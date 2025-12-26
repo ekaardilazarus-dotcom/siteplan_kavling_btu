@@ -24,12 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .then(svg => {
       map.innerHTML = svg;
-
       const svgEl = map.querySelector('svg');
       if (svgEl) {
         svgEl.removeAttribute('width');
         svgEl.removeAttribute('height');
-
+        svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         originalViewBox = svgEl.getAttribute('viewBox');
         if (!originalViewBox) {
           const bbox = svgEl.getBBox();
@@ -134,67 +133,37 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // FUNGSI ZOOM KE ELEMEN
   // ===============================
-  function zoomToElement(element, scale) {
-    const svgEl = document.querySelector('#map svg');
-    const mapDiv = document.getElementById('map');
-    
-    if (!svgEl || !mapDiv || !element) return;
+function zoomToElement(element) {
+  const svgEl = document.querySelector('#map svg');
+  if (!svgEl || !element) return;
 
-    // 1. Dapatkan bounding box elemen dalam koordinat SVG
-    let bbox;
-    if (element.tagName.toLowerCase() === 'g') {
-      // Untuk group, gabungkan semua child
-      const children = element.querySelectorAll('rect, path, polygon');
-      if (children.length === 0) return;
-      
-      // Dapatkan titik ekstrem
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      children.forEach(child => {
-        const childBox = child.getBBox();
-        minX = Math.min(minX, childBox.x);
-        minY = Math.min(minY, childBox.y);
-        maxX = Math.max(maxX, childBox.x + childBox.width);
-        maxY = Math.max(maxY, childBox.y + childBox.height);
-      });
-      
-      bbox = {
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY
-      };
-    } else if (element.getBBox) {
-      bbox = element.getBBox();
-    } else {
-      return;
-    }
+  let bbox;
 
-    // 2. Hitung pusat elemen dalam koordinat SVG
-    const centerX = bbox.x + bbox.width / 2;
-    const centerY = bbox.y + bbox.height / 2;
+  if (element.tagName.toLowerCase() === 'g') {
+    const children = element.querySelectorAll('rect, path, polygon');
+    if (!children.length) return;
 
-    // 3. Set zoom
-    currentScale = scale;
-    svgEl.style.transformOrigin = "0 0";
-    svgEl.style.transform = `scale(${currentScale})`;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    children.forEach(c => {
+      const b = c.getBBox();
+      minX = Math.min(minX, b.x);
+      minY = Math.min(minY, b.y);
+      maxX = Math.max(maxX, b.x + b.width);
+      maxY = Math.max(maxY, b.y + b.height);
+    });
 
-    // 4. Setelah transform diterapkan, hitung posisi scroll
-    // Kita perlu tunggu sebentar agar transform selesai
-    setTimeout(() => {
-      // Hitung posisi elemen setelah scaling
-      const scaledCenterX = centerX * currentScale;
-      const scaledCenterY = centerY * currentScale;
-      
-      // Hitung posisi scroll untuk memusatkan elemen
-      // Scroll ke posisi: (posisi_elemen) - (setengah_viewport)
-      const scrollLeft = scaledCenterX - (mapDiv.clientWidth / 2);
-      const scrollTop = scaledCenterY - (mapDiv.clientHeight / 2);
-      
-      // Terapkan scroll dengan batasan minimal 0
-      mapDiv.scrollLeft = Math.max(0, scrollLeft);
-      mapDiv.scrollTop = Math.max(0, scrollTop);
-    }, 50); // Delay kecil untuk memastikan transform sudah diterapkan
+    bbox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+  } else {
+    bbox = element.getBBox();
   }
+
+  const padding = Math.max(bbox.width, bbox.height) * 0.6;
+
+  svgEl.setAttribute(
+    'viewBox',
+    `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`
+  );
+}
 
   // ===============================
   // FUNGSI ZOOM PADA POSISI TERTENTU
