@@ -22,9 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // Ambil semua TEXT dari SVG
       const texts = map.querySelectorAll('text');
 
-      kavlingIndex = Array.from(texts)
-        .map(t => t.textContent.trim())
-        .filter(t => /^(KR|UJ|GA|M|Blok)/i.test(t));
+     kavlingIndex = [...new Set(
+  Array.from(texts)
+    .map(t => t.textContent.trim())
+    .filter(t => /^(KR|UJ|GA|M|Blok)/i.test(t))
+)];
 
       console.log('DATA KAVLING:', kavlingIndex);
     })
@@ -49,45 +51,77 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   });
 
-  // ===============================
-  // FOCUS & HIGHLIGHT KAVLING
-  // ===============================
-  function focusKavling(kode) {
-    resultsBox.innerHTML = '';
-    searchInput.value = kode;
+function focusKavling(kode) {
+  resultsBox.innerHTML = '';
+  searchInput.value = kode;
 
-    // cari TEXT yang sesuai
-    const textEl = Array.from(
-      document.querySelectorAll('#map text')
-    ).find(t => t.textContent.trim() === kode);
+  // cari text label
+  const textEl = Array.from(
+    document.querySelectorAll('#map text')
+  ).find(t => t.textContent.trim() === kode);
 
-    if (!textEl) return;
+  if (!textEl) {
+    console.warn('Text tidak ditemukan:', kode);
+    return;
+  }
 
-    // cari elemen visual terdekat
-    const target =
-      textEl.closest('g') ||
-      textEl.previousElementSibling ||
-      textEl.parentElement;
+  // reset highlight lama
+  document.querySelectorAll('#map rect, #map path, #map polygon')
+    .forEach(el => el.style.cssText = '');
 
-    if (!target) return;
+  let target = null;
 
-    // reset warna sebelumnya
-    document.querySelectorAll('#map rect, #map path, #map polygon')
-      .forEach(el => el.style.cssText = '');
+  // PRIORITAS 1: g[id]
+  target = document.querySelector(`#map g[id="${kode}"]`);
 
-    // highlight kavling
-    target.querySelectorAll('rect, path, polygon')
-      .forEach(el => {
-        el.style.fill = '#ffd54f';
-        el.style.stroke = '#ff6f00';
-        el.style.strokeWidth = '2';
-      });
+  // PRIORITAS 2: shape dengan id langsung
+  if (!target) {
+    target = document.querySelector(
+      `#map path[id="${kode}"], 
+       #map rect[id="${kode}"], 
+       #map polygon[id="${kode}"]`
+    );
+  }
 
-    // scroll ke lokasi
-    target.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-      inline: 'center'
+  // PRIORITAS 3: shape terdekat dari text (fallback)
+  if (!target) {
+    const bbox = textEl.getBBox();
+    const shapes = document.querySelectorAll('#map rect, #map path, #map polygon');
+
+    shapes.forEach(el => {
+      const b = el.getBBox();
+      const dx = Math.abs(b.x - bbox.x);
+      const dy = Math.abs(b.y - bbox.y);
+      if (dx < 20 && dy < 20) target = el;
     });
   }
+
+  if (!target) {
+    console.warn('Target visual tidak ditemukan:', kode);
+    return;
+  }
+
+  // highlight
+  if (target.tagName === 'g') {
+    target.querySelectorAll('rect, path, polygon').forEach(el => {
+      el.style.fill = '#ffd54f';
+      el.style.stroke = '#ff6f00';
+      el.style.strokeWidth = '2';
+    });
+  } else {
+    target.style.fill = '#ffd54f';
+    target.style.stroke = '#ff6f00';
+    target.style.strokeWidth = '2';
+  }
+
+  // scroll ke lokasi
+  target.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center',
+    inline: 'center'
+  });
+  resultsBox.innerHTML = '';
+
+}
+
 });
