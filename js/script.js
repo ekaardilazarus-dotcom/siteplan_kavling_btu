@@ -294,3 +294,9 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsBox.innerHTML = '';
   };
 });
+
+
+
+//DATABASE
+//======
+const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
