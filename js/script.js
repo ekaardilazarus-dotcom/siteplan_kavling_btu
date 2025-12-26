@@ -80,76 +80,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // focus kavling
-  function focusKavling(kode) {
-  resultsBox.innerHTML = '';
-  searchInput.value = kode;
+  // fungsi set zoom dengan center
+  function setZoom(scale, targetBBox = null) {
+    const svgEl = document.querySelector('#map svg');
+    if (!svgEl) return;
 
-  // reset highlight
-  document.querySelectorAll('#map rect, #map path, #map polygon')
-    .forEach(el => el.style.cssText = '');
-
-  let target =
-    document.querySelector(`#map g[id="${kode}"]`) ||
-    document.querySelector(`#map rect[id="${kode}"], #map path[id="${kode}"], #map polygon[id="${kode}"]`);
-
-  if (!target) return;
-
-  // highlight
-  if (target.tagName.toLowerCase() === 'g') {
-    target.querySelectorAll('rect, path, polygon').forEach(el => {
-      el.style.fill = '#ffd54f';
-      el.style.stroke = '#ff6f00';
-      el.style.strokeWidth = '2';
-    });
-  } else {
-    target.style.fill = '#ffd54f';
-    target.style.stroke = '#ff6f00';
-    target.style.strokeWidth = '2';
-  }
-
-  // geser ke posisi kavling
-  const bbox = target.getBBox();
-  const mapDiv = document.getElementById('map');
-  mapDiv.scrollLeft = bbox.x - mapDiv.clientWidth / 2 + bbox.width / 2;
-  mapDiv.scrollTop = bbox.y - mapDiv.clientHeight / 2 + bbox.height / 2;
-
-  // zoom otomatis lebih besar (50%)
-  const svgEl = document.querySelector('#map svg');
-  if (svgEl) {
-    currentScale = 1.5; // zoom 50%
+    currentScale = scale;
     svgEl.style.transformOrigin = "0 0";
     svgEl.style.transform = `scale(${currentScale})`;
+
+    const mapDiv = document.getElementById('map');
+    let centerX, centerY;
+
+    if (targetBBox) {
+      // center di blok terpilih
+      centerX = targetBBox.x + targetBBox.width / 2;
+      centerY = targetBBox.y + targetBBox.height / 2;
+    } else {
+      // center di tengah map
+      const bbox = svgEl.getBBox();
+      centerX = bbox.x + bbox.width / 2;
+      centerY = bbox.y + bbox.height / 2;
+    }
+
+    mapDiv.scrollLeft = centerX * currentScale - mapDiv.clientWidth / 2;
+    mapDiv.scrollTop  = centerY * currentScale - mapDiv.clientHeight / 2;
   }
-}
+
+  // focus kavling
+  function focusKavling(kode) {
+    resultsBox.innerHTML = '';
+    searchInput.value = kode;
+
+    document.querySelectorAll('#map rect, #map path, #map polygon')
+      .forEach(el => el.style.cssText = '');
+
+    let target =
+      document.querySelector(`#map g[id="${kode}"]`) ||
+      document.querySelector(`#map rect[id="${kode}"], #map path[id="${kode}"], #map polygon[id="${kode}"]`);
+
+    if (!target) return;
+
+    if (target.tagName.toLowerCase() === 'g') {
+      target.querySelectorAll('rect, path, polygon').forEach(el => {
+        el.style.fill = '#ffd54f';
+        el.style.stroke = '#ff6f00';
+        el.style.strokeWidth = '2';
+      });
+    } else {
+      target.style.fill = '#ffd54f';
+      target.style.stroke = '#ff6f00';
+      target.style.strokeWidth = '2';
+    }
+
+    const bbox = target.getBBox();
+    setZoom(1.5, bbox); // zoom otomatis 50% dengan center di blok
+  }
 
   // tombol zoom manual
   zoomInBtn.addEventListener('click', () => {
-    const svgEl = document.querySelector('#map svg');
-    if (!svgEl) return;
-    currentScale *= 1.2;
-    svgEl.style.transformOrigin = "0 0";
-    svgEl.style.transform = `scale(${currentScale})`;
+    setZoom(currentScale * 1.2); // zoom in, center map
   });
 
   zoomOutBtn.addEventListener('click', () => {
-    const svgEl = document.querySelector('#map svg');
-    if (!svgEl) return;
-    currentScale /= 1.2;
-    svgEl.style.transformOrigin = "0 0";
-    svgEl.style.transform = `scale(${currentScale})`;
+    setZoom(currentScale / 1.2); // zoom out, center map
   });
 
   // reset zoom
   resetBtn.addEventListener('click', () => {
-    const svgEl = document.querySelector('#map svg');
-    if (svgEl) {
-      currentScale = 1;
-      svgEl.style.transform = "scale(1)";
-      svgEl.style.transformOrigin = "0 0";
-      svgEl.setAttribute('viewBox', originalViewBox);
-      map.scrollLeft = 0;
-      map.scrollTop = 0;
-    }
+    setZoom(1); // reset zoom, center map
   });
 });
