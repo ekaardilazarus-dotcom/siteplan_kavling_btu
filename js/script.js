@@ -82,44 +82,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // focus kavling
   function focusKavling(kode) {
-    resultsBox.innerHTML = '';
-    searchInput.value = kode;
+  resultsBox.innerHTML = '';
+  searchInput.value = kode;
 
-    document.querySelectorAll('#map rect, #map path, #map polygon')
-      .forEach(el => el.style.cssText = '');
+  // reset highlight
+  document.querySelectorAll('#map rect, #map path, #map polygon')
+    .forEach(el => el.style.cssText = '');
 
-    let target =
-      document.querySelector(`#map g[id="${kode}"]`) ||
-      document.querySelector(`#map rect[id="${kode}"], #map path[id="${kode}"], #map polygon[id="${kode}"]`);
+  let target =
+    document.querySelector(`#map g[id="${kode}"]`) ||
+    document.querySelector(`#map rect[id="${kode}"], #map path[id="${kode}"], #map polygon[id="${kode}"]`);
 
-    if (!target) return;
+  if (!target) return;
 
-    if (target.tagName.toLowerCase() === 'g') {
-      target.querySelectorAll('rect, path, polygon').forEach(el => {
-        el.style.fill = '#ffd54f';
-        el.style.stroke = '#ff6f00';
-        el.style.strokeWidth = '2';
-      });
-    } else {
-      target.style.fill = '#ffd54f';
-      target.style.stroke = '#ff6f00';
-      target.style.strokeWidth = '2';
-    }
-
-    // geser ke posisi kavling
-    const bbox = target.getBBox();
-    const mapDiv = document.getElementById('map');
-    mapDiv.scrollLeft = bbox.x - mapDiv.clientWidth / 2 + bbox.width / 2;
-    mapDiv.scrollTop = bbox.y - mapDiv.clientHeight / 2 + bbox.height / 2;
-
-    // zoom sedikit otomatis (CSS transform)
-    const svgEl = document.querySelector('#map svg');
-    if (svgEl) {
-      currentScale = 1.2; // zoom 20%
-      svgEl.style.transformOrigin = "0 0";
-      svgEl.style.transform = `scale(${currentScale})`;
-    }
+  // highlight
+  if (target.tagName.toLowerCase() === 'g') {
+    target.querySelectorAll('rect, path, polygon').forEach(el => {
+      el.style.fill = '#ffd54f';
+      el.style.stroke = '#ff6f00';
+      el.style.strokeWidth = '2';
+    });
+  } else {
+    target.style.fill = '#ffd54f';
+    target.style.stroke = '#ff6f00';
+    target.style.strokeWidth = '2';
   }
+
+  // geser ke posisi kavling
+  const bbox = target.getBBox();
+  const mapDiv = document.getElementById('map');
+  mapDiv.scrollLeft = bbox.x - mapDiv.clientWidth / 2 + bbox.width / 2;
+  mapDiv.scrollTop = bbox.y - mapDiv.clientHeight / 2 + bbox.height / 2;
+
+  // zoom otomatis lebih besar (50%)
+  const svgEl = document.querySelector('#map svg');
+  if (svgEl) {
+    currentScale = 1.5; // zoom 50%
+    svgEl.style.transformOrigin = "0 0";
+    svgEl.style.transform = `scale(${currentScale})`;
+  }
+}
 
   // tombol zoom manual
   zoomInBtn.addEventListener('click', () => {
