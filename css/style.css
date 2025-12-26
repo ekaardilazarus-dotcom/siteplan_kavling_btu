@@ -33,3 +33,10 @@ body {
 #map text {
   pointer-events: none;
 }
+
+#map g[id] rect,
+#map g[id] path,
+#map g[id] polygon {
+  pointer-events: all;
+}
+
