@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // LOAD SVG & INDEX KAVLING
   // ===============================
-  fetch('./sitemap.svg')
+  fetch('sitemap.svg') // gunakan tanpa "./" untuk GitHub Pages, pastikan nama file sama persis (case-sensitive)
     .then(res => {
       if (!res.ok) throw new Error('SVG tidak ditemukan');
       return res.text();
@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
           .filter(id => /^(KR|UJ|GA|M|Blok)/i.test(id))
       ])];
 
+      // Sort biar rapi (opsional)
+      kavlingIndex.sort((a, b) => a.localeCompare(b, 'id'));
+
       console.log('DATA KAVLING:', kavlingIndex);
 
       // Aktifkan search SETELAH data siap
@@ -57,16 +60,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const q = searchInput.value.trim().toLowerCase();
     resultsBox.innerHTML = '';
 
-    if (q.length < 2) return;
+    // Tampilkan dropdown hanya jika ada query
+    if (q.length < 1) return;
 
-    kavlingIndex
-      .filter(name => name.toLowerCase().includes(q))
-      .forEach(name => {
-        const li = document.createElement('li');
-        li.textContent = name;
-        li.onclick = () => focusKavling(name);
-        resultsBox.appendChild(li);
-      });
+    const matches = kavlingIndex.filter(name => name.toLowerCase().includes(q));
+
+    if (matches.length === 0) {
+      const li = document.createElement('li');
+      li.textContent = 'Tidak ditemukan';
+      li.style.color = '#777';
+      li.style.cursor = 'default';
+      resultsBox.appendChild(li);
+      return;
+    }
+
+    matches.forEach(name => {
+      const li = document.createElement('li');
+      li.textContent = name;
+      li.onclick = () => focusKavling(name);
+      resultsBox.appendChild(li);
+    });
+  });
+
+  // Tutup dropdown saat klik di luar
+  document.addEventListener('click', (e) => {
+    const within = e.target.closest('#search-container');
+    if (!within) resultsBox.innerHTML = '';
   });
 
   // ===============================
@@ -102,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!target) return;
 
-    if (target.tagName === 'g') {
+    if (target.tagName.toLowerCase() === 'g') {
       target.querySelectorAll('rect, path, polygon').forEach(el => {
         el.style.fill = '#ffd54f';
         el.style.stroke = '#ff6f00';
@@ -114,4 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
       target.style.strokeWidth = '2';
     }
 
-    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center
+    // Scroll halus ke posisi shape
+    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  }
+});
