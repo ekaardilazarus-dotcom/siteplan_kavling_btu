@@ -43,8 +43,6 @@ body {
 
 /* ===============================
    FALLBACK
-   jika ID ada langsung di path / rect / polygon
-   (kasus GA)
    =============================== */
 #map path[id^="KR" i],
 #map path[id^="UJ" i],
