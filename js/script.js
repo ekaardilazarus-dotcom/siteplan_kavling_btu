@@ -126,5 +126,8 @@ function focusKavling(kode) {
   resultsBox.innerHTML = '';
 
 }
+// Aktifkan search setelah data siap
+searchInput.disabled = false;
+searchInput.placeholder = 'Cari kavling...';
 
 });
