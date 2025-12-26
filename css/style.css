@@ -7,7 +7,6 @@ h1 {
   margin: 16px;
 }
 
-/* Map container */
 #map {
   width: 100%;
   overflow: auto;
@@ -15,14 +14,13 @@ h1 {
   margin-top: 16px;
 }
 
-/* SVG responsive */
 #map svg {
   width: 100%;
   height: auto;
   display: block;
 }
 
-/* Interaksi kavling (group level) */
+/* interaksi kavling */
 #map g[id^="KR" i],
 #map g[id^="UJ" i],
 #map g[id^="GA" i],
@@ -42,65 +40,21 @@ h1 {
   stroke-width: 2;
 }
 
-/* Fallback interaksi langsung */
-#map path[id^="KR" i],
-#map path[id^="UJ" i],
-#map path[id^="GA" i],
-#map path[id^="M" i],
-#map path[id^="Blok" i],
-#map rect[id^="KR" i],
-#map rect[id^="UJ" i],
-#map rect[id^="GA" i],
-#map rect[id^="M" i],
-#map rect[id^="Blok" i],
-#map polygon[id^="KR" i],
-#map polygon[id^="UJ" i],
-#map polygon[id^="GA" i],
-#map polygon[id^="M" i],
-#map polygon[id^="Blok" i] {
-  cursor: pointer;
-  pointer-events: all;
-}
+#map text { pointer-events: none; }
 
-#map path[id^="KR" i]:hover,
-#map path[id^="UJ" i]:hover,
-#map path[id^="GA" i]:hover,
-#map path[id^="M" i]:hover,
-#map path[id^="Blok" i]:hover,
-#map rect[id^="KR" i]:hover,
-#map rect[id^="UJ" i]:hover,
-#map rect[id^="GA" i]:hover,
-#map rect[id^="M" i]:hover,
-#map rect[id^="Blok" i]:hover,
-#map polygon[id^="KR" i]:hover,
-#map polygon[id^="UJ" i]:hover,
-#map polygon[id^="GA" i]:hover,
-#map polygon[id^="M" i]:hover,
-#map polygon[id^="Blok" i]:hover {
-  fill: #ffd54f !important;
-  stroke: #ff6f00 !important;
-  stroke-width: 2;
-}
-
-/* Label text tidak blok klik */
-#map text {
-  pointer-events: none;
-}
-
-/* Search container */
+/* search container */
 #search-container {
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 320px;
-  background: #ffffff;
+  width: 360px;
+  background: #fff;
   padding: 10px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 9999;
 }
 
-/* Input + tombol sejajar */
 .search-row {
   display: flex;
   gap: 8px;
@@ -114,11 +68,8 @@ h1 {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
-#zoomIn, #zoomOut, #resetZoom {
-  min-width: 40px;
-  text-align: center;
-}
-#resetZoom {
+
+#resetZoom, #zoomIn, #zoomOut {
   padding: 8px 12px;
   font-size: 14px;
   border: 1px solid #ccc;
@@ -128,11 +79,11 @@ h1 {
   white-space: nowrap;
 }
 
-#resetZoom:hover {
+#resetZoom:hover, #zoomIn:hover, #zoomOut:hover {
   background: #e0e0e0;
 }
 
-/* Dropdown hasil pencarian */
+/* dropdown hasil */
 #search-results {
   position: absolute;
   top: calc(100% + 6px);
@@ -155,19 +106,7 @@ h1 {
   cursor: pointer;
   font-size: 14px;
 }
-#zoomIn, #zoomOut {
-  padding: 8px 12px;
-  font-size: 14px;       /* samakan dengan resetZoom */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #f5f5f5;
-  cursor: pointer;
-  white-space: nowrap;   /* biar teks/tanda + - tidak pecah */
-}
 
-#zoomIn:hover, #zoomOut:hover {
-  background: #e0e0e0;
-}
 #search-results li:hover {
   background: #f5f5f5;
 }
