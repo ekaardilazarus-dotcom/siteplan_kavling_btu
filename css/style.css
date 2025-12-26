@@ -1,3 +1,15 @@
 body {
   font-family: Arial, sans-serif;
+  #map {
+  width: 100%;
+  overflow: auto;
+}
+
+#siteplan {
+  width: 100%;
+  max-width: 1200px;
+  display: block;
+  margin: auto;
+}
+
 }
