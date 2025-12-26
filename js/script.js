@@ -1,8 +1,38 @@
+// ===============================
+// FINAL CLEAN SCRIPT – SVG MAP
+// Search blok & kavling, zoom, pan, click sync
+// ===============================
+
 let kavlingIndex = [];
 let originalViewBox = null;
-let currentScale = 1;
+let viewBoxState = null;
 let lastFocusedEl = null;
+let zoomPadding = null;
 
+let isPanning = false;
+let isDragging = false;
+let panStart = { x: 0, y: 0 };
+
+// ===============================
+// HELPERS
+// ===============================
+function parseViewBox(vb) {
+  const [x, y, w, h] = vb.split(' ').map(Number);
+  return { x, y, w, h };
+}
+
+function applyViewBox(svg) {
+  svg.setAttribute('viewBox', `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`);
+}
+
+function clearHighlight() {
+  document.querySelectorAll('#map rect, #map path, #map polygon')
+    .forEach(el => el.style.cssText = '');
+}
+
+// ===============================
+// DOM READY
+// ===============================
 document.addEventListener('DOMContentLoaded', () => {
   const map = document.getElementById('map');
   const searchInput = document.getElementById('search');
@@ -12,325 +42,261 @@ document.addEventListener('DOMContentLoaded', () => {
   const zoomOutBtn = document.getElementById('zoomOut');
 
   searchInput.disabled = true;
-  searchInput.placeholder = 'Memuat data kavling...';
 
   // ===============================
   // LOAD SVG
   // ===============================
   fetch('sitemap.svg')
-    .then(res => {
-      if (!res.ok) throw new Error('SVG tidak ditemukan');
-      return res.text();
-    })
-    .then(svg => {
-      map.innerHTML = svg;
+    .then(r => r.text())
+    .then(svgText => {
+      map.innerHTML = svgText;
+      const svg = map.querySelector('svg');
 
-      const svgEl = map.querySelector('svg');
-      if (svgEl) {
-        svgEl.removeAttribute('width');
-        svgEl.removeAttribute('height');
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-        originalViewBox = svgEl.getAttribute('viewBox');
-        if (!originalViewBox) {
-          const bbox = svgEl.getBBox();
-          originalViewBox = `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`;
-          svgEl.setAttribute('viewBox', originalViewBox);
-        }
+      originalViewBox = svg.getAttribute('viewBox');
+      if (!originalViewBox) {
+        const b = svg.getBBox();
+        originalViewBox = `${b.x} ${b.y} ${b.width} ${b.height}`;
+        svg.setAttribute('viewBox', originalViewBox);
       }
 
-      // indexing kavling
-      const texts = map.querySelectorAll('text');
+      viewBoxState = parseViewBox(originalViewBox);
+
+      // indexing ID kavling
       const ids = map.querySelectorAll('g[id], rect[id], path[id], polygon[id]');
+      kavlingIndex = [...new Set(
+        Array.from(ids)
+          .map(el => el.id.trim().toUpperCase())
+          .filter(id => /^(GA|UJ|KR|M)/.test(id))
+      )].sort((a, b) => a.localeCompare(b, 'id'));
 
-      kavlingIndex = [...new Set([
-        ...Array.from(texts).map(t => t.textContent.trim()).filter(t => /^(KR|UJ|GA|M|Blok)/i.test(t)),
-        ...Array.from(ids).map(el => el.id.trim()).filter(id => /^(KR|UJ|GA|M|Blok)/i.test(id))
-      ])];
-
-      kavlingIndex.sort((a, b) => a.localeCompare(b, 'id'));
       searchInput.disabled = false;
-      searchInput.placeholder = 'Cari kavling...';
     });
 
   // ===============================
-  // SEARCH INPUT
+  // SEARCH (BLOK + KAVLING)
   // ===============================
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
     resultsBox.innerHTML = '';
-    if (q.length < 1) return;
+    if (!q) return;
 
-    const matches = kavlingIndex.filter(name => name.toLowerCase().includes(q));
-    if (matches.length === 0) {
-      const li = document.createElement('li');
-      li.textContent = 'Tidak ditemukan';
-      li.style.color = '#777';
-      resultsBox.appendChild(li);
-      return;
+    const upper = q.toUpperCase();
+
+    // BLOK OTOMATIS (uj10, ga34)
+    const blokItems = kavlingIndex.filter(id => id.startsWith(upper + '_'));
+    if (blokItems.length && !q.includes('_')) {
+      const liBlok = document.createElement('li');
+      liBlok.textContent = `${upper} (${blokItems.length} kavling)`;
+      liBlok.style.fontWeight = 'bold';
+      liBlok.onclick = () => focusBlok(upper);
+      resultsBox.appendChild(liBlok);
     }
 
-    matches.forEach(name => {
-      const li = document.createElement('li');
-      li.textContent = name;
-      li.onclick = () => focusKavling(name);
-      resultsBox.appendChild(li);
-    });
-  });
-
-  // tutup dropdown saat klik di luar
-  document.addEventListener('click', (e) => {
-    const within = e.target.closest('#search-container');
-    const isResultItem = e.target.closest('#search-results li');
-    if (!within && !isResultItem) {
-      resultsBox.innerHTML = '';
-    }
-  });
-
-  // ===============================
-  // FUNGSI UTAMA: FOKUS KE KAVLING
-  // ===============================
-  function focusKavling(kode) {
-    resultsBox.innerHTML = '';
-    searchInput.value = kode;
-
-    // Reset semua highlight sebelumnya
-    document.querySelectorAll('#map rect, #map path, #map polygon')
-      .forEach(el => {
-        el.style.fill = '';
-        el.style.stroke = '';
-        el.style.strokeWidth = '';
+    // KAVLING DETAIL
+    kavlingIndex
+      .filter(id => id.toLowerCase().includes(q))
+      .slice(0, 20)
+      .forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        li.onclick = () => focusKavling(name);
+        resultsBox.appendChild(li);
       });
 
-    // Cari elemen target
-    let target =
-      document.querySelector(`#map g[id="${kode}"]`) ||
-      document.querySelector(`#map rect[id="${kode}"], #map path[id="${kode}"], #map polygon[id="${kode}"]`);
+    if (!resultsBox.children.length) {
+      resultsBox.innerHTML = '<li style="color:#777">Tidak ditemukan</li>';
+    }
+  });
 
-    if (!target) {
-      console.warn(`Kavling "${kode}" tidak ditemukan`);
-      return;
+  // ===============================
+  // FOCUS KAVLING
+  // ===============================
+  function focusKavling(id) {
+    const svg = map.querySelector('svg');
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    clearHighlight();
+
+    if (el.tagName.toLowerCase() === 'g') {
+      el.querySelectorAll('rect, path, polygon').forEach(c => {
+        c.style.fill = '#ffd54f';
+        c.style.stroke = '#ff6f00';
+        c.style.strokeWidth = '2';
+      });
+    } else {
+      el.style.fill = '#ffd54f';
+      el.style.stroke = '#ff6f00';
+      el.style.strokeWidth = '2';
     }
 
-    // Highlight elemen
-    if (target.tagName.toLowerCase() === 'g') {
-      target.querySelectorAll('rect, path, polygon').forEach(el => {
+    const box = el.getBBox();
+    zoomPadding = Math.max(box.width, box.height) * 0.6;
+
+    viewBoxState = {
+      x: box.x - zoomPadding,
+      y: box.y - zoomPadding,
+      w: box.width + zoomPadding * 2,
+      h: box.height + zoomPadding * 2
+    };
+
+    lastFocusedEl = el;
+    searchInput.value = id;
+    applyViewBox(svg);
+  }
+
+  // ===============================
+  // FOCUS BLOK
+  // ===============================
+  function focusBlok(prefix) {
+    const svg = map.querySelector('svg');
+    clearHighlight();
+
+    const els = [...map.querySelectorAll(`[id^="${prefix}_"]`)];
+    if (!els.length) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    els.forEach(el => {
+      if (el.tagName.toLowerCase() === 'g') {
+        el.querySelectorAll('rect, path, polygon').forEach(c => {
+          c.style.fill = '#ffd54f';
+          c.style.stroke = '#ff6f00';
+          c.style.strokeWidth = '2';
+        });
+      } else {
         el.style.fill = '#ffd54f';
         el.style.stroke = '#ff6f00';
         el.style.strokeWidth = '2';
-      });
-    } else {
-      target.style.fill = '#ffd54f';
-      target.style.stroke = '#ff6f00';
-      target.style.strokeWidth = '2';
-    }
-
-    // Simpan elemen terakhir
-    lastFocusedEl = target;
-
-    // Langsung zoom ke elemen
-    zoomToElement(target, 1.5);
-  }
-
-  // ===============================
-  // FUNGSI ZOOM KE ELEMEN
-  // ===============================
-  function zoomToElement(element, scale) {
-    const svgEl = document.querySelector('#map svg');
-    const mapDiv = document.getElementById('map');
-    
-    if (!svgEl || !mapDiv || !element) return;
-
-    // 1. Dapatkan bounding box elemen dalam koordinat SVG
-    let bbox;
-    if (element.tagName.toLowerCase() === 'g') {
-      // Untuk group, gabungkan semua child
-      const children = element.querySelectorAll('rect, path, polygon');
-      if (children.length === 0) return;
-      
-      // Dapatkan titik ekstrem
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      children.forEach(child => {
-        const childBox = child.getBBox();
-        minX = Math.min(minX, childBox.x);
-        minY = Math.min(minY, childBox.y);
-        maxX = Math.max(maxX, childBox.x + childBox.width);
-        maxY = Math.max(maxY, childBox.y + childBox.height);
-      });
-      
-      bbox = {
-        x: minX,
-        y: minY,
-        width: maxX - minX,
-        height: maxY - minY
-      };
-    } else if (element.getBBox) {
-      bbox = element.getBBox();
-    } else {
-      return;
-    }
-
-    // 2. Hitung pusat elemen dalam koordinat SVG
-    const centerX = bbox.x + bbox.width / 2;
-    const centerY = bbox.y + bbox.height / 2;
-
-    // 3. Set zoom
-    currentScale = scale;
-    svgEl.style.transformOrigin = "0 0";
-    svgEl.style.transform = `scale(${currentScale})`;
-
-    // 4. Setelah transform diterapkan, hitung posisi scroll
-    // Kita perlu tunggu sebentar agar transform selesai
-    setTimeout(() => {
-      // Hitung posisi elemen setelah scaling
-      const scaledCenterX = centerX * currentScale;
-      const scaledCenterY = centerY * currentScale;
-      
-      // Hitung posisi scroll untuk memusatkan elemen
-      // Scroll ke posisi: (posisi_elemen) - (setengah_viewport)
-      const scrollLeft = scaledCenterX - (mapDiv.clientWidth / 2);
-      const scrollTop = scaledCenterY - (mapDiv.clientHeight / 2);
-      
-      // Terapkan scroll dengan batasan minimal 0
-      mapDiv.scrollLeft = Math.max(0, scrollLeft);
-      mapDiv.scrollTop = Math.max(0, scrollTop);
-    }, 50); // Delay kecil untuk memastikan transform sudah diterapkan
-  }
-
-  // ===============================
-  // FUNGSI ZOOM PADA POSISI TERTENTU
-  // ===============================
-  function zoomAtPoint(scale, pointX, pointY) {
-    const svgEl = document.querySelector('#map svg');
-    const mapDiv = document.getElementById('map');
-    
-    if (!svgEl || !mapDiv) return;
-
-    // Simpan skala lama
-    const oldScale = currentScale;
-    
-    // Set skala baru
-    currentScale = Math.max(0.1, Math.min(5, scale));
-    svgEl.style.transformOrigin = "0 0";
-    svgEl.style.transform = `scale(${currentScale})`;
-    
-    // Hitung posisi relatif titik dalam koordinat SVG
-    const svgX = pointX / oldScale;
-    const svgY = pointY / oldScale;
-    
-    // Hitung posisi titik setelah scaling
-    const newPointX = svgX * currentScale;
-    const newPointY = svgY * currentScale;
-    
-    // Hitung scroll untuk mempertahankan titik di posisi yang sama
-    const scrollLeft = newPointX - (pointX - mapDiv.scrollLeft);
-    const scrollTop = newPointY - (pointY - mapDiv.scrollTop);
-    
-    // Terapkan scroll
-    mapDiv.scrollLeft = Math.max(0, scrollLeft);
-    mapDiv.scrollTop = Math.max(0, scrollTop);
-  }
-
-  // ===============================
-  // TOMBOL ZOOM MANUAL
-  // ===============================
-  zoomInBtn.addEventListener('click', () => {
-    const mapDiv = document.getElementById('map');
-    
-    if (lastFocusedEl) {
-      // Jika ada elemen terfokus, zoom ke elemen tersebut
-      zoomToElement(lastFocusedEl, currentScale * 1.2);
-    } else {
-      // Zoom pada tengah viewport
-      const centerX = mapDiv.scrollLeft + mapDiv.clientWidth / 2;
-      const centerY = mapDiv.scrollTop + mapDiv.clientHeight / 2;
-      zoomAtPoint(currentScale * 1.2, centerX, centerY);
-    }
-  });
-
-  zoomOutBtn.addEventListener('click', () => {
-    const mapDiv = document.getElementById('map');
-    
-    if (lastFocusedEl) {
-      // Jika ada elemen terfokus, zoom ke elemen tersebut
-      zoomToElement(lastFocusedEl, currentScale / 1.2);
-    } else {
-      // Zoom pada tengah viewport
-      const centerX = mapDiv.scrollLeft + mapDiv.clientWidth / 2;
-      const centerY = mapDiv.scrollTop + mapDiv.clientHeight / 2;
-      zoomAtPoint(currentScale / 1.2, centerX, centerY);
-    }
-  });
-
-  // ===============================
-  // RESET ZOOM
-  // ===============================
-  resetBtn.addEventListener('click', () => {
-    const svgEl = document.querySelector('#map svg');
-    const mapDiv = document.getElementById('map');
-    
-    if (svgEl && mapDiv) {
-      // Reset state
-      lastFocusedEl = null;
-      currentScale = 1;
-      
-      // Reset transform
-      svgEl.style.transformOrigin = "0 0";
-      svgEl.style.transform = 'scale(1)';
-      
-      // Reset highlight
-      document.querySelectorAll('#map rect, #map path, #map polygon')
-        .forEach(el => {
-          el.style.fill = '';
-          el.style.stroke = '';
-          el.style.strokeWidth = '';
-        });
-      
-      // Reset scroll
-      mapDiv.scrollLeft = 0;
-      mapDiv.scrollTop = 0;
-      
-      // Clear search
-      searchInput.value = '';
-      resultsBox.innerHTML = '';
-    }
-  });
-
-  // ===============================
-  // CLICK EVENT UNTUK SELECT MANUAL
-  // ===============================
-  map.addEventListener('click', (e) => {
-    // Cari elemen yang diklik (lewatai text, cari shape)
-    let target = e.target;
-    
-    // Jika klik pada text, cari shape terdekat
-    if (target.tagName.toLowerCase() === 'text') {
-      // Cari shape dalam parent yang sama
-      const parent = target.parentElement;
-      const shapes = parent.querySelectorAll('rect, path, polygon, g');
-      if (shapes.length > 0) {
-        target = shapes[0];
       }
-    }
-    
-    // Pastikan target adalah shape atau group
-    const validTags = ['rect', 'path', 'polygon', 'g'];
-    if (!validTags.includes(target.tagName.toLowerCase())) {
-      return;
-    }
-    
-    // Cari ID kavling
-    let kavlingId = target.id;
-    if (!kavlingId && target.parentElement && target.parentElement.tagName.toLowerCase() === 'g') {
-      kavlingId = target.parentElement.id;
-    }
-    
-    // Jika ID sesuai format kavling, fokuskan
-    if (kavlingId && /^(KR|UJ|GA|M|Blok)/i.test(kavlingId)) {
-      searchInput.value = kavlingId;
-      
-      // Cari elemen lengkapnya
-      const element = document.getElementById(kavlingId) || target;
-      focusKavling(kavlingId);
-    }
+
+      const b = el.getBBox();
+      minX = Math.min(minX, b.x);
+      minY = Math.min(minY, b.y);
+      maxX = Math.max(maxX, b.x + b.width);
+      maxY = Math.max(maxY, b.y + b.height);
+    });
+
+    const pad = Math.max(maxX - minX, maxY - minY) * 0.4;
+
+    viewBoxState = {
+      x: minX - pad,
+      y: minY - pad,
+      w: (maxX - minX) + pad * 2,
+      h: (maxY - minY) + pad * 2
+    };
+
+    lastFocusedEl = null;
+    zoomPadding = null;
+    searchInput.value = prefix;
+    applyViewBox(svg);
+  }
+
+  // ===============================
+  // CLICK MAP (SYNC)
+  // ===============================
+  map.addEventListener('click', e => {
+    if (isDragging) return;
+
+    let t = e.target;
+    if (t.tagName.toLowerCase() === 'text') t = t.parentElement;
+    if (!t || !t.id) return;
+
+    const id = t.id.toUpperCase();
+    resultsBox.innerHTML = '';
+
+    if (id.includes('_')) focusKavling(id);
+    else focusBlok(id);
   });
+
+  // ===============================
+  // PAN (DRAG)
+  // ===============================
+  map.addEventListener('mousedown', e => {
+    isPanning = true;
+    isDragging = false;
+    panStart = { x: e.clientX, y: e.clientY };
+  });
+
+  map.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+
+    const dxRaw = e.clientX - panStart.x;
+    const dyRaw = e.clientY - panStart.y;
+
+    if (Math.abs(dxRaw) > 3 || Math.abs(dyRaw) > 3) isDragging = true;
+
+    const dx = dxRaw * (viewBoxState.w / map.clientWidth);
+    const dy = dyRaw * (viewBoxState.h / map.clientHeight);
+
+    viewBoxState.x -= dx;
+    viewBoxState.y -= dy;
+
+    panStart = { x: e.clientX, y: e.clientY };
+    applyViewBox(map.querySelector('svg'));
+  });
+
+  map.addEventListener('mouseup', () => isPanning = false);
+  map.addEventListener('mouseleave', () => isPanning = false);
+
+  // ===============================
+  // ZOOM SCROLL (TO CURSOR)
+  // ===============================
+  map.addEventListener('wheel', e => {
+    e.preventDefault();
+
+    const rect = map.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) / rect.width;
+    const my = (e.clientY - rect.top) / rect.height;
+    const factor = e.deltaY < 0 ? 0.9 : 1.1;
+
+    const newW = viewBoxState.w * factor;
+    const newH = viewBoxState.h * factor;
+
+    viewBoxState.x += (viewBoxState.w - newW) * mx;
+    viewBoxState.y += (viewBoxState.h - newH) * my;
+    viewBoxState.w = newW;
+    viewBoxState.h = newH;
+
+    applyViewBox(map.querySelector('svg'));
+  }, { passive: false });
+
+  // ===============================
+  // ZOOM BUTTON
+  // ===============================
+  zoomInBtn.onclick = () => {
+    if (!lastFocusedEl) return;
+    zoomPadding *= 0.8;
+    focusKavling(lastFocusedEl.id);
+  };
+
+  zoomOutBtn.onclick = () => {
+    if (!lastFocusedEl) return;
+    zoomPadding *= 1.25;
+    focusKavling(lastFocusedEl.id);
+  };
+
+  // ===============================
+  // RESET
+  // ===============================
+  resetBtn.onclick = () => {
+    const svg = map.querySelector('svg');
+    clearHighlight();
+    svg.setAttribute('viewBox', originalViewBox);
+    viewBoxState = parseViewBox(originalViewBox);
+    lastFocusedEl = null;
+    zoomPadding = null;
+    searchInput.value = '';
+    resultsBox.innerHTML = '';
+  };
 });
+
+
+
+//DATABASE
+//======
+const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
