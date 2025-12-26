@@ -9,17 +9,17 @@ h1 {
 
 #map {
   width: 100%;
-  overflow: auto;
+  height: 80vh; 
+  overflow: hidden;
   border: 1px solid #ddd;
   margin-top: 16px;
+  position: relative;
 }
 
 #map svg {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
-  transform-origin: 0 0;
-  transition: transform 0.2s ease;
 }
 
 /* interaksi kavling */
