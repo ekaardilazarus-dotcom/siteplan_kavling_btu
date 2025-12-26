@@ -16,6 +16,12 @@ body {
   height: auto;
   display: block;
 }
+#map g[id] path,
+#map g[id] rect,
+#map g[id] polygon {
+  fill: transparent;
+  pointer-events: all;
+}
 
 /* semua kavling (KR, UJ, M, dll) */
 #map g[id] * {
