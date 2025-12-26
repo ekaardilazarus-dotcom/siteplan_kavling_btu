@@ -200,9 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // CLICK MAP (SYNC)
   // ===============================
   map.addEventListener('click', e => {
-  if (isDragging) return;
-
-  let t = e.target;
+   let t = e.target;
 
   // naik ke parent sampai ketemu yang punya id
   while (t && t !== map && !t.id) {
