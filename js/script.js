@@ -185,7 +185,7 @@ function focusKavling(kode) {
   const svgEl = document.querySelector('#map svg');
 if (svgEl) {
   const bbox = target.getBBox();
-  const padding = 10; // lebih kecil → zoom lebih ketat
+  const padding = 15; // lebih kecil → zoom lebih ketat
   const x = bbox.x - padding;
   const y = bbox.y - padding;
   const w = bbox.width + padding * 2;
