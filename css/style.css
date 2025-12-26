@@ -1,32 +1,44 @@
+/* ===============================
+   BASE
+================================ */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
+  background: #f4f6f8;
 }
 
 h1 {
   margin: 16px;
+  font-size: 20px;
 }
 
+/* ===============================
+   MAP
+================================ */
 #map {
   width: 100%;
-  height: 80vh; 
+  height: 80vh;
+  margin-top: 16px;
+  border: 1px solid #ddd;
   overflow: hidden;
   cursor: grab;
-  border: 1px solid #ddd;
-  margin-top: 16px;
-  position: relative;
+  background: #fff;
 }
 
 #map:active {
   cursor: grabbing;
 }
+
 #map svg {
   width: 100%;
   height: 100%;
   display: block;
+  user-select: none;
 }
 
-/* interaksi kavling */
+/* ===============================
+   INTERAKSI SVG
+================================ */
 #map g[id^="KR" i],
 #map g[id^="UJ" i],
 #map g[id^="GA" i],
@@ -41,14 +53,18 @@ h1 {
 #map g[id^="GA" i]:hover *,
 #map g[id^="M" i]:hover *,
 #map g[id^="Blok" i]:hover * {
-  fill: #ffd54f !important;
+  fill: #ffe082 !important;
   stroke: #ff6f00 !important;
   stroke-width: 2;
 }
 
-#map text { pointer-events: none; }
+#map text {
+  pointer-events: none;
+}
 
-/* search container */
+/* ===============================
+   SEARCH CONTAINER
+================================ */
 #search-container {
   position: fixed;
   top: 20px;
@@ -63,7 +79,7 @@ h1 {
 
 .search-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -71,25 +87,33 @@ h1 {
   flex: 1;
   padding: 8px 10px;
   font-size: 14px;
-  border: 1px solid #ccc;
   border-radius: 4px;
+  border: 1px solid #ccc;
 }
 
-#resetZoom, #zoomIn, #zoomOut {
-  padding: 8px 12px;
+/* ===============================
+   BUTTON
+================================ */
+#zoomIn,
+#zoomOut,
+#resetZoom {
+  padding: 8px 10px;
   font-size: 14px;
-  border: 1px solid #ccc;
   border-radius: 4px;
+  border: 1px solid #ccc;
   background: #f5f5f5;
   cursor: pointer;
-  white-space: nowrap;
 }
 
-#resetZoom:hover, #zoomIn:hover, #zoomOut:hover {
+#zoomIn:hover,
+#zoomOut:hover,
+#resetZoom:hover {
   background: #e0e0e0;
 }
 
-/* dropdown hasil */
+/* ===============================
+   SEARCH RESULTS
+================================ */
 #search-results {
   position: absolute;
   top: calc(100% + 6px);
@@ -115,90 +139,4 @@ h1 {
 
 #search-results li:hover {
   background: #f5f5f5;
-}
-
-/* ===============================
-   POPUP SERTIFIKAT
-================================ */
-.popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 380px;
-  max-width: 90vw;
-  background: #ffffff;
-  padding: 14px;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  z-index: 9999;
-}
-
-.hidden {
-  display: none;
-}
-
-.popup h3 {
-  margin: 0 0 10px;
-  font-size: 16px;
-}
-
-/* ===============================
-   POPUP INPUT & BUTTON
-================================ */
-#kodeAkses {
-  width: 100%;
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-
-#cekData,
-.popup button {
-  width: 100%;
-  padding: 8px 10px;
-  margin-top: 6px;
-  border: none;
-  border-radius: 6px;
-  background: #1976d2;
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.popup button:last-child {
-  background: #777;
-}
-
-#cekData:hover,
-.popup button:hover {
-  opacity: 0.9;
-}
-
-.rekap-box {
-  margin-top: 12px;
-  padding: 12px;
-  background: #f7f7f7;
-  border-radius: 6px;
-  font-family: monospace;
-  font-size: 13px;
-  white-space: pre-wrap; /* WAJIB */
-  max-height: 320px;
-  overflow-y: auto;
-  line-height: 1.4;
-}
-
-/* ===============================
-   RESPONSIVE
-================================ */
-@media (max-width: 600px) {
-  #search-container {
-    width: calc(100% - 24px);
-    right: 12px;
-  }
-
-  .popup {
-    width: calc(100% - 24px);
-  }
 }
