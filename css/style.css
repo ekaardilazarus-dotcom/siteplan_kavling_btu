@@ -14,20 +14,20 @@ body {
   height: auto;
   display: block;
 }
-/* hanya kavling valid */
-#map g[id^="KR"],
-#map g[id^="UJ"],
-#map g[id^="M"],
-#map g[id^="Blok"] {
+/* hanya kavling valid (case-insensitive) */
+#map g[id^="KR" i],
+#map g[id^="UJ" i],
+#map g[id^="M" i],
+#map g[id^="Blok" i] {
   cursor: pointer;
   pointer-events: bounding-box;
 }
 
 /* hover kavling valid */
-#map g[id^="KR"]:hover *,
-#map g[id^="UJ"]:hover *,
-#map g[id^="M"]:hover *,
-#map g[id^="Blok"]:hover * {
+#map g[id^="KR" i]:hover *,
+#map g[id^="UJ" i]:hover *,
+#map g[id^="M" i]:hover *,
+#map g[id^="Blok" i]:hover * {
   fill: #ffd54f !important;
   stroke: #ff6f00 !important;
   stroke-width: 2;
@@ -37,4 +37,3 @@ body {
 #map text {
   pointer-events: none;
 }
-
