@@ -3,6 +3,9 @@ let kavlingIndex = [];
 document.addEventListener('DOMContentLoaded', () => {
   const map = document.getElementById('map');
   const searchInput = document.getElementById('search');
+searchInput.disabled = true;
+searchInput.placeholder = 'Memuat data kavling...';
+
   const resultsBox = document.getElementById('search-results');
 
   // ===============================
