@@ -13,16 +13,17 @@ h1 {
 }
 
 /* ===============================
-   MAP
+   MAP CONTAINER
 ================================ */
 #map {
   width: 100%;
   height: 80vh;
   margin-top: 16px;
   border: 1px solid #ddd;
-  overflow: hidden;
-  cursor: grab;
   background: #fff;
+  overflow: auto;          /* WAJIB untuk scroll zoom */
+  cursor: grab;
+  position: relative;
 }
 
 #map:active {
@@ -30,10 +31,11 @@ h1 {
 }
 
 #map svg {
-  width: 100%;
-  height: 100%;
   display: block;
+  width: max-content;      /* PENTING untuk scroll */
+  height: max-content;
   user-select: none;
+  transform-origin: 0 0;
 }
 
 /* ===============================
@@ -43,7 +45,10 @@ h1 {
 #map g[id^="UJ" i],
 #map g[id^="GA" i],
 #map g[id^="M" i],
-#map g[id^="Blok" i] {
+#map g[id^="Blok" i],
+#map rect[id^="KR" i],
+#map path[id^="KR" i],
+#map polygon[id^="KR" i] {
   cursor: pointer;
   pointer-events: bounding-box;
 }
@@ -53,7 +58,7 @@ h1 {
 #map g[id^="GA" i]:hover *,
 #map g[id^="M" i]:hover *,
 #map g[id^="Blok" i]:hover * {
-  fill: #ffe082 !important;
+  fill: #ffd54f !important;
   stroke: #ff6f00 !important;
   stroke-width: 2;
 }
@@ -87,8 +92,8 @@ h1 {
   flex: 1;
   padding: 8px 10px;
   font-size: 14px;
-  border-radius: 4px;
   border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 /* ===============================
@@ -97,12 +102,13 @@ h1 {
 #zoomIn,
 #zoomOut,
 #resetZoom {
-  padding: 8px 10px;
+  padding: 8px 12px;
   font-size: 14px;
-  border-radius: 4px;
   border: 1px solid #ccc;
+  border-radius: 4px;
   background: #f5f5f5;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 #zoomIn:hover,
