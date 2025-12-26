@@ -7,19 +7,20 @@
 </head>
 <body>
 
-<h1>DATABASE Kavling & Surat BTU</h1>
+  <h1>Site DATA Kavling BTU</h1>
 
-<div id="search-container">
-  <input id="search" placeholder="Cari kavling...">
-  <ul id="search-results"></ul>
-</div>
-<div id="search-container">
-  <input id="search" placeholder="Cari kavling..." disabled>
-  <ul id="search-results"></ul>
-  <button id="resetZoom">Lihat Semua Area</button>
-</div>
-<div id="map"></div>
+  <!-- Search box + tombol reset zoom -->
+  <div id="search-container">
+    <div class="search-row">
+      <input id="search" placeholder="Cari kavling..." disabled>
+      <button id="resetZoom">Lihat Semua Area</button>
+    </div>
+    <ul id="search-results"></ul>
+  </div>
 
-<script src="js/script.js"></script>
+  <!-- Map container -->
+  <div id="map"></div>
+
+  <script src="js/script.js"></script>
 </body>
 </html>
