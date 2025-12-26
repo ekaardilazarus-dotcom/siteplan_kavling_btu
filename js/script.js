@@ -1,40 +1,19 @@
 let kavlingIndex = [];
 let originalViewBox = null;
+let currentScale = 1;
 
 document.addEventListener('DOMContentLoaded', () => {
   const map = document.getElementById('map');
   const searchInput = document.getElementById('search');
   const resultsBox = document.getElementById('search-results');
   const resetBtn = document.getElementById('resetZoom');
-const zoomInBtn = document.getElementById('zoomIn');
-const zoomOutBtn = document.getElementById('zoomOut');
+  const zoomInBtn = document.getElementById('zoomIn');
+  const zoomOutBtn = document.getElementById('zoomOut');
 
-// fungsi zoom helper
-function adjustZoom(factor) {
-  // zoom ke area kavling
-const svgEl = document.querySelector('#map svg');
-if (svgEl) {
-  const bbox = target.getBBox();
-  const padding = 0;   // zoom rapat
-  const minSize = 1;   // tidak dipaksa besar
-  const x = bbox.x - padding;
-  const y = bbox.y - padding;
-  const w = Math.max(bbox.width + padding * 2, minSize);
-  const h = Math.max(bbox.height + padding * 2, minSize);
-
-  svgEl.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
-}
-}
-
-// event listener tombol
-zoomInBtn.addEventListener('click', () => adjustZoom(0.8)); // zoom in 20%
-zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
   searchInput.disabled = true;
   searchInput.placeholder = 'Memuat data kavling...';
 
-  // ===============================
-  // LOAD SVG
-  // ===============================
+  // load SVG
   fetch('sitemap.svg')
     .then(res => {
       if (!res.ok) throw new Error('SVG tidak ditemukan');
@@ -48,7 +27,6 @@ zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
         svgEl.removeAttribute('width');
         svgEl.removeAttribute('height');
 
-        // simpan viewBox asli
         originalViewBox = svgEl.getAttribute('viewBox');
         if (!originalViewBox) {
           const bbox = svgEl.getBBox();
@@ -57,7 +35,7 @@ zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
         }
       }
 
-      // indexing kavling: ambil teks + id
+      // indexing kavling
       const texts = map.querySelectorAll('text');
       const ids = map.querySelectorAll('g[id], rect[id], path[id], polygon[id]');
 
@@ -71,9 +49,7 @@ zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
       searchInput.placeholder = 'Cari kavling...';
     });
 
-  // ===============================
-  // SEARCH INPUT
-  // ===============================
+  // search input
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
     resultsBox.innerHTML = '';
@@ -96,9 +72,6 @@ zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
     });
   });
 
-  // ===============================
-  // Tutup dropdown saat klik di luar
-  // ===============================
   document.addEventListener('click', (e) => {
     const within = e.target.closest('#search-container');
     const isResultItem = e.target.closest('#search-results li');
@@ -107,14 +80,11 @@ zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
     }
   });
 
-  // ===============================
-  // FOCUS KAVLING + ZOOM
-  // ===============================
+  // focus kavling
   function focusKavling(kode) {
     resultsBox.innerHTML = '';
     searchInput.value = kode;
 
-    // reset highlight
     document.querySelectorAll('#map rect, #map path, #map polygon')
       .forEach(el => el.style.cssText = '');
 
@@ -124,7 +94,6 @@ zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
 
     if (!target) return;
 
-    // highlight
     if (target.tagName.toLowerCase() === 'g') {
       target.querySelectorAll('rect, path, polygon').forEach(el => {
         el.style.fill = '#ffd54f';
@@ -137,28 +106,48 @@ zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
       target.style.strokeWidth = '2';
     }
 
-    // zoom ke area
+    // geser ke posisi kavling
+    const bbox = target.getBBox();
+    const mapDiv = document.getElementById('map');
+    mapDiv.scrollLeft = bbox.x - mapDiv.clientWidth / 2 + bbox.width / 2;
+    mapDiv.scrollTop = bbox.y - mapDiv.clientHeight / 2 + bbox.height / 2;
+
+    // zoom sedikit otomatis
     const svgEl = document.querySelector('#map svg');
     if (svgEl) {
-      const bbox = target.getBBox();
-      const padding = 2; // zoom ketat tapi masih ada area sekitar
-      const minSize = 10; // minimal area supaya tidak terlalu nge-zoom
-      const x = bbox.x - padding;
-      const y = bbox.y - padding;
-      const w = Math.max(bbox.width + padding * 2, minSize);
-      const h = Math.max(bbox.height + padding * 2, minSize);
-
-      svgEl.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+      currentScale = 1.2; // zoom 20%
+      svgEl.style.transformOrigin = "0 0";
+      svgEl.style.transform = `scale(${currentScale})`;
     }
   }
 
-  // ===============================
-  // RESET ZOOM
-  // ===============================
+  // tombol zoom manual
+  zoomInBtn.addEventListener('click', () => {
+    const svgEl = document.querySelector('#map svg');
+    if (!svgEl) return;
+    currentScale *= 1.2;
+    svgEl.style.transformOrigin = "0 0";
+    svgEl.style.transform = `scale(${currentScale})`;
+  });
+
+  zoomOutBtn.addEventListener('click', () => {
+    const svgEl = document.querySelector('#map svg');
+    if (!svgEl) return;
+    currentScale /= 1.2;
+    svgEl.style.transformOrigin = "0 0";
+    svgEl.style.transform = `scale(${currentScale})`;
+  });
+
+  // reset zoom
   resetBtn.addEventListener('click', () => {
     const svgEl = document.querySelector('#map svg');
-    if (svgEl && originalViewBox) {
+    if (svgEl) {
+      currentScale = 1;
+      svgEl.style.transform = "scale(1)";
+      svgEl.style.transformOrigin = "0 0";
       svgEl.setAttribute('viewBox', originalViewBox);
+      map.scrollLeft = 0;
+      map.scrollTop = 0;
     }
   });
 });
