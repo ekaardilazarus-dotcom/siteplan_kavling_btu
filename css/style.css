@@ -11,11 +11,15 @@ h1 {
   width: 100%;
   height: 80vh; 
   overflow: hidden;
+  cursor: grab;
   border: 1px solid #ddd;
   margin-top: 16px;
   position: relative;
 }
 
+#map:active {
+  cursor: grabbing;
+}
 #map svg {
   width: 100%;
   height: 100%;
