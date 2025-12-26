@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // HELPER: CENTER BERDASARKAN POSISI VISUAL
+  // HELPER: CENTER VISUAL
   // ===============================
   function centerOnElement(el) {
     const mapDiv = document.getElementById('map');
@@ -96,34 +96,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const elRect = el.getBoundingClientRect();
     const mapRect = mapDiv.getBoundingClientRect();
 
-    // delta ke tengah viewport map
     const deltaX = (elRect.left + elRect.width / 2) - (mapRect.left + mapRect.width / 2);
     const deltaY = (elRect.top  + elRect.height / 2) - (mapRect.top  + mapRect.height / 2);
 
-    // geser scroll berdasarkan delta visual
     mapDiv.scrollLeft += deltaX;
     mapDiv.scrollTop  += deltaY;
   }
 
   // ===============================
-  // FUNGSI SET ZOOM + CENTER
+  // SET ZOOM
   // ===============================
   function setZoom(scale, targetEl = null) {
     const svgEl = document.querySelector('#map svg');
-    if (!svgEl) return;
+    const mapDiv = document.getElementById('map');
+    if (!svgEl || !mapDiv) return;
 
-    currentScale = scale;
+    currentScale = Math.max(0.1, Math.min(5, scale));
     svgEl.style.transformOrigin = "0 0";
     svgEl.style.transform = `scale(${currentScale})`;
 
-    // setelah transform diterapkan, re-center dengan frame berikutnya
     requestAnimationFrame(() => {
-      if (targetEl) {
-        centerOnElement(targetEl);
-      } else {
-        // center ke tengah map: pakai <svg> sendiri sebagai target
-        centerOnElement(svgEl);
-      }
+      const el = targetEl || svgEl;
+      centerOnElement(el);
     });
   }
 
@@ -134,8 +128,13 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsBox.innerHTML = '';
     searchInput.value = kode;
 
+    // reset highlight
     document.querySelectorAll('#map rect, #map path, #map polygon')
-      .forEach(el => el.style.cssText = '');
+      .forEach(el => {
+        el.style.fill = '';
+        el.style.stroke = '';
+        el.style.strokeWidth = '';
+      });
 
     let target =
       document.querySelector(`#map g[id="${kode}"]`) ||
@@ -157,10 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
       target.style.strokeWidth = '2';
     }
 
-    // langkah 1: center dulu pada posisi visual saat ini
-    centerOnElement(target);
-
-    // langkah 2: zoom otomatis 1.5x dan re-center pada blok setelah transform
+    // zoom otomatis 1.5x dan center ke blok
     setZoom(1.5, target);
   }
 
@@ -180,13 +176,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   resetBtn.addEventListener('click', () => {
     const svgEl = document.querySelector('#map svg');
-    if (svgEl) {
+    const mapDiv = document.getElementById('map');
+
+    if (svgEl && mapDiv) {
       lastFocusedEl = null;
-      setZoom(1, null); // center ke tengah map
-      // opsional: kembali ke posisi atas-kiri
-      // const mapDiv = document.getElementById('map');
-      // mapDiv.scrollLeft = 0;
-      // mapDiv.scrollTop = 0;
+      currentScale = 1;
+      svgEl.style.transformOrigin = "0 0";
+      svgEl.style.transform = `scale(1)`;
+
+      // reset highlight
+      document.querySelectorAll('#map rect, #map path, #map polygon')
+        .forEach(el => {
+          el.style.fill = '';
+          el.style.stroke = '';
+          el.style.strokeWidth = '';
+        });
+
+      // reset scroll ke tengah map
+      setZoom(1, null);
+
+      // clear search
+      searchInput.value = '';
+      resultsBox.innerHTML = '';
     }
   });
 });
