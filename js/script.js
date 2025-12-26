@@ -43,10 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const texts = map.querySelectorAll('text');
       const ids = map.querySelectorAll('g[id], rect[id], path[id], polygon[id]');
 
-      kavlingIndex = [...new Set([
-        ...Array.from(texts).map(t => t.textContent.trim()).filter(t => /^(KR|UJ|GA|M|Blok)/i.test(t)),
-        ...Array.from(ids).map(el => el.id.trim()).filter(id => /^(KR|UJ|GA|M|Blok)/i.test(id))
-      ])].sort((a, b) => a.localeCompare(b, 'id'));
+     kavlingIndex = [...new Set(
+  Array.from(ids)
+    .map(el => el.id.trim())
+    .filter(id => /^(KR|UJ|GA|M)/i.test(id))
+)].sort((a, b) => a.localeCompare(b, 'id'));
+
 
       searchInput.disabled = false;
       searchInput.placeholder = 'Cari kavling...';
