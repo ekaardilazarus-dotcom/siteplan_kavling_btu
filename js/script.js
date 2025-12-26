@@ -249,6 +249,39 @@ function focusBlok(prefix) {
     searchInput.value = '';
     resultsBox.innerHTML = '';
   };
+// ===============================
+// CLICK DI PETA (SYNC SEARCH + FOCUS)
+// ===============================
+map.addEventListener('click', e => {
+  let target = e.target;
+
+  // jika klik text, naik ke parent
+  if (target.tagName.toLowerCase() === 'text') {
+    target = target.parentElement;
+  }
+
+  if (!target || !target.id) return;
+
+  const id = target.id.trim().toUpperCase();
+
+  // reset dropdown
+  resultsBox.innerHTML = '';
+
+  // ===============================
+  // KLIK KAVLING (GA34_5)
+  // ===============================
+  if (id.includes('_')) {
+    searchInput.value = id;
+    focusKavling(id);
+    return;
+  }
+
+  // ===============================
+  // KLIK BLOK (GA34 / UJ10)
+  // ===============================
+  searchInput.value = id;
+  focusBlok(id);
+});
 
   // ===============================
   // ZOOM SCROLL (MOUSE WHEEL)
