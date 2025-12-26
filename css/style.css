@@ -91,16 +91,15 @@ h1 {
 
 /* Search container: pindah ke kanan atas, absolute */
 #search-container {
-  position: relative;
-  margin: 16px auto;
-  top: 16px;
-  right: 16px;
+  position: fixed;   /* selalu di layar */
+  top: 20px;
+  right: 20px;
   width: 280px;
   background: #ffffff;
   padding: 10px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 9999;
+  z-index: 9999;     /* pastikan di atas SVG */
 }
 
 /* input search */
