@@ -3,18 +3,24 @@ body {
   margin: 0;
 }
 
+/* container */
 #map {
   width: 100%;
   overflow: auto;
   border: 1px solid #ddd;
 }
 
+/* SVG responsive */
 #map svg {
   width: 100%;
   height: auto;
   display: block;
 }
-/* hanya kavling valid (case-insensitive) */
+
+/* ===============================
+   KAVLING VALID (GROUP LEVEL)
+   KR, UJ, GA, M, Blok
+   =============================== */
 #map g[id^="KR" i],
 #map g[id^="UJ" i],
 #map g[id^="GA" i],
@@ -24,7 +30,7 @@ body {
   pointer-events: bounding-box;
 }
 
-/* hover kavling valid */
+/* hover untuk kavling di <g> */
 #map g[id^="KR" i]:hover *,
 #map g[id^="UJ" i]:hover *,
 #map g[id^="GA" i]:hover *,
@@ -35,7 +41,54 @@ body {
   stroke-width: 2;
 }
 
-/* text tembus mouse */
+/* ===============================
+   FALLBACK
+   jika ID ada langsung di path / rect / polygon
+   (kasus GA)
+   =============================== */
+#map path[id^="KR" i],
+#map path[id^="UJ" i],
+#map path[id^="GA" i],
+#map path[id^="M" i],
+#map path[id^="Blok" i],
+#map rect[id^="KR" i],
+#map rect[id^="UJ" i],
+#map rect[id^="GA" i],
+#map rect[id^="M" i],
+#map rect[id^="Blok" i],
+#map polygon[id^="KR" i],
+#map polygon[id^="UJ" i],
+#map polygon[id^="GA" i],
+#map polygon[id^="M" i],
+#map polygon[id^="Blok" i] {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+/* hover fallback */
+#map path[id^="KR" i]:hover,
+#map path[id^="UJ" i]:hover,
+#map path[id^="GA" i]:hover,
+#map path[id^="M" i]:hover,
+#map path[id^="Blok" i]:hover,
+#map rect[id^="KR" i]:hover,
+#map rect[id^="UJ" i]:hover,
+#map rect[id^="GA" i]:hover,
+#map rect[id^="M" i]:hover,
+#map rect[id^="Blok" i]:hover,
+#map polygon[id^="KR" i]:hover,
+#map polygon[id^="UJ" i]:hover,
+#map polygon[id^="GA" i]:hover,
+#map polygon[id^="M" i]:hover,
+#map polygon[id^="Blok" i]:hover {
+  fill: #ffd54f !important;
+  stroke: #ff6f00 !important;
+  stroke-width: 2;
+}
+
+/* ===============================
+   TEXT / LABEL
+   =============================== */
 #map text {
   pointer-events: none;
 }
