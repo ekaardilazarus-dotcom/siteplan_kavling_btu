@@ -87,186 +87,177 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // HELPER: GET BOUNDING BOX UNTUK GROUP ELEMENTS
-  // ===============================
-  function getElementBBox(el) {
-    if (el.tagName.toLowerCase() === 'g') {
-      const children = el.querySelectorAll('rect, path, polygon');
-      if (children.length === 0) return null;
-      
-      const firstBox = children[0].getBBox();
-      let bbox = { ...firstBox };
-      
-      for (let i = 1; i < children.length; i++) {
-        const childBox = children[i].getBBox();
-        const x1 = Math.min(bbox.x, childBox.x);
-        const y1 = Math.min(bbox.y, childBox.y);
-        const x2 = Math.max(bbox.x + bbox.width, childBox.x + childBox.width);
-        const y2 = Math.max(bbox.y + bbox.height, childBox.y + childBox.height);
-        bbox = { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
-      }
-      
-      return bbox;
-    } else if (el.getBBox) {
-      return el.getBBox();
-    }
-    return null;
-  }
-
-  // ===============================
-  // FUNGSI UTAMA: FOKUS KE ELEMEN DENGAN ZOOM
-  // ===============================
-  function focusOnElement(el, zoomScale = 1.5) {
-    if (!el) return;
-    
-    const svgEl = document.querySelector('#map svg');
-    const mapDiv = document.getElementById('map');
-    if (!svgEl || !mapDiv) return;
-    
-    // Simpan elemen terakhir
-    lastFocusedEl = el;
-    
-    // Dapatkan bounding box elemen
-    const bbox = getElementBBox(el);
-    if (!bbox) return;
-    
-    // Hitung pusat elemen dalam koordinat SVG
-    const centerX = bbox.x + bbox.width / 2;
-    const centerY = bbox.y + bbox.height / 2;
-    
-    // Hitung dimensi viewport map
-    const viewportWidth = mapDiv.clientWidth;
-    const viewportHeight = mapDiv.clientHeight;
-    
-    // Hitung scroll position untuk memusatkan elemen
-    // Rumus: (posisi_elemen * scale) - (lebar_viewport / 2)
-    const targetScrollLeft = (centerX * zoomScale) - (viewportWidth / 2);
-    const targetScrollTop = (centerY * zoomScale) - (viewportHeight / 2);
-    
-    // Terapkan zoom
-    currentScale = zoomScale;
-    svgEl.style.transformOrigin = "0 0";
-    svgEl.style.transform = `scale(${currentScale})`;
-    
-    // Set scroll position
-    mapDiv.scrollLeft = Math.max(0, targetScrollLeft);
-    mapDiv.scrollTop = Math.max(0, targetScrollTop);
-    
-    // Highlight elemen
-    highlightElement(el);
-  }
-
-  // ===============================
-  // FUNGSI HIGHLIGHT ELEMEN
-  // ===============================
-  function highlightElement(el) {
-    // Reset semua highlight sebelumnya
-    document.querySelectorAll('#map rect, #map path, #map polygon')
-      .forEach(element => {
-        element.style.fill = '';
-        element.style.stroke = '';
-        element.style.strokeWidth = '';
-      });
-    
-    // Highlight elemen yang dipilih
-    if (el.tagName.toLowerCase() === 'g') {
-      el.querySelectorAll('rect, path, polygon').forEach(child => {
-        child.style.fill = '#ffd54f';
-        child.style.stroke = '#ff6f00';
-        child.style.strokeWidth = '2';
-      });
-    } else {
-      el.style.fill = '#ffd54f';
-      el.style.stroke = '#ff6f00';
-      el.style.strokeWidth = '2';
-    }
-  }
-
-  // ===============================
-  // FUNGSI ZOOM DENGAN PERTAHANAN POSISI
-  // ===============================
-  function zoomAtPosition(scale, focusPointX = null, focusPointY = null) {
-    const svgEl = document.querySelector('#map svg');
-    const mapDiv = document.getElementById('map');
-    if (!svgEl || !mapDiv) return;
-    
-    const oldScale = currentScale;
-    
-    // Jika tidak ada titik fokus, gunakan tengah viewport saat ini
-    if (focusPointX === null || focusPointY === null) {
-      focusPointX = mapDiv.scrollLeft + mapDiv.clientWidth / 2;
-      focusPointY = mapDiv.scrollTop + mapDiv.clientHeight / 2;
-    }
-    
-    // Hitung posisi relatif sebelum zoom
-    const relativeX = focusPointX / oldScale;
-    const relativeY = focusPointY / oldScale;
-    
-    // Terapkan zoom baru
-    currentScale = Math.max(0.1, Math.min(5, scale));
-    svgEl.style.transformOrigin = "0 0";
-    svgEl.style.transform = `scale(${currentScale})`;
-    
-    // Hitung scroll baru untuk mempertahankan fokus pada titik yang sama
-    const newScrollX = (relativeX * currentScale) - mapDiv.clientWidth / 2;
-    const newScrollY = (relativeY * currentScale) - mapDiv.clientHeight / 2;
-    
-    // Terapkan scroll
-    mapDiv.scrollLeft = Math.max(0, newScrollX);
-    mapDiv.scrollTop = Math.max(0, newScrollY);
-  }
-
-  // ===============================
-  // FOCUS KAVLING (FUNGSI UTAMA PENCARIAN)
+  // FUNGSI UTAMA: FOKUS KE KAVLING
   // ===============================
   function focusKavling(kode) {
     resultsBox.innerHTML = '';
     searchInput.value = kode;
-    
+
+    // Reset semua highlight sebelumnya
+    document.querySelectorAll('#map rect, #map path, #map polygon')
+      .forEach(el => {
+        el.style.fill = '';
+        el.style.stroke = '';
+        el.style.strokeWidth = '';
+      });
+
     // Cari elemen target
     let target =
       document.querySelector(`#map g[id="${kode}"]`) ||
       document.querySelector(`#map rect[id="${kode}"], #map path[id="${kode}"], #map polygon[id="${kode}"]`);
-    
+
     if (!target) {
       console.warn(`Kavling "${kode}" tidak ditemukan`);
       return;
     }
+
+    // Highlight elemen
+    if (target.tagName.toLowerCase() === 'g') {
+      target.querySelectorAll('rect, path, polygon').forEach(el => {
+        el.style.fill = '#ffd54f';
+        el.style.stroke = '#ff6f00';
+        el.style.strokeWidth = '2';
+      });
+    } else {
+      target.style.fill = '#ffd54f';
+      target.style.stroke = '#ff6f00';
+      target.style.strokeWidth = '2';
+    }
+
+    // Simpan elemen terakhir
+    lastFocusedEl = target;
+
+    // Langsung zoom ke elemen
+    zoomToElement(target, 1.5);
+  }
+
+  // ===============================
+  // FUNGSI ZOOM KE ELEMEN
+  // ===============================
+  function zoomToElement(element, scale) {
+    const svgEl = document.querySelector('#map svg');
+    const mapDiv = document.getElementById('map');
     
-    // Fokus ke elemen dengan zoom
-    focusOnElement(target, 1.5);
+    if (!svgEl || !mapDiv || !element) return;
+
+    // 1. Dapatkan bounding box elemen dalam koordinat SVG
+    let bbox;
+    if (element.tagName.toLowerCase() === 'g') {
+      // Untuk group, gabungkan semua child
+      const children = element.querySelectorAll('rect, path, polygon');
+      if (children.length === 0) return;
+      
+      // Dapatkan titik ekstrem
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      children.forEach(child => {
+        const childBox = child.getBBox();
+        minX = Math.min(minX, childBox.x);
+        minY = Math.min(minY, childBox.y);
+        maxX = Math.max(maxX, childBox.x + childBox.width);
+        maxY = Math.max(maxY, childBox.y + childBox.height);
+      });
+      
+      bbox = {
+        x: minX,
+        y: minY,
+        width: maxX - minX,
+        height: maxY - minY
+      };
+    } else if (element.getBBox) {
+      bbox = element.getBBox();
+    } else {
+      return;
+    }
+
+    // 2. Hitung pusat elemen dalam koordinat SVG
+    const centerX = bbox.x + bbox.width / 2;
+    const centerY = bbox.y + bbox.height / 2;
+
+    // 3. Set zoom
+    currentScale = scale;
+    svgEl.style.transformOrigin = "0 0";
+    svgEl.style.transform = `scale(${currentScale})`;
+
+    // 4. Setelah transform diterapkan, hitung posisi scroll
+    // Kita perlu tunggu sebentar agar transform selesai
+    setTimeout(() => {
+      // Hitung posisi elemen setelah scaling
+      const scaledCenterX = centerX * currentScale;
+      const scaledCenterY = centerY * currentScale;
+      
+      // Hitung posisi scroll untuk memusatkan elemen
+      // Scroll ke posisi: (posisi_elemen) - (setengah_viewport)
+      const scrollLeft = scaledCenterX - (mapDiv.clientWidth / 2);
+      const scrollTop = scaledCenterY - (mapDiv.clientHeight / 2);
+      
+      // Terapkan scroll dengan batasan minimal 0
+      mapDiv.scrollLeft = Math.max(0, scrollLeft);
+      mapDiv.scrollTop = Math.max(0, scrollTop);
+    }, 50); // Delay kecil untuk memastikan transform sudah diterapkan
+  }
+
+  // ===============================
+  // FUNGSI ZOOM PADA POSISI TERTENTU
+  // ===============================
+  function zoomAtPoint(scale, pointX, pointY) {
+    const svgEl = document.querySelector('#map svg');
+    const mapDiv = document.getElementById('map');
+    
+    if (!svgEl || !mapDiv) return;
+
+    // Simpan skala lama
+    const oldScale = currentScale;
+    
+    // Set skala baru
+    currentScale = Math.max(0.1, Math.min(5, scale));
+    svgEl.style.transformOrigin = "0 0";
+    svgEl.style.transform = `scale(${currentScale})`;
+    
+    // Hitung posisi relatif titik dalam koordinat SVG
+    const svgX = pointX / oldScale;
+    const svgY = pointY / oldScale;
+    
+    // Hitung posisi titik setelah scaling
+    const newPointX = svgX * currentScale;
+    const newPointY = svgY * currentScale;
+    
+    // Hitung scroll untuk mempertahankan titik di posisi yang sama
+    const scrollLeft = newPointX - (pointX - mapDiv.scrollLeft);
+    const scrollTop = newPointY - (pointY - mapDiv.scrollTop);
+    
+    // Terapkan scroll
+    mapDiv.scrollLeft = Math.max(0, scrollLeft);
+    mapDiv.scrollTop = Math.max(0, scrollTop);
   }
 
   // ===============================
   // TOMBOL ZOOM MANUAL
   // ===============================
   zoomInBtn.addEventListener('click', () => {
+    const mapDiv = document.getElementById('map');
+    
     if (lastFocusedEl) {
-      // Jika ada elemen terfokus, zoom dengan fokus pada elemen tersebut
-      const bbox = getElementBBox(lastFocusedEl);
-      if (bbox) {
-        const centerX = bbox.x + bbox.width / 2;
-        const centerY = bbox.y + bbox.height / 2;
-        zoomAtPosition(currentScale * 1.2, centerX * currentScale, centerY * currentScale);
-      }
+      // Jika ada elemen terfokus, zoom ke elemen tersebut
+      zoomToElement(lastFocusedEl, currentScale * 1.2);
     } else {
-      // Jika tidak ada elemen terfokus, zoom pada tengah viewport
-      zoomAtPosition(currentScale * 1.2);
+      // Zoom pada tengah viewport
+      const centerX = mapDiv.scrollLeft + mapDiv.clientWidth / 2;
+      const centerY = mapDiv.scrollTop + mapDiv.clientHeight / 2;
+      zoomAtPoint(currentScale * 1.2, centerX, centerY);
     }
   });
 
   zoomOutBtn.addEventListener('click', () => {
+    const mapDiv = document.getElementById('map');
+    
     if (lastFocusedEl) {
-      // Jika ada elemen terfokus, zoom dengan fokus pada elemen tersebut
-      const bbox = getElementBBox(lastFocusedEl);
-      if (bbox) {
-        const centerX = bbox.x + bbox.width / 2;
-        const centerY = bbox.y + bbox.height / 2;
-        zoomAtPosition(currentScale / 1.2, centerX * currentScale, centerY * currentScale);
-      }
+      // Jika ada elemen terfokus, zoom ke elemen tersebut
+      zoomToElement(lastFocusedEl, currentScale / 1.2);
     } else {
-      // Jika tidak ada elemen terfokus, zoom pada tengah viewport
-      zoomAtPosition(currentScale / 1.2);
+      // Zoom pada tengah viewport
+      const centerX = mapDiv.scrollLeft + mapDiv.clientWidth / 2;
+      const centerY = mapDiv.scrollTop + mapDiv.clientHeight / 2;
+      zoomAtPoint(currentScale / 1.2, centerX, centerY);
     }
   });
 
@@ -284,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Reset transform
       svgEl.style.transformOrigin = "0 0";
-      svgEl.style.transform = `scale(1)`;
+      svgEl.style.transform = 'scale(1)';
       
       // Reset highlight
       document.querySelectorAll('#map rect, #map path, #map polygon')
@@ -294,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
           el.style.strokeWidth = '';
         });
       
-      // Reset scroll ke kiri atas
+      // Reset scroll
       mapDiv.scrollLeft = 0;
       mapDiv.scrollTop = 0;
       
@@ -305,20 +296,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // CLICK EVENT PADA MAP UNTUK SELECT MANUAL
+  // CLICK EVENT UNTUK SELECT MANUAL
   // ===============================
   map.addEventListener('click', (e) => {
-    // Cari elemen SVG yang diklik
+    // Cari elemen yang diklik (lewatai text, cari shape)
     let target = e.target;
     
-    // Jika klik pada text, cari parent atau sibling yang berupa shape
+    // Jika klik pada text, cari shape terdekat
     if (target.tagName.toLowerCase() === 'text') {
-      // Coba cari shape terdekat
-      const shapes = target.parentElement.querySelectorAll('rect, path, polygon, g');
+      // Cari shape dalam parent yang sama
+      const parent = target.parentElement;
+      const shapes = parent.querySelectorAll('rect, path, polygon, g');
       if (shapes.length > 0) {
         target = shapes[0];
-      } else {
-        return;
       }
     }
     
@@ -328,19 +318,19 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     
-    // Cek jika elemen memiliki ID atau parent memiliki ID yang relevan
+    // Cari ID kavling
     let kavlingId = target.id;
     if (!kavlingId && target.parentElement && target.parentElement.tagName.toLowerCase() === 'g') {
       kavlingId = target.parentElement.id;
     }
     
+    // Jika ID sesuai format kavling, fokuskan
     if (kavlingId && /^(KR|UJ|GA|M|Blok)/i.test(kavlingId)) {
-      // Update search input
       searchInput.value = kavlingId;
       
-      // Fokus ke elemen yang diklik
-      const el = document.getElementById(kavlingId) || target;
-      focusOnElement(el, 1.5);
+      // Cari elemen lengkapnya
+      const element = document.getElementById(kavlingId) || target;
+      focusKavling(kavlingId);
     }
   });
 });
