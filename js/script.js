@@ -11,23 +11,19 @@ const zoomOutBtn = document.getElementById('zoomOut');
 
 // fungsi zoom helper
 function adjustZoom(factor) {
-  const svgEl = document.querySelector('#map svg');
-  if (!svgEl) return;
+  // zoom ke area kavling
+const svgEl = document.querySelector('#map svg');
+if (svgEl) {
+  const bbox = target.getBBox();
+  const padding = 0;   // zoom rapat
+  const minSize = 1;   // tidak dipaksa besar
+  const x = bbox.x - padding;
+  const y = bbox.y - padding;
+  const w = Math.max(bbox.width + padding * 2, minSize);
+  const h = Math.max(bbox.height + padding * 2, minSize);
 
-  let [x, y, w, h] = svgEl.getAttribute('viewBox').split(' ').map(Number);
-
-  // zoom in → perkecil w/h, zoom out → perbesar w/h
-  const newW = w * factor;
-  const newH = h * factor;
-
-  // geser supaya tetap center
-  const dx = (w - newW) / 2;
-  const dy = (h - newH) / 2;
-
-  x += dx;
-  y += dy;
-
-  svgEl.setAttribute('viewBox', `${x} ${y} ${newW} ${newH}`);
+  svgEl.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+}
 }
 
 // event listener tombol
