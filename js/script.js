@@ -124,46 +124,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Simpan elemen terakhir
-    lastFocusedEl = target;
+lastFocusedEl = target;
+zoomPadding = Math.max(
+  target.getBBox().width,
+  target.getBBox().height
+) * 0.6;
 
-    // Langsung zoom ke elemen
-    zoomToElement(target, 1.5);
+zoomToElement(target, zoomPadding);
+
   }
 
   // ===============================
   // FUNGSI ZOOM KE ELEMEN
   // ===============================
-function zoomToElement(element) {
-  const svgEl = document.querySelector('#map svg');
-  if (!svgEl || !element) return;
+lastFocusedEl = target;
+zoomPadding = Math.max(
+  target.getBBox().width,
+  target.getBBox().height
+) * 0.6;
 
-  let bbox;
-
-  if (element.tagName.toLowerCase() === 'g') {
-    const children = element.querySelectorAll('rect, path, polygon');
-    if (!children.length) return;
-
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    children.forEach(c => {
-      const b = c.getBBox();
-      minX = Math.min(minX, b.x);
-      minY = Math.min(minY, b.y);
-      maxX = Math.max(maxX, b.x + b.width);
-      maxY = Math.max(maxY, b.y + b.height);
-    });
-
-    bbox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-  } else {
-    bbox = element.getBBox();
-  }
-
-  const padding = Math.max(bbox.width, bbox.height) * 0.6;
-
-  svgEl.setAttribute(
-    'viewBox',
-    `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`
-  );
-}
+zoomToElement(target, zoomPadding);
 
   // ===============================
   // FUNGSI ZOOM PADA POSISI TERTENTU
@@ -233,26 +213,20 @@ function zoomToElement(element) {
   // ===============================
   // RESET ZOOM
   // ===============================
-  resetBtn.addEventListener('click', () => {
-    const svgEl = document.querySelector('#map svg');
-    const mapDiv = document.getElementById('map');
-    
-    if (svgEl && mapDiv) {
-      // Reset state
-      lastFocusedEl = null;
-      currentScale = 1;
-      
-      // Reset transform
-      svgEl.style.transformOrigin = "0 0";
-      svgEl.style.transform = 'scale(1)';
-      
-      // Reset highlight
-      document.querySelectorAll('#map rect, #map path, #map polygon')
-        .forEach(el => {
-          el.style.fill = '';
-          el.style.stroke = '';
-          el.style.strokeWidth = '';
-        });
+resetBtn.addEventListener('click', () => {
+  const svgEl = document.querySelector('#map svg');
+  if (!svgEl || !originalViewBox) return;
+
+  svgEl.setAttribute('viewBox', originalViewBox);
+  lastFocusedEl = null;
+  zoomPadding = null;
+
+  document.querySelectorAll('#map rect, #map path, #map polygon')
+    .forEach(el => el.style.cssText = '');
+
+  searchInput.value = '';
+  resultsBox.innerHTML = '';
+});
       
       // Reset scroll
       mapDiv.scrollLeft = 0;
