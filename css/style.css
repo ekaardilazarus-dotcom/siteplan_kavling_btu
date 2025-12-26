@@ -117,6 +117,65 @@ h1 {
   background: #f5f5f5;
 }
 
+/* ===============================
+   POPUP SERTIFIKAT
+================================ */
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 380px;
+  max-width: 90vw;
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  z-index: 9999;
+}
+
+.hidden {
+  display: none;
+}
+
+.popup h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+/* ===============================
+   POPUP INPUT & BUTTON
+================================ */
+#kodeAkses {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+#cekData,
+.popup button {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border: none;
+  border-radius: 6px;
+  background: #1976d2;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.popup button:last-child {
+  background: #777;
+}
+
+#cekData:hover,
+.popup button:hover {
+  opacity: 0.9;
+}
+
 .rekap-box {
   margin-top: 12px;
   padding: 12px;
@@ -128,4 +187,18 @@ h1 {
   max-height: 320px;
   overflow-y: auto;
   line-height: 1.4;
+}
+
+/* ===============================
+   RESPONSIVE
+================================ */
+@media (max-width: 600px) {
+  #search-container {
+    width: calc(100% - 24px);
+    right: 12px;
+  }
+
+  .popup {
+    width: calc(100% - 24px);
+  }
 }
