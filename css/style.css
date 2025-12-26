@@ -3,7 +3,6 @@ body {
   margin: 0;
 }
 
-/* Header beri jarak dari atas */
 h1 {
   margin: 16px;
 }
@@ -13,7 +12,6 @@ h1 {
   width: 100%;
   overflow: auto;
   border: 1px solid #ddd;
-  /* beri jarak agar search tidak menutupi konten */
   margin-top: 16px;
 }
 
@@ -24,7 +22,7 @@ h1 {
   display: block;
 }
 
-/* Interaksi kavling (tetap sama) */
+/* Interaksi kavling (group level) */
 #map g[id^="KR" i],
 #map g[id^="UJ" i],
 #map g[id^="GA" i],
@@ -44,7 +42,7 @@ h1 {
   stroke-width: 2;
 }
 
-/* Fallback interaksi */
+/* Fallback interaksi langsung */
 #map path[id^="KR" i],
 #map path[id^="UJ" i],
 #map path[id^="GA" i],
@@ -89,29 +87,48 @@ h1 {
   pointer-events: none;
 }
 
-/* Search container: pindah ke kanan atas, absolute */
+/* Search container */
 #search-container {
-  position: fixed;   /* selalu di layar */
+  position: fixed;
   top: 20px;
   right: 20px;
-  width: 280px;
+  width: 320px;
   background: #ffffff;
   padding: 10px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 9999;     /* pastikan di atas SVG */
+  z-index: 9999;
 }
 
-/* input search */
+/* Input + tombol sejajar */
+.search-row {
+  display: flex;
+  gap: 8px;
+}
+
 #search {
-  width: 100%;
+  flex: 1;
   padding: 8px 10px;
   font-size: 14px;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
-/* dropdown nempel ke input, absolute di dalam container */
+#resetZoom {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#resetZoom:hover {
+  background: #e0e0e0;
+}
+
+/* Dropdown hasil pencarian */
 #search-results {
   position: absolute;
   top: calc(100% + 6px);
@@ -126,6 +143,7 @@ h1 {
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+  z-index: 10000;
 }
 
 #search-results li {
@@ -136,27 +154,4 @@ h1 {
 
 #search-results li:hover {
   background: #f5f5f5;
-}
-
-/* Responsive: di layar kecil, pindah ke kiri atas agar tidak menutupi map penting */
-@media (max-width: 600px) {
-  #search-container {
-    left: 12px;
-    right: 12px;
-    width: auto;
-  }
-}
-#resetZoom {
-  margin-top: 8px;
-  width: 100%;
-  padding: 8px 10px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #f5f5f5;
-  cursor: pointer;
-}
-
-#resetZoom:hover {
-  background: #e0e0e0;
 }
