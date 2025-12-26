@@ -300,3 +300,13 @@ document.addEventListener('DOMContentLoaded', () => {
 //DATABASE
 //======
 const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
+fetch(`${API_URL}?kode=${selectedKavling}`)
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) {
+      hasilData.textContent = data.error;
+      return;
+    }
+
+    hasilData.textContent = data.rekap || 'Belum ada data';
+  });
