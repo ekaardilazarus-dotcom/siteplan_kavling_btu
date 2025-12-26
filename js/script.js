@@ -200,18 +200,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // CLICK MAP (SYNC)
   // ===============================
   map.addEventListener('click', e => {
-    if (isDragging) return;
+  if (isDragging) return;
 
-    let t = e.target;
-    if (t.tagName.toLowerCase() === 'text') t = t.parentElement;
-    if (!t || !t.id) return;
+  let t = e.target;
 
-    const id = t.id.toUpperCase();
-    resultsBox.innerHTML = '';
+  // naik ke parent sampai ketemu yang punya id
+  while (t && t !== map && !t.id) {
+    t = t.parentElement;
+  }
 
-    if (id.includes('_')) focusKavling(id);
-    else focusBlok(id);
-  });
+  if (!t || !t.id) return;
+
+  const id = t.id.toUpperCase();
+  resultsBox.innerHTML = '';
+
+  if (id.includes('_')) {
+    focusKavling(id);
+  } else {
+    focusBlok(id);
+  }
+});
+
 
   // ===============================
   // PAN (DRAG)
