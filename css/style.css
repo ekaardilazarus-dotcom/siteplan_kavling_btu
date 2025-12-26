@@ -3,30 +3,22 @@ body {
   margin: 0;
 }
 
-/* container */
 #map {
   width: 100%;
   overflow: auto;
   border: 1px solid #ddd;
 }
 
-/* SVG responsive */
 #map svg {
   width: 100%;
   height: auto;
   display: block;
 }
-#map g[id] path,
-#map g[id] rect,
-#map g[id] polygon {
-  fill: transparent;
-  pointer-events: all;
-}
 
-/* semua kavling (KR, UJ, M, dll) */
-#map g[id] * {
+/* semua kavling */
+#map g[id] {
   cursor: pointer;
-  transition: fill 0.2s ease, stroke 0.2s ease;
+  pointer-events: bounding-box;
 }
 
 /* hover kavling */
@@ -36,13 +28,7 @@ body {
   stroke-width: 2;
 }
 
+/* text tembus mouse */
 #map text {
   pointer-events: none;
 }
-
-#map g[id] rect,
-#map g[id] path,
-#map g[id] polygon {
-  pointer-events: all;
-}
-
