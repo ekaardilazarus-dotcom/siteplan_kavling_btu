@@ -1,5 +1,5 @@
 let kavlingIndex = [];
-let originalViewBox = null; // simpan viewBox awal
+let originalViewBox = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const map = document.getElementById('map');
@@ -27,14 +27,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // simpan viewBox asli
         originalViewBox = svgEl.getAttribute('viewBox');
         if (!originalViewBox) {
-          // kalau belum ada, buat dari bounding box keseluruhan
           const bbox = svgEl.getBBox();
           originalViewBox = `${bbox.x} ${bbox.y} ${bbox.width} ${bbox.height}`;
           svgEl.setAttribute('viewBox', originalViewBox);
         }
       }
 
-      // indexing kavling
+      // indexing kavling: ambil teks + id
       const texts = map.querySelectorAll('text');
       const ids = map.querySelectorAll('g[id], rect[id], path[id], polygon[id]');
 
@@ -71,8 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Tutup dropdown saat klik di luar (kecuali klik hasil)
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('#search-container')) resultsBox.innerHTML = '';
+    const within = e.target.closest('#search-container');
+    const isResultItem = e.target.closest('#search-results li');
+    if (!within && !isResultItem) {
+      resultsBox.innerHTML = '';
+    }
   });
 
   // FOCUS KAVLING + ZOOM
@@ -103,21 +107,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const svgEl = document.querySelector('#map svg');
     if (svgEl) {
-      const bbox = target.getBBox();
-      const padding = 16; // zoom ketat tapi masih ada area sekitar
-      const x = bbox.x - padding;
-      const y = bbox.y - padding;
-      const w = bbox.width + padding * 2;
-      const h = bbox.height + padding * 2;
-      svgEl.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
-    }
-  }
-
-  // RESET ZOOM
-  resetBtn.addEventListener('click', () => {
-    const svgEl = document.querySelector('#map svg');
-    if (svgEl && originalViewBox) {
-      svgEl.setAttribute('viewBox', originalViewBox);
-    }
-  });
-});
+      const bbox
