@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (svgEl) {
       const bbox = target.getBBox();
       const padding = 8; // zoom ketat tapi masih ada area sekitar
-      const minSize = 100; // minimal area supaya tidak terlalu nge-zoom
+      const minSize = 50; // minimal area supaya tidak terlalu nge-zoom
       const x = bbox.x - padding;
       const y = bbox.y - padding;
       const w = Math.max(bbox.width + padding * 2, minSize);
