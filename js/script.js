@@ -135,4 +135,63 @@ document.addEventListener('DOMContentLoaded', () => {
     // Scroll halus ke posisi shape
     target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
   }
+
+function focusKavling(kode) {
+  resultsBox.innerHTML = '';
+  searchInput.value = kode;
+
+  // reset highlight
+  document.querySelectorAll('#map rect, #map path, #map polygon')
+    .forEach(el => el.style.cssText = '');
+
+  let target =
+    document.querySelector(`#map g[id="${kode}"]`) ||
+    document.querySelector(`#map rect[id="${kode}"], #map path[id="${kode}"], #map polygon[id="${kode}"]`);
+
+  // fallback: cari shape terdekat dari text
+  if (!target) {
+    const textEl = [...document.querySelectorAll('#map text')]
+      .find(t => t.textContent.trim() === kode);
+    if (textEl) {
+      const bbox = textEl.getBBox();
+      document.querySelectorAll('#map rect, #map path, #map polygon')
+        .forEach(el => {
+          const b = el.getBBox();
+          if (Math.abs(b.x - bbox.x) < 20 && Math.abs(b.y - bbox.y) < 20) {
+            target = el;
+          }
+        });
+    }
+  }
+
+  if (!target) return;
+
+  // highlight
+  if (target.tagName.toLowerCase() === 'g') {
+    target.querySelectorAll('rect, path, polygon').forEach(el => {
+      el.style.fill = '#ffd54f';
+      el.style.stroke = '#ff6f00';
+      el.style.strokeWidth = '2';
+    });
+  } else {
+    target.style.fill = '#ffd54f';
+    target.style.stroke = '#ff6f00';
+    target.style.strokeWidth = '2';
+  }
+
+  // ===============================
+  // ZOOM KE AREA (pakai viewBox)
+  // ===============================
+  const svgEl = document.querySelector('#map svg');
+  if (svgEl) {
+    const bbox = target.getBBox();
+    const padding = 50; // margin sekitar kavling
+    const x = bbox.x - padding;
+    const y = bbox.y - padding;
+    const w = bbox.width + padding * 2;
+    const h = bbox.height + padding * 2;
+
+    svgEl.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+  }
+}  
 });
