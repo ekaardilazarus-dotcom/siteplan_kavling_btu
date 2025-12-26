@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // LOAD SVG & INDEX KAVLING
   // ===============================
-  fetch('sitemap.svg') // gunakan tanpa "./" untuk GitHub Pages, pastikan nama file sama persis (case-sensitive)
+  fetch('sitemap.svg') // pastikan nama file sesuai di repo GitHub
     .then(res => {
       if (!res.ok) throw new Error('SVG tidak ditemukan');
       return res.text();
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .filter(id => /^(KR|UJ|GA|M|Blok)/i.test(id))
       ])];
 
-      // Sort biar rapi (opsional)
+      // Sort biar rapi
       kavlingIndex.sort((a, b) => a.localeCompare(b, 'id'));
 
       console.log('DATA KAVLING:', kavlingIndex);
@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const q = searchInput.value.trim().toLowerCase();
     resultsBox.innerHTML = '';
 
-    // Tampilkan dropdown hanya jika ada query
     if (q.length < 1) return;
 
     const matches = kavlingIndex.filter(name => name.toLowerCase().includes(q));
