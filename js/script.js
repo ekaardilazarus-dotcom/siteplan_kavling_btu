@@ -13,7 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
   searchInput.disabled = true;
   searchInput.placeholder = 'Memuat data kavling...';
 
-  // load SVG
+  // ===============================
+  // LOAD SVG
+  // ===============================
   fetch('sitemap.svg')
     .then(res => {
       if (!res.ok) throw new Error('SVG tidak ditemukan');
@@ -49,7 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
       searchInput.placeholder = 'Cari kavling...';
     });
 
-  // search input
+  // ===============================
+  // SEARCH INPUT
+  // ===============================
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
     resultsBox.innerHTML = '';
@@ -72,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // tutup dropdown saat klik di luar
   document.addEventListener('click', (e) => {
     const within = e.target.closest('#search-container');
     const isResultItem = e.target.closest('#search-results li');
@@ -80,7 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // fungsi set zoom dengan center
+  // ===============================
+  // FUNGSI SET ZOOM DENGAN CENTER
+  // ===============================
   function setZoom(scale, targetBBox = null) {
     const svgEl = document.querySelector('#map svg');
     if (!svgEl) return;
@@ -107,7 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
     mapDiv.scrollTop  = centerY * currentScale - mapDiv.clientHeight / 2;
   }
 
-  // focus kavling
+  // ===============================
+  // FOCUS KAVLING
+  // ===============================
   function focusKavling(kode) {
     resultsBox.innerHTML = '';
     searchInput.value = kode;
@@ -137,7 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setZoom(1.5, bbox); // zoom otomatis 50% dengan center di blok
   }
 
-  // tombol zoom manual
+  // ===============================
+  // TOMBOL ZOOM MANUAL
+  // ===============================
   zoomInBtn.addEventListener('click', () => {
     setZoom(currentScale * 1.2); // zoom in, center map
   });
@@ -146,7 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setZoom(currentScale / 1.2); // zoom out, center map
   });
 
-  // reset zoom
+  // ===============================
+  // RESET ZOOM
+  // ===============================
   resetBtn.addEventListener('click', () => {
     setZoom(1); // reset zoom, center map
   });
