@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
   searchInput.disabled = true;
   searchInput.placeholder = 'Memuat data kavling...';
 
+  // ===============================
   // LOAD SVG
+  // ===============================
   fetch('sitemap.svg')
     .then(res => {
       if (!res.ok) throw new Error('SVG tidak ditemukan');
@@ -47,7 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
       searchInput.placeholder = 'Cari kavling...';
     });
 
+  // ===============================
   // SEARCH INPUT
+  // ===============================
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
     resultsBox.innerHTML = '';
@@ -70,7 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Tutup dropdown saat klik di luar (kecuali klik hasil)
+  // ===============================
+  // Tutup dropdown saat klik di luar
+  // ===============================
   document.addEventListener('click', (e) => {
     const within = e.target.closest('#search-container');
     const isResultItem = e.target.closest('#search-results li');
@@ -79,11 +85,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ===============================
   // FOCUS KAVLING + ZOOM
+  // ===============================
   function focusKavling(kode) {
     resultsBox.innerHTML = '';
     searchInput.value = kode;
 
+    // reset highlight
     document.querySelectorAll('#map rect, #map path, #map polygon')
       .forEach(el => el.style.cssText = '');
 
@@ -93,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!target) return;
 
+    // highlight
     if (target.tagName.toLowerCase() === 'g') {
       target.querySelectorAll('rect, path, polygon').forEach(el => {
         el.style.fill = '#ffd54f';
@@ -105,6 +115,28 @@ document.addEventListener('DOMContentLoaded', () => {
       target.style.strokeWidth = '2';
     }
 
+    // zoom ke area
     const svgEl = document.querySelector('#map svg');
     if (svgEl) {
-      const bbox
+      const bbox = target.getBBox();
+      const padding = 8; // zoom ketat tapi masih ada area sekitar
+      const minSize = 100; // minimal area supaya tidak terlalu nge-zoom
+      const x = bbox.x - padding;
+      const y = bbox.y - padding;
+      const w = Math.max(bbox.width + padding * 2, minSize);
+      const h = Math.max(bbox.height + padding * 2, minSize);
+
+      svgEl.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+    }
+  }
+
+  // ===============================
+  // RESET ZOOM
+  // ===============================
+  resetBtn.addEventListener('click', () => {
+    const svgEl = document.querySelector('#map svg');
+    if (svgEl && originalViewBox) {
+      svgEl.setAttribute('viewBox', originalViewBox);
+    }
+  });
+});
