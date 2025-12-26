@@ -183,15 +183,16 @@ function focusKavling(kode) {
   // ZOOM KE AREA (pakai viewBox)
   // ===============================
   const svgEl = document.querySelector('#map svg');
-  if (svgEl) {
-    const bbox = target.getBBox();
-    const padding = 50; // margin sekitar kavling
-    const x = bbox.x - padding;
-    const y = bbox.y - padding;
-    const w = bbox.width + padding * 2;
-    const h = bbox.height + padding * 2;
+if (svgEl) {
+  const bbox = target.getBBox();
+  const padding = 10; // lebih kecil → zoom lebih ketat
+  const x = bbox.x - padding;
+  const y = bbox.y - padding;
+  const w = bbox.width + padding * 2;
+  const h = bbox.height + padding * 2;
 
-    svgEl.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
-  }
+  svgEl.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+}
+
 }  
 });
