@@ -57,49 +57,46 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // SEARCH
   // ===============================
- searchInput.addEventListener('input', () => {
+searchInput.addEventListener('input', () => {
   const q = searchInput.value.trim().toLowerCase();
   resultsBox.innerHTML = '';
   if (!q) return;
 
-  // ===== SEARCH BLOK =====
-  if (q.startsWith('blok ')) {
-    const blok = q.replace('blok ', '').trim().toUpperCase();
+  const upper = q.toUpperCase();
 
-    const exists = kavlingIndex.some(id =>
-      id.toUpperCase().startsWith(blok)
-    );
-
-    if (!exists) {
-      resultsBox.innerHTML = '<li style="color:#777">Blok tidak ditemukan</li>';
-      return;
-    }
-
-    const li = document.createElement('li');
-    li.textContent = `BLOK ${blok}`;
-    li.onclick = () => focusBlok(blok);
-    resultsBox.appendChild(li);
-    return;
-  }
-
-  // ===== SEARCH KAVLING BIASA =====
-  const matches = kavlingIndex.filter(k =>
-    k.toLowerCase().includes(q)
+  // ===============================
+  // MODE BLOK OTOMATIS (uj10, ga34)
+  // ===============================
+  const blokItems = kavlingIndex.filter(id =>
+    id.startsWith(upper + '_')
   );
 
-  if (!matches.length) {
-    resultsBox.innerHTML = '<li style="color:#777">Tidak ditemukan</li>';
-    return;
+  if (blokItems.length && !q.includes('_')) {
+    const liBlok = document.createElement('li');
+    liBlok.textContent = `${upper} (${blokItems.length} kavling)`;
+    liBlok.style.fontWeight = 'bold';
+    liBlok.onclick = () => focusBlok(upper);
+    resultsBox.appendChild(liBlok);
   }
 
-  matches.forEach(name => {
+  // ===============================
+  // MODE KAVLING DETAIL (uj10_3)
+  // ===============================
+  const kavlingMatches = kavlingIndex.filter(id =>
+    id.toLowerCase().includes(q)
+  );
+
+  kavlingMatches.slice(0, 20).forEach(name => {
     const li = document.createElement('li');
     li.textContent = name;
     li.onclick = () => focusKavling(name);
     resultsBox.appendChild(li);
   });
-});
 
+  if (!resultsBox.children.length) {
+    resultsBox.innerHTML = '<li style="color:#777">Tidak ditemukan</li>';
+  }
+});
 
   document.addEventListener('click', e => {
     if (!e.target.closest('#search-container')) resultsBox.innerHTML = '';
@@ -141,14 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function focusBlok(prefix) {
   resultsBox.innerHTML = '';
-  searchInput.value = `BLOK ${prefix}`;
+ searchInput.value = prefix;
 
   // reset highlight
   document.querySelectorAll('#map rect, #map path, #map polygon')
     .forEach(el => el.style.cssText = '');
 
   const elements = [...document.querySelectorAll(
-    `[id^="${prefix}"]`
+  `[id^="${prefix}_"]`
   )];
 
   if (!elements.length) return;
