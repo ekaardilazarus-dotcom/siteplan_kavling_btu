@@ -92,3 +92,39 @@ body {
 #map text {
   pointer-events: none;
 }
+
+/* ===============================
+   SEARCH UI
+   =============================== */
+#search-container {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  padding: 10px;
+  z-index: 1000;
+  border-bottom: 1px solid #ddd;
+}
+
+#search {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+}
+
+#search-results {
+  list-style: none;
+  margin: 5px 0 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+}
+
+#search-results li {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+#search-results li:hover {
+  background: #f0f0f0;
+}
