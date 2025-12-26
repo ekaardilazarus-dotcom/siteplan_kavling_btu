@@ -119,8 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const svgEl = document.querySelector('#map svg');
     if (svgEl) {
       const bbox = target.getBBox();
-      const padding = 5; // zoom ketat tapi masih ada area sekitar
-      const minSize = 50; // minimal area supaya tidak terlalu nge-zoom
+      const padding = 2; // zoom ketat tapi masih ada area sekitar
+      const minSize = 10; // minimal area supaya tidak terlalu nge-zoom
       const x = bbox.x - padding;
       const y = bbox.y - padding;
       const w = Math.max(bbox.width + padding * 2, minSize);
