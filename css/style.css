@@ -91,7 +91,8 @@ h1 {
 
 /* Search container: pindah ke kanan atas, absolute */
 #search-container {
-  position: fixed;
+  position: relative;
+  margin: 16px auto;
   top: 16px;
   right: 16px;
   width: 280px;
