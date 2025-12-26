@@ -6,7 +6,33 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search');
   const resultsBox = document.getElementById('search-results');
   const resetBtn = document.getElementById('resetZoom');
+const zoomInBtn = document.getElementById('zoomIn');
+const zoomOutBtn = document.getElementById('zoomOut');
 
+// fungsi zoom helper
+function adjustZoom(factor) {
+  const svgEl = document.querySelector('#map svg');
+  if (!svgEl) return;
+
+  let [x, y, w, h] = svgEl.getAttribute('viewBox').split(' ').map(Number);
+
+  // zoom in → perkecil w/h, zoom out → perbesar w/h
+  const newW = w * factor;
+  const newH = h * factor;
+
+  // geser supaya tetap center
+  const dx = (w - newW) / 2;
+  const dy = (h - newH) / 2;
+
+  x += dx;
+  y += dy;
+
+  svgEl.setAttribute('viewBox', `${x} ${y} ${newW} ${newH}`);
+}
+
+// event listener tombol
+zoomInBtn.addEventListener('click', () => adjustZoom(0.8)); // zoom in 20%
+zoomOutBtn.addEventListener('click', () => adjustZoom(1.25)); // zoom out 25%
   searchInput.disabled = true;
   searchInput.placeholder = 'Memuat data kavling...';
 
