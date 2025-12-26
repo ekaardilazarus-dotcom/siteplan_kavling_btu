@@ -1,6 +1,7 @@
 let kavlingIndex = [];
 let originalViewBox = null;
 let currentScale = 1;
+let lastFocusedEl = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const map = document.getElementById('map');
@@ -86,9 +87,28 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // FUNGSI SET ZOOM DENGAN CENTER
+  // HELPER: CENTER BERDASARKAN POSISI VISUAL
   // ===============================
-  function setZoom(scale, targetBBox = null) {
+  function centerOnElement(el) {
+    const mapDiv = document.getElementById('map');
+    if (!el || !mapDiv) return;
+
+    const elRect = el.getBoundingClientRect();
+    const mapRect = mapDiv.getBoundingClientRect();
+
+    // delta ke tengah viewport map
+    const deltaX = (elRect.left + elRect.width / 2) - (mapRect.left + mapRect.width / 2);
+    const deltaY = (elRect.top  + elRect.height / 2) - (mapRect.top  + mapRect.height / 2);
+
+    // geser scroll berdasarkan delta visual
+    mapDiv.scrollLeft += deltaX;
+    mapDiv.scrollTop  += deltaY;
+  }
+
+  // ===============================
+  // FUNGSI SET ZOOM + CENTER
+  // ===============================
+  function setZoom(scale, targetEl = null) {
     const svgEl = document.querySelector('#map svg');
     if (!svgEl) return;
 
@@ -96,22 +116,15 @@ document.addEventListener('DOMContentLoaded', () => {
     svgEl.style.transformOrigin = "0 0";
     svgEl.style.transform = `scale(${currentScale})`;
 
-    const mapDiv = document.getElementById('map');
-    let centerX, centerY;
-
-    if (targetBBox) {
-      // center di blok terpilih
-      centerX = targetBBox.x + targetBBox.width / 2;
-      centerY = targetBBox.y + targetBBox.height / 2;
-    } else {
-      // center di tengah map
-      const bbox = svgEl.getBBox();
-      centerX = bbox.x + bbox.width / 2;
-      centerY = bbox.y + bbox.height / 2;
-    }
-
-    mapDiv.scrollLeft = centerX * currentScale - mapDiv.clientWidth / 2;
-    mapDiv.scrollTop  = centerY * currentScale - mapDiv.clientHeight / 2;
+    // setelah transform diterapkan, re-center dengan frame berikutnya
+    requestAnimationFrame(() => {
+      if (targetEl) {
+        centerOnElement(targetEl);
+      } else {
+        // center ke tengah map: pakai <svg> sendiri sebagai target
+        centerOnElement(svgEl);
+      }
+    });
   }
 
   // ===============================
@@ -130,6 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!target) return;
 
+    lastFocusedEl = target;
+
     if (target.tagName.toLowerCase() === 'g') {
       target.querySelectorAll('rect, path, polygon').forEach(el => {
         el.style.fill = '#ffd54f';
@@ -142,25 +157,36 @@ document.addEventListener('DOMContentLoaded', () => {
       target.style.strokeWidth = '2';
     }
 
-    const bbox = target.getBBox();
-    setZoom(1.5, bbox); // zoom otomatis 50% dengan center di blok
+    // langkah 1: center dulu pada posisi visual saat ini
+    centerOnElement(target);
+
+    // langkah 2: zoom otomatis 1.5x dan re-center pada blok setelah transform
+    setZoom(1.5, target);
   }
 
   // ===============================
   // TOMBOL ZOOM MANUAL
   // ===============================
   zoomInBtn.addEventListener('click', () => {
-    setZoom(currentScale * 1.2); // zoom in, center map
+    setZoom(currentScale * 1.2, lastFocusedEl || null);
   });
 
   zoomOutBtn.addEventListener('click', () => {
-    setZoom(currentScale / 1.2); // zoom out, center map
+    setZoom(currentScale / 1.2, lastFocusedEl || null);
   });
 
   // ===============================
   // RESET ZOOM
   // ===============================
   resetBtn.addEventListener('click', () => {
-    setZoom(1); // reset zoom, center map
+    const svgEl = document.querySelector('#map svg');
+    if (svgEl) {
+      lastFocusedEl = null;
+      setZoom(1, null); // center ke tengah map
+      // opsional: kembali ke posisi atas-kiri
+      // const mapDiv = document.getElementById('map');
+      // mapDiv.scrollLeft = 0;
+      // mapDiv.scrollTop = 0;
+    }
   });
 });
