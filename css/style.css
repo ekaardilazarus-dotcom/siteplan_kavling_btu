@@ -17,6 +17,7 @@ body {
 /* hanya kavling valid (case-insensitive) */
 #map g[id^="KR" i],
 #map g[id^="UJ" i],
+#map g[id^="GA" i],
 #map g[id^="M" i],
 #map g[id^="Blok" i] {
   cursor: pointer;
@@ -26,6 +27,7 @@ body {
 /* hover kavling valid */
 #map g[id^="KR" i]:hover *,
 #map g[id^="UJ" i]:hover *,
+#map g[id^="GA" i]:hover *,
 #map g[id^="M" i]:hover *,
 #map g[id^="Blok" i]:hover * {
   fill: #ffd54f !important;
