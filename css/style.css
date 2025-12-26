@@ -153,11 +153,12 @@ h1 {
 }
 #zoomIn, #zoomOut {
   padding: 8px 12px;
-  font-size: 16px;
+  font-size: 14px;       /* samakan dengan resetZoom */
   border: 1px solid #ccc;
   border-radius: 4px;
   background: #f5f5f5;
   cursor: pointer;
+  white-space: nowrap;   /* biar teks/tanda + - tidak pecah */
 }
 
 #zoomIn:hover, #zoomOut:hover {
