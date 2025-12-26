@@ -18,6 +18,8 @@ h1 {
   width: 100%;
   height: auto;
   display: block;
+  transform-origin: 0 0;
+  transition: transform 0.2s ease;
 }
 
 /* interaksi kavling */
