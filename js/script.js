@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lastFocusedEl = target;
     const box = target.getBBox();
-    zoomPadding = Math.max(box.width, box.height) * 0.6;
+    zoomPadding = Math.max(box.width, box.height) * 0.7;
     zoomToElement(target, zoomPadding);
   }
 
@@ -141,13 +141,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   zoomInBtn.onclick = () => {
     if (!lastFocusedEl) return;
-    zoomPadding *= 0.8;
+    zoomPadding *= 0.7;
     zoomToElement(lastFocusedEl, zoomPadding);
   };
 
   zoomOutBtn.onclick = () => {
     if (!lastFocusedEl) return;
-    zoomPadding *= 1.25;
+    zoomPadding *= 1.1;
     zoomToElement(lastFocusedEl, zoomPadding);
   };
 
