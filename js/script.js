@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     mapDiv.scrollLeft = bbox.x - mapDiv.clientWidth / 2 + bbox.width / 2;
     mapDiv.scrollTop = bbox.y - mapDiv.clientHeight / 2 + bbox.height / 2;
 
-    // zoom sedikit otomatis
+    // zoom sedikit otomatis (CSS transform)
     const svgEl = document.querySelector('#map svg');
     if (svgEl) {
       currentScale = 1.2; // zoom 20%
