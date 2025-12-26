@@ -14,15 +14,20 @@ body {
   height: auto;
   display: block;
 }
-
-/* semua kavling */
-#map g[id] {
+/* hanya kavling valid */
+#map g[id^="KR"],
+#map g[id^="UJ"],
+#map g[id^="M"],
+#map g[id^="Blok"] {
   cursor: pointer;
   pointer-events: bounding-box;
 }
 
-/* hover kavling */
-#map g[id]:hover * {
+/* hover kavling valid */
+#map g[id^="KR"]:hover *,
+#map g[id^="UJ"]:hover *,
+#map g[id^="M"]:hover *,
+#map g[id^="Blok"]:hover * {
   fill: #ffd54f !important;
   stroke: #ff6f00 !important;
   stroke-width: 2;
@@ -32,3 +37,4 @@ body {
 #map text {
   pointer-events: none;
 }
+
