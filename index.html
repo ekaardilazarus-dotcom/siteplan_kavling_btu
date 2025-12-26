@@ -1,40 +1,29 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Peta Kavling</title>
-
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>DATA SITE BTU MALANG</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <h1>DATA Kavling BTU Malang</h1>
+  <h1>DATA SITE BTU MALANG</h1>
 
-  <!-- SEARCH + ZOOM -->
+  <!-- Search box + tombol zoom -->
   <div id="search-container">
     <div class="search-row">
-      <input
-        type="text"
-        id="search"
-        placeholder="Memuat data kavling..."
-        autocomplete="off"
-        disabled
-      />
-
-      <button id="zoomIn" title="Zoom In">+</button>
-      <button id="zoomOut" title="Zoom Out">−</button>
-      <button id="resetZoom" title="Reset Zoom">Reset</button>
+      <input id="search" placeholder="Cari kavling..." disabled>
+      <button id="zoomIn">+</button>
+      <button id="zoomOut">-</button>
+      <button id="resetZoom">Lihat Semua Area</button>
     </div>
-
     <ul id="search-results"></ul>
   </div>
+<div id="hasilData" class="rekap-box"></div>
 
-  <!-- MAP -->
-  <div id="map">
-    <!-- SVG dimuat via fetch('sitemap.svg') -->
-  </div>
+  <!-- Map container -->
+  <div id="map"></div>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>
