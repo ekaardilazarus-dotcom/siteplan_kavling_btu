@@ -1,33 +1,39 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Peta Kavling</title>
-  <link rel="stylesheet" href="style.css">
+
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <h1>DATA Kavling</h1>
 
-  <!-- SEARCH + ZOOM CONTROL -->
+  <!-- SEARCH + ZOOM -->
   <div id="search-container">
     <div class="search-row">
       <input
         type="text"
         id="search"
-        placeholder="Cari blok / kavling"
+        placeholder="Memuat data kavling..."
         autocomplete="off"
+        disabled
       />
-      <button id="zoomIn">+</button>
-      <button id="zoomOut">−</button>
-      <button id="resetZoom">Reset</button>
+
+      <button id="zoomIn" title="Zoom In">+</button>
+      <button id="zoomOut" title="Zoom Out">−</button>
+      <button id="resetZoom" title="Reset Zoom">Reset</button>
     </div>
+
     <ul id="search-results"></ul>
   </div>
 
   <!-- MAP -->
-  <div id="map"></div>
+  <div id="map">
+    <!-- SVG dimuat via fetch('sitemap.svg') -->
+  </div>
 
   <script src="script.js"></script>
 </body>
