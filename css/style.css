@@ -3,11 +3,18 @@ body {
   margin: 0;
 }
 
-/* container */
+/* Header beri jarak dari atas */
+h1 {
+  margin: 16px;
+}
+
+/* Map container */
 #map {
   width: 100%;
   overflow: auto;
   border: 1px solid #ddd;
+  /* beri jarak agar search tidak menutupi konten */
+  margin-top: 16px;
 }
 
 /* SVG responsive */
@@ -17,10 +24,7 @@ body {
   display: block;
 }
 
-/* ===============================
-   KAVLING VALID (GROUP LEVEL)
-   KR, UJ, GA, M, Blok
-   =============================== */
+/* Interaksi kavling (tetap sama) */
 #map g[id^="KR" i],
 #map g[id^="UJ" i],
 #map g[id^="GA" i],
@@ -30,7 +34,6 @@ body {
   pointer-events: bounding-box;
 }
 
-/* hover untuk kavling di <g> */
 #map g[id^="KR" i]:hover *,
 #map g[id^="UJ" i]:hover *,
 #map g[id^="GA" i]:hover *,
@@ -41,9 +44,7 @@ body {
   stroke-width: 2;
 }
 
-/* ===============================
-   FALLBACK
-   =============================== */
+/* Fallback interaksi */
 #map path[id^="KR" i],
 #map path[id^="UJ" i],
 #map path[id^="GA" i],
@@ -63,7 +64,6 @@ body {
   pointer-events: all;
 }
 
-/* hover fallback */
 #map path[id^="KR" i]:hover,
 #map path[id^="UJ" i]:hover,
 #map path[id^="GA" i]:hover,
@@ -84,21 +84,17 @@ body {
   stroke-width: 2;
 }
 
-/* ===============================
-   TEXT / LABEL
-   =============================== */
+/* Label text tidak blok klik */
 #map text {
   pointer-events: none;
 }
 
-/* ===============================
-   SEARCH BOX FLOATING
-   =============================== */
+/* Search container: pindah ke kanan atas, absolute */
 #search-container {
   position: fixed;
-  top: 80px;
-  left: 15px;
-  width: 260px;
+  top: 16px;
+  right: 16px;
+  width: 280px;
   background: #ffffff;
   padding: 10px;
   border-radius: 8px;
@@ -115,24 +111,38 @@ body {
   border-radius: 4px;
 }
 
-/* dropdown */
+/* dropdown nempel ke input, absolute di dalam container */
 #search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
   list-style: none;
-  margin: 6px 0 0;
+  margin: 0;
   padding: 0;
-  max-height: 200px;
+  max-height: 240px;
   overflow-y: auto;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 8px;
   background: #fff;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.12);
 }
 
 #search-results li {
-  padding: 6px 8px;
+  padding: 8px 10px;
   cursor: pointer;
   font-size: 14px;
 }
 
 #search-results li:hover {
-  background: #f0f0f0;
+  background: #f5f5f5;
+}
+
+/* Responsive: di layar kecil, pindah ke kiri atas agar tidak menutupi map penting */
+@media (max-width: 600px) {
+  #search-container {
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
 }
