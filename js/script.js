@@ -55,24 +55,49 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // SEARCH
   // ===============================
-  searchInput.addEventListener('input', () => {
-    const q = searchInput.value.toLowerCase();
-    resultsBox.innerHTML = '';
-    if (!q) return;
+ searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  resultsBox.innerHTML = '';
+  if (!q) return;
 
-    const matches = kavlingIndex.filter(k => k.toLowerCase().includes(q));
-    if (!matches.length) {
-      resultsBox.innerHTML = '<li style="color:#777">Tidak ditemukan</li>';
+  // ===== SEARCH BLOK =====
+  if (q.startsWith('blok ')) {
+    const blok = q.replace('blok ', '').trim().toUpperCase();
+
+    const exists = kavlingIndex.some(id =>
+      id.toUpperCase().startsWith(blok)
+    );
+
+    if (!exists) {
+      resultsBox.innerHTML = '<li style="color:#777">Blok tidak ditemukan</li>';
       return;
     }
 
-    matches.forEach(name => {
-      const li = document.createElement('li');
-      li.textContent = name;
-      li.onclick = () => focusKavling(name);
-      resultsBox.appendChild(li);
-    });
+    const li = document.createElement('li');
+    li.textContent = `BLOK ${blok}`;
+    li.onclick = () => focusBlok(blok);
+    resultsBox.appendChild(li);
+    return;
+  }
+
+  // ===== SEARCH KAVLING BIASA =====
+  const matches = kavlingIndex.filter(k =>
+    k.toLowerCase().includes(q)
+  );
+
+  if (!matches.length) {
+    resultsBox.innerHTML = '<li style="color:#777">Tidak ditemukan</li>';
+    return;
+  }
+
+  matches.forEach(name => {
+    const li = document.createElement('li');
+    li.textContent = name;
+    li.onclick = () => focusKavling(name);
+    resultsBox.appendChild(li);
   });
+});
+
 
   document.addEventListener('click', e => {
     if (!e.target.closest('#search-container')) resultsBox.innerHTML = '';
@@ -110,6 +135,64 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===============================
+  //fokus blok
+
+function focusBlok(prefix) {
+  resultsBox.innerHTML = '';
+  searchInput.value = `BLOK ${prefix}`;
+
+  // reset highlight
+  document.querySelectorAll('#map rect, #map path, #map polygon')
+    .forEach(el => el.style.cssText = '');
+
+  const elements = [...document.querySelectorAll(
+    `[id^="${prefix}"]`
+  )];
+
+  if (!elements.length) return;
+
+  // highlight semua kavling dalam blok
+  elements.forEach(el => {
+    if (el.tagName.toLowerCase() === 'g') {
+      el.querySelectorAll('rect, path, polygon').forEach(c => {
+        c.style.fill = '#ffd54f';
+        c.style.stroke = '#ff6f00';
+        c.style.strokeWidth = '2';
+      });
+    } else {
+      el.style.fill = '#ffd54f';
+      el.style.stroke = '#ff6f00';
+      el.style.strokeWidth = '2';
+    }
+  });
+
+  // hitung bounding box gabungan
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  elements.forEach(el => {
+    const b = el.getBBox();
+    minX = Math.min(minX, b.x);
+    minY = Math.min(minY, b.y);
+    maxX = Math.max(maxX, b.x + b.width);
+    maxY = Math.max(maxY, b.y + b.height);
+  });
+
+  const padding = Math.max(maxX - minX, maxY - minY) * 0.4;
+
+  viewBoxState = {
+    x: minX - padding,
+    y: minY - padding,
+    w: (maxX - minX) + padding * 2,
+    h: (maxY - minY) + padding * 2
+  };
+
+  lastFocusedEl = null; // blok ≠ satu kavling
+  zoomPadding = null;
+
+  applyViewBox();
+}
+//===========================
+  
   // ZOOM KE ELEMENT (VIEWBOX)
   // ===============================
   function zoomToElement(el, padding) {
