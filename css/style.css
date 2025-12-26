@@ -94,35 +94,45 @@ body {
 }
 
 /* ===============================
-   SEARCH UI
+   SEARCH BOX FLOATING
    =============================== */
 #search-container {
-  position: sticky;
-  top: 0;
-  background: #fff;
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  width: 260px;
+  background: #ffffff;
   padding: 10px;
-  z-index: 1000;
-  border-bottom: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 2000;
 }
 
+/* input search */
 #search {
   width: 100%;
-  padding: 10px;
-  font-size: 16px;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
+/* dropdown */
 #search-results {
   list-style: none;
-  margin: 5px 0 0;
+  margin: 6px 0 0;
   padding: 0;
   max-height: 200px;
   overflow-y: auto;
   border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
 }
 
 #search-results li {
-  padding: 8px 10px;
+  padding: 6px 8px;
   cursor: pointer;
+  font-size: 14px;
 }
 
 #search-results li:hover {
