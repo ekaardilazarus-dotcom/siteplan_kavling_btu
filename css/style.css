@@ -1,33 +1,32 @@
 body {
   font-family: Arial, sans-serif;
+  margin: 0;
+}
+
+/* container */
 #map {
   width: 100%;
   overflow: auto;
+  border: 1px solid #ddd;
 }
 
-#siteplan {
-  width: 100%;
-  max-width: 1200px;
-  display: block;
-  margin: auto;
-}
-svg {
+/* SVG responsive */
+#map svg {
   width: 100%;
   height: auto;
+  display: block;
 }
 
-/* default kavling */
-svg [id^="KR"] {
+/* semua kavling (KR, UJ, M, dll) */
+#map g[id] * {
   cursor: pointer;
-  transition: fill 0.2s, stroke 0.2s;
+  transition: fill 0.2s ease, stroke 0.2s ease;
 }
 
-/* hover */
-svg [id^="KR"]:hover {
+/* hover kavling */
+#map g[id]:hover * {
   fill: #ffd54f !important;
   stroke: #ff6f00 !important;
   stroke-width: 2;
 }
 
-
-}
