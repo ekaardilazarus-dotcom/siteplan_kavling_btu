@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   searchInput.placeholder = 'Memuat data kavling...';
 
   // ===============================
-  // LOAD SVG & INDEX TEXT KAVLING
+  // LOAD SVG & INDEX KAVLING
   // ===============================
   fetch('./sitemap.svg')
     .then(res => {
@@ -26,14 +26,18 @@ document.addEventListener('DOMContentLoaded', () => {
         svgEl.removeAttribute('height');
       }
 
-      // Ambil semua TEXT dari SVG
+      // Ambil semua TEXT dan ID dari SVG
       const texts = map.querySelectorAll('text');
+      const ids = map.querySelectorAll('g[id], rect[id], path[id], polygon[id]');
 
-      kavlingIndex = [...new Set(
-        Array.from(texts)
+      kavlingIndex = [...new Set([
+        ...Array.from(texts)
           .map(t => t.textContent.trim())
-          .filter(t => /^(KR|UJ|GA|M|Blok)/i.test(t))
-      )];
+          .filter(t => /^(KR|UJ|GA|M|Blok)/i.test(t)),
+        ...Array.from(ids)
+          .map(el => el.id.trim())
+          .filter(id => /^(KR|UJ|GA|M|Blok)/i.test(id))
+      ])];
 
       console.log('DATA KAVLING:', kavlingIndex);
 
@@ -72,11 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsBox.innerHTML = '';
     searchInput.value = kode;
 
-    const textEl = [...document.querySelectorAll('#map text')]
-      .find(t => t.textContent.trim() === kode);
-
-    if (!textEl) return;
-
     // reset highlight
     document.querySelectorAll('#map rect, #map path, #map polygon')
       .forEach(el => el.style.cssText = '');
@@ -85,16 +84,20 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelector(`#map g[id="${kode}"]`) ||
       document.querySelector(`#map rect[id="${kode}"], #map path[id="${kode}"], #map polygon[id="${kode}"]`);
 
-    // fallback: cari shape terdekat
+    // fallback: cari shape terdekat dari text
     if (!target) {
-      const bbox = textEl.getBBox();
-      document.querySelectorAll('#map rect, #map path, #map polygon')
-        .forEach(el => {
-          const b = el.getBBox();
-          if (Math.abs(b.x - bbox.x) < 20 && Math.abs(b.y - bbox.y) < 20) {
-            target = el;
-          }
-        });
+      const textEl = [...document.querySelectorAll('#map text')]
+        .find(t => t.textContent.trim() === kode);
+      if (textEl) {
+        const bbox = textEl.getBBox();
+        document.querySelectorAll('#map rect, #map path, #map polygon')
+          .forEach(el => {
+            const b = el.getBBox();
+            if (Math.abs(b.x - bbox.x) < 20 && Math.abs(b.y - bbox.y) < 20) {
+              target = el;
+            }
+          });
+      }
     }
 
     if (!target) return;
@@ -111,6 +114,4 @@ document.addEventListener('DOMContentLoaded', () => {
       target.style.strokeWidth = '2';
     }
 
-    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-  }
-});
+    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center
