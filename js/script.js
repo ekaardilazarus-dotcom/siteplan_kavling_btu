@@ -8,10 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(err => console.error('Gagal load SVG:', err));
 });
 document.addEventListener('click', (e) => {
-  const el = e.target;
+  const kavling = e.target.closest('g[id]');
+  if (!kavling) return;
 
-  if (el.id && el.id.startsWith('KR')) {
-    console.log('Kavling diklik:', el.id);
-  }
+  console.log('Kavling diklik:', kavling.id);
 });
 
