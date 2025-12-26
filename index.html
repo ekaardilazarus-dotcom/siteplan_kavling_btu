@@ -1,57 +1,34 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Peta Kavling</title>
-
-  <!-- CSS nanti menyusul -->
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- JUDUL -->
   <h1>DATA Kavling</h1>
 
-  <!-- SEARCH -->
+  <!-- SEARCH + ZOOM CONTROL -->
   <div id="search-container">
-    <input
-      type="text"
-      id="search"
-      placeholder="Cari blok / kavling (contoh: KR15_1)"
-      autocomplete="off"
-    />
+    <div class="search-row">
+      <input
+        type="text"
+        id="search"
+        placeholder="Cari blok / kavling (GA34, GA34_12)"
+        autocomplete="off"
+      />
+      <button id="zoomIn">+</button>
+      <button id="zoomOut">−</button>
+      <button id="resetZoom">Reset</button>
+    </div>
     <ul id="search-results"></ul>
   </div>
 
-  <!-- MAP SVG -->
-  <div id="map">
-    <!-- SVG akan di-load oleh script.js -->
-  </div>
+  <!-- MAP -->
+  <div id="map"></div>
 
-  <!-- POPUP SERTIFIKAT -->
-  <div id="certPopup" class="popup hidden">
-    <h3>Data Sertifikat Kavling</h3>
-
-    <input
-      type="password"
-      id="kodeAkses"
-      placeholder="Masukkan kode akses"
-    />
-
-    <button id="cekData">
-      Lihat Sertifikat
-    </button>
-
-    <div id="hasilData" class="rekap-box"></div>
-
-    <button onclick="closePopup()">
-      Tutup
-    </button>
-  </div>
-
-  <!-- SCRIPT -->
   <script src="script.js"></script>
-
 </body>
 </html>
