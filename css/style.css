@@ -1,283 +1,118 @@
-/* ===========================
-   STYLES FOR DATA SITE MAP
-   Clean, responsive, and accessible
-   =========================== */
-
-:root{
-  --bg: #ffffff;
-  --panel: #f8fafb;
-  --muted: #6b7280;
-  --accent: #ff6f00;
-  --highlight: #ffd54f;
-  --border: #e6e9ee;
-  --shadow: 0 6px 18px rgba(16,24,40,0.08);
-  --radius: 10px;
-  --glass: rgba(255,255,255,0.9);
-  --ui-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
 }
 
-/* Base */
-html,body{
-  height:100%;
-  margin:0;
-  font-family: var(--ui-font);
-  background: linear-gradient(180deg,#fbfdff 0%, #f6f9fc 100%);
-  color:#111827;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
+h1 {
+  margin: 16px;
 }
 
-/* Header */
-h1{
-  margin:18px 20px;
-  font-size:18px;
-  font-weight:600;
-  color:#0f172a;
-  letter-spacing:0.2px;
-}
-
-/* Map container */
-#map{
-  width:100%;
-  height: calc(100vh - 140px);
-  margin: 12px 0 32px 0;
-  border-radius:12px;
-  overflow:hidden;
-  position:relative;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
-  background: #fff;
+#map {
+  width: 100%;
+  height: 80vh; 
+  overflow: hidden;
   cursor: grab;
-}
-#map:active{ cursor: grabbing; }
-
-#map svg{
-  width:100%;
-  height:100%;
-  display:block;
-  user-select:none;
-  -webkit-user-select:none;
+  border: 1px solid #ddd;
+  margin-top: 16px;
+  position: relative;
 }
 
-/* Kavling interaction (case-insensitive selectors supported) */
+#map:active {
+  cursor: grabbing;
+}
+#map svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* interaksi kavling */
 #map g[id^="KR" i],
 #map g[id^="UJ" i],
 #map g[id^="GA" i],
 #map g[id^="M" i],
-#map g[id^="Blok" i],
-#map rect[id], #map path[id], #map polygon[id]{
-  transition: fill .12s ease, stroke .12s ease, transform .12s ease;
+#map g[id^="Blok" i] {
   cursor: pointer;
-  vector-effect: non-scaling-stroke;
+  pointer-events: bounding-box;
 }
 
-/* Hover visual (non-destructive) */
 #map g[id^="KR" i]:hover *,
 #map g[id^="UJ" i]:hover *,
 #map g[id^="GA" i]:hover *,
 #map g[id^="M" i]:hover *,
-#map g[id^="Blok" i]:hover *{
-  fill: var(--highlight) !important;
-  stroke: var(--accent) !important;
-  stroke-width: 2 !important;
-  transform: translateZ(0);
+#map g[id^="Blok" i]:hover * {
+  fill: #ffd54f !important;
+  stroke: #ff6f00 !important;
+  stroke-width: 2;
 }
 
-/* Make text inside SVG non-interactive for pointer events */
-#map text{ pointer-events: none; }
+#map text { pointer-events: none; }
 
-/* Search panel */
-#search-container{
+/* search container */
+#search-container {
   position: fixed;
   top: 20px;
   right: 20px;
   width: 360px;
-  max-width: calc(100% - 40px);
-  background: var(--glass);
-  backdrop-filter: blur(6px);
-  padding: 12px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(15,23,42,0.04);
-  z-index: 1200;
-}
-
-/* Row layout */
-.search-row{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  flex-wrap:wrap;
-}
-
-/* Input */
-#search{
-  flex:1;
-  min-width: 120px;
-  padding:10px 12px;
-  font-size:14px;
-  border-radius:8px;
-  border:1px solid var(--border);
   background: #fff;
-  color: #0f172a;
-  outline: none;
-  box-shadow: inset 0 1px 0 rgba(16,24,40,0.02);
-}
-#search:focus{
-  border-color: rgba(255,111,0,0.9);
-  box-shadow: 0 4px 12px rgba(255,111,0,0.08);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9999;
 }
 
-/* Buttons (unified style) */
-button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:8px 10px;
-  font-size:14px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  background: #fff;
-  color:#0f172a;
-  cursor:pointer;
-  transition: transform .08s ease, box-shadow .12s ease, background .12s ease;
-  white-space:nowrap;
-}
-button:hover{ transform: translateY(-1px); box-shadow: 0 6px 14px rgba(16,24,40,0.06); }
-button:active{ transform: translateY(0); }
-
-#resetZoom{
-  background:#fff;
-  border:1px solid rgba(15,23,42,0.06);
-  padding:8px 12px;
-  font-weight:600;
+.search-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-/* Export buttons styling to stand out */
-#exportSvg{
-  background: linear-gradient(180deg,#fff 0%, #fffefc 100%);
-  border:1px solid rgba(15,23,42,0.06);
-}
-#exportPng{
-  background: linear-gradient(180deg,#fff 0%, #fffefc 100%);
-  border:1px solid rgba(15,23,42,0.06);
-}
-
-/* Small icon style for + / - if still used */
-#zoomIn, #zoomOut{
-  width:40px;
-  height:40px;
-  padding:0;
-  font-weight:700;
-  font-size:18px;
-  line-height:1;
-}
-
-/* Search results dropdown */
-#search-results{
-  position:absolute;
-  top: calc(100% + 8px);
-  left: 12px;
-  right: 12px;
-  list-style:none;
-  margin:0;
-  padding:6px;
-  max-height:260px;
-  overflow:auto;
-  border-radius:10px;
-  background: #fff;
-  border:1px solid var(--border);
-  box-shadow: 0 12px 30px rgba(2,6,23,0.08);
-  z-index:1300;
-}
-
-/* Result items */
-#search-results li{
-  padding:10px 12px;
-  font-size:14px;
-  color:#0f172a;
-  border-radius:8px;
-  cursor:pointer;
-}
-#search-results li:hover{
-  background:#f8fafc;
-}
-
-/* Muted helper text */
-#search-results li[aria-disabled="true"]{
-  color:var(--muted);
-  cursor:default;
-}
-
-/* Rekap box (left) */
-.rekap-box{
-  position: fixed;
-  left: 20px;
-  top: 20px;
-  width: 300px;
-  max-height: 60vh;
-  overflow-y: auto;
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,250,0.95));
-  padding:12px;
-  border-radius:10px;
-  box-shadow: var(--shadow);
-  border:1px solid rgba(15,23,42,0.04);
-  z-index:1100;
-  font-size:13px;
-  color:#0f172a;
-}
-
-/* Responsive adjustments */
-@media (max-width:900px){
-  #search-container{ width:320px; right:16px; top:14px; }
-  .rekap-box{ display:none; }
-}
-@media (max-width:520px){
-  #search-container{ width: calc(100% - 32px); left:16px; right:16px; top:12px; }
-  .search-row{ gap:6px; }
-  #zoomIn, #zoomOut{ width:36px; height:36px; }
-  #search-results{ left:8px; right:8px; }
-}
-
-/* Accessibility focus outlines */
-button:focus, #search:focus, #search-results li:focus{
-  outline: 3px solid rgba(255,111,0,0.18);
-  outline-offset: 2px;
-  border-radius:8px;
-}
-/* Pastikan search container di atas map */
-#search-container { z-index: 1400; }
-
-/* Info card */
-.info-card{
-  position: fixed;
-  min-width: 240px;
-  max-width: 360px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,250,0.95));
-  border: 1px solid rgba(15,23,42,0.06);
-  box-shadow: 0 12px 30px rgba(2,6,23,0.08);
-  padding: 12px;
-  border-radius: 10px;
-  color: #0f172a;
+#search {
+  flex: 1;
+  padding: 8px 10px;
   font-size: 14px;
-  z-index: 1600;
-  pointer-events: auto;
-}
-.info-card .title{ font-weight:700; margin-bottom:8px; font-size:15px; }
-.info-card .muted{ color:var(--muted); font-size:13px; }
-.hidden{ display:none !important; }
-
-/* Responsive: bottom sheet on small screens */
-@media (max-width:520px){
-  .info-card{
-    left: 12px !important;
-    right: 12px !important;
-    bottom: 12px !important;
-    top: auto !important;
-    max-width: none;
-  }
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-/* Utility */
-.hidden{ display:none !important; }
+#resetZoom, #zoomIn, #zoomOut {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#resetZoom:hover, #zoomIn:hover, #zoomOut:hover {
+  background: #e0e0e0;
+}
+
+/* dropdown hasil */
+#search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+  z-index: 10000;
+}
+
+#search-results li {
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#search-results li:hover {
+  background: #f5f5f5;
+}
