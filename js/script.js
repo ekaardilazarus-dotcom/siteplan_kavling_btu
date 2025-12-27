@@ -175,94 +175,205 @@ document.addEventListener('DOMContentLoaded', () => {
   // - renderHasilData: tampilkan header segera, status, dan baris data
   // - fetchDataForAddress: panggil API, tangani JSON/text, fallback pesan
   // ===============================
-function renderHasilData(address, data) {
+function renderHasilData(address, result) {
   if (!hasilDataBox) return;
-  hasilDataBox.innerHTML = ''; // reset
-
+  
+  // Reset konten
+  hasilDataBox.innerHTML = '';
+  
+  // Buat container utama
+  const container = document.createElement('div');
+  container.style.cssText = `
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #333;
+  `;
+  
+  // Header dengan kode
   const header = document.createElement('div');
-  header.style.fontWeight = '700';
-  header.style.marginBottom = '6px';
-  header.style.fontSize = '14px';
-  header.textContent = `Kode: ${address}`;
-  hasilDataBox.appendChild(header);
-
-  // Status koneksi
+  header.style.cssText = `
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e0e0e0;
+    color: #1a237e;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  `;
+  
+  const iconSpan = document.createElement('span');
+  iconSpan.textContent = '📋';
+  
+  const textSpan = document.createElement('span');
+  textSpan.textContent = `Kode: ${address}`;
+  
+  header.appendChild(iconSpan);
+  header.appendChild(textSpan);
+  container.appendChild(header);
+  
+  // Status container
   const statusDiv = document.createElement('div');
-  statusDiv.style.fontSize = '12px';
-  statusDiv.style.color = '#666';
-  statusDiv.style.marginBottom = '8px';
-  hasilDataBox.appendChild(statusDiv);
-
-  // Container untuk data
+  statusDiv.style.cssText = `
+    font-size: 13px;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-weight: 500;
+  `;
+  
+  // Data container
   const dataDiv = document.createElement('div');
-  dataDiv.style.fontSize = '13px';
-  dataDiv.style.lineHeight = '1.4';
-  hasilDataBox.appendChild(dataDiv);
-
-  // Update berdasarkan state
-  if (data.status === 'loading') {
-    statusDiv.textContent = 'Memuat data dari database...';
-    statusDiv.style.color = '#2196F3';
-    dataDiv.innerHTML = '<div style="color:#666">Mohon tunggu...</div>';
-  } 
-  else if (data.status === 'error') {
-    statusDiv.textContent = 'Kesalahan koneksi';
-    statusDiv.style.color = '#F44336';
-    dataDiv.innerHTML = `<div style="color:#F44336">${data.message || 'Gagal terhubung ke server'}</div>`;
-  }
-  else if (data.status === 'success') {
-    if (!data.found) {
-      statusDiv.textContent = 'Data tidak ditemukan';
-      statusDiv.style.color = '#FF9800';
-      dataDiv.innerHTML = '<div style="color:#FF9800">Kode ini tidak ada di database</div>';
-    }
-    else if (!data.ai) {
-      statusDiv.textContent = 'Data ditemukan';
-      statusDiv.style.color = '#4CAF50';
-      dataDiv.innerHTML = '<div style="color:#666">Tidak ada data di kolom AI</div>';
-    }
-    else {
-      statusDiv.textContent = 'Data ditemukan';
-      statusDiv.style.color = '#4CAF50';
+  dataDiv.style.cssText = `
+    font-size: 13px;
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 5px;
+  `;
+  
+  // Set berdasarkan status
+  switch (result.status) {
+    case 'loading':
+      statusDiv.textContent = '⏳ Memuat data dari database...';
+      statusDiv.style.backgroundColor = '#e3f2fd';
+      statusDiv.style.color = '#0d47a1';
+      statusDiv.style.borderLeft = '4px solid #2196f3';
+      dataDiv.innerHTML = '<div style="color:#666; padding:10px; text-align:center;">Mohon tunggu...</div>';
+      break;
       
-      // Format data dari kolom AI (asumsi data dipisah newline)
-      const lines = data.ai.split(/\r?\n/).filter(Boolean);
+    case 'success':
+      statusDiv.textContent = '✅ Data ditemukan';
+      statusDiv.style.backgroundColor = '#e8f5e9';
+      statusDiv.style.color = '#1b5e20';
+      statusDiv.style.borderLeft = '4px solid #4caf50';
       
-      if (lines.length === 0) {
-        dataDiv.innerHTML = '<div style="color:#666">Tidak ada data di kolom AI</div>';
+      if (result.data && result.data.trim() !== '') {
+        // Format data dari kolom AI
+        const lines = result.data.split(/\r?\n/).filter(line => line.trim() !== '');
+        
+        if (lines.length === 0) {
+          const emptyMsg = document.createElement('div');
+          emptyMsg.style.cssText = 'color: #757575; font-style: italic; padding: 8px;';
+          emptyMsg.textContent = 'Tidak ada data yang ditampilkan';
+          dataDiv.appendChild(emptyMsg);
+        } else {
+          lines.forEach((line, index) => {
+            const lineDiv = document.createElement('div');
+            lineDiv.style.cssText = `
+              margin: 8px 0;
+              padding: 10px;
+              background: #f8f9fa;
+              border-radius: 4px;
+              border-left: 4px solid #4caf50;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            `;
+            
+            // Coba format khusus untuk label:value
+            if (line.includes(':') || line.includes('-') || line.includes('=')) {
+              lineDiv.textContent = line;
+            } else {
+              // Jika plain text, beri bullet
+              lineDiv.textContent = `• ${line}`;
+            }
+            
+            dataDiv.appendChild(lineDiv);
+          });
+        }
       } else {
-        lines.forEach(line => {
-          const p = document.createElement('div');
-          p.style.marginBottom = '6px';
-          p.style.padding = '4px 0';
-          p.style.borderBottom = '1px solid #eee';
-          p.innerText = line;
-          dataDiv.appendChild(p);
-        });
+        dataDiv.innerHTML = '<div style="color:#666; padding:8px;">Data kosong</div>';
       }
-    }
+      break;
+      
+    case 'empty':
+      statusDiv.textContent = 'ℹ️ Data ditemukan';
+      statusDiv.style.backgroundColor = '#fff3e0';
+      statusDiv.style.color = '#e65100';
+      statusDiv.style.borderLeft = '4px solid #ff9800';
+      dataDiv.innerHTML = '<div style="color:#666; padding:10px; text-align:center;">Tidak ada data di kolom AI</div>';
+      break;
+      
+    case 'notfound':
+      statusDiv.textContent = '🔍 Data tidak ditemukan';
+      statusDiv.style.backgroundColor = '#fff3e0';
+      statusDiv.style.color = '#e65100';
+      statusDiv.style.borderLeft = '4px solid #ff9800';
+      dataDiv.innerHTML = `
+        <div style="color:#e65100; padding:10px; text-align:center;">
+          <div style="margin-bottom:5px;">⚠️ Kode <strong>${address}</strong> tidak terdaftar</div>
+          <div style="font-size:12px; color:#757575;">Periksa kembali penulisan kode</div>
+        </div>
+      `;
+      break;
+      
+    case 'error':
+      statusDiv.textContent = '❌ Kesalahan';
+      statusDiv.style.backgroundColor = '#ffebee';
+      statusDiv.style.color = '#c62828';
+      statusDiv.style.borderLeft = '4px solid #f44336';
+      dataDiv.innerHTML = `
+        <div style="color:#c62828; padding:10px;">
+          <strong>Gagal mengambil data:</strong><br>
+          <span style="font-size:12px;">${result.message || 'Terjadi kesalahan tidak diketahui'}</span>
+        </div>
+      `;
+      break;
+      
+    default:
+      statusDiv.textContent = '❓ Status tidak diketahui';
+      statusDiv.style.backgroundColor = '#f5f5f5';
+      statusDiv.style.color = '#616161';
   }
+  
+  container.appendChild(statusDiv);
+  container.appendChild(dataDiv);
+  hasilDataBox.appendChild(container);
 }
 
+// ===============================
+// FUNGSI UTAMA: AMBIL DATA DARI API
+// ===============================
 async function fetchDataForAddress(address) {
-  if (!address) return;
+  if (!address || !address.trim()) {
+    console.log('❌ Address kosong');
+    return;
+  }
   
-  // Tampilkan loading state
-  renderHasilData(address, { status: 'loading' });
+  const cleanAddress = address.trim().toUpperCase();
+  console.log('🔍 Mencari data untuk:', cleanAddress);
+  
+  // Tampilkan loading
+  renderHasilData(cleanAddress, { status: 'loading' });
 
   try {
+    // URL API yang sudah terbukti berfungsi
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
+    
     // Encode address untuk URL
-    const encodedAddress = encodeURIComponent(address);
+    const encodedAddress = encodeURIComponent(cleanAddress);
     const url = `${API_URL}?address=${encodedAddress}`;
     
-    console.log('Fetching URL:', url); // Debug
+    console.log('🌐 Mengambil data dari:', url);
     
-    const res = await fetch(url, { 
+    // Tambahkan timestamp untuk menghindari cache
+    const fetchUrl = url + '&_t=' + Date.now();
+    
+    // Fetch data dengan timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik timeout
+    
+    const res = await fetch(fetchUrl, { 
       method: 'GET',
-      mode: 'cors'
+      mode: 'cors',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json'
+      }
     });
+    
+    clearTimeout(timeoutId);
 
-    console.log('Response status:', res.status); // Debug
+    console.log('📊 Status respons:', res.status, res.statusText);
     
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -270,50 +381,79 @@ async function fetchDataForAddress(address) {
 
     // Parse JSON
     const data = await res.json();
-    console.log('Response data:', data); // Debug
-
-    // Handle respons berdasarkan struktur baru
+    console.log('📦 Data diterima:', data);
+    
+    // ANALISIS RESPONS DARI API AWAL:
+    // Struktur API awal:
+    // 1. Jika ditemukan: { address: "...", ai: "..." }
+    // 2. Jika tidak ditemukan: { address: "...", error: "Data tidak ditemukan" }
+    // 3. Jika error lain: { error: "...", message: "..." }
+    
+    // Cek jika ada error property
     if (data.error) {
-      renderHasilData(address, { 
-        status: 'error', 
-        message: data.message || data.error 
-      });
-    } 
-    else if (data.found === false) {
-      renderHasilData(address, { 
-        status: 'success', 
-        found: false,
-        ai: '',
-        message: data.message 
-      });
+      if (data.error === 'Data tidak ditemukan') {
+        renderHasilData(cleanAddress, { 
+          status: 'notfound',
+          message: 'Kode tidak ditemukan di database'
+        });
+      } else {
+        renderHasilData(cleanAddress, { 
+          status: 'error', 
+          message: data.message || data.error || 'Error dari server'
+        });
+      }
+      return;
     }
-    else if (data.found === true) {
-      renderHasilData(address, { 
-        status: 'success', 
-        found: true,
-        ai: data.ai || '',
-        message: data.message 
-      });
+    
+    // Cek jika data ditemukan (ada property 'ai')
+    if (data.hasOwnProperty('ai')) {
+      const aiData = data.ai || '';
+      
+      if (aiData === '') {
+        renderHasilData(cleanAddress, { 
+          status: 'empty',
+          message: 'Data ditemukan tetapi kolom AI kosong',
+          data: ''
+        });
+      } else {
+        renderHasilData(cleanAddress, { 
+          status: 'success',
+          message: 'Data ditemukan',
+          data: aiData
+        });
+      }
+      return;
     }
-    else {
-      // Fallback untuk struktur lama
-      renderHasilData(address, { 
-        status: 'success', 
-        found: !!data.ai,
-        ai: data.ai || '',
-        message: data.message || 'Data ditemukan' 
-      });
-    }
+    
+    // Jika format tidak dikenali
+    console.warn('Format respons tidak dikenali:', data);
+    renderHasilData(cleanAddress, { 
+      status: 'error', 
+      message: 'Format respons tidak valid dari server'
+    });
 
   } catch (err) {
-    console.error('Gagal mengambil data:', err);
-    renderHasilData(address, { 
+    console.error('❌ Error fetch data:', err);
+    
+    // Deteksi jenis error
+    let errorMessage = 'Gagal mengambil data';
+    
+    if (err.name === 'AbortError') {
+      errorMessage = 'Timeout: Server tidak merespons dalam 10 detik';
+    } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      errorMessage = 'Gagal terhubung ke server. Periksa koneksi internet.';
+    } else if (err.message.includes('CORS')) {
+      errorMessage = 'Error CORS. Coba deploy ulang Google Apps Script.';
+    } else {
+      errorMessage = `Error: ${err.message}`;
+    }
+    
+    renderHasilData(cleanAddress, { 
       status: 'error', 
-      message: 'Tidak terkoneksi ke database. Periksa koneksi internet atau URL API.' 
+      message: errorMessage 
     });
   }
 }
-
   // ===============================
   // FOCUS KAVLING
   // ===============================
@@ -403,7 +543,46 @@ async function fetchDataForAddress(address) {
     // Panggil API untuk menampilkan ringkasan blok (uji koneksi)
     fetchDataForAddress(prefix);
   }
+// ===============================
+// FUNGSI TESTING (bisa dipanggil di Console)
+// ===============================
+window.testAPI = async function(kode) {
+  const testAddress = kode || 'KR_15';
+  console.log('🧪 Testing API dengan kode:', testAddress);
+  
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
+  const url = `${API_URL}?address=${encodeURIComponent(testAddress)}&_t=${Date.now()}`;
+  
+  console.log('URL:', url);
+  
+  try {
+    const res = await fetch(url);
+    console.log('Status:', res.status, res.statusText);
+    
+    const text = await res.text();
+    console.log('Raw response:', text);
+    
+    try {
+      const json = JSON.parse(text);
+      console.log('Parsed JSON:', json);
+      return json;
+    } catch (e) {
+      console.error('Gagal parse JSON:', e);
+      return text;
+    }
+  } catch (err) {
+    console.error('Fetch error:', err);
+    return null;
+  }
+};
 
+// Auto-test saat halaman dimuat (opsional)
+document.addEventListener('DOMContentLoaded', () => {
+  // Tunggu 2 detik lalu test koneksi
+  setTimeout(() => {
+    console.log('🚀 Script loaded. Test dengan: testAPI("KR_15") di Console');
+  }, 2000);
+});
   // ===============================
   // CLICK MAP (SYNC FIXED)
   // ===============================
