@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // SEARCH (BLOK + KAVLING)
+  // SEARCH (BLOK + KAVLING) DENGAN AUTO-SELECT
   // ===============================
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
@@ -178,54 +178,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!q) return;
 
     const upper = q.toUpperCase();
-// ===============================
-// AUTO-SELECT DROPDOWN
-// ===============================
-searchInput.addEventListener('input', () => {
-  const q = searchInput.value.trim().toLowerCase();
-  resultsBox.innerHTML = '';
-  if (!q) return;
 
-  const upper = q.toUpperCase();
+    // AUTO-SELECT: Jika query persis sama dengan salah satu item
+    const exactMatch = kavlingIndex.find(id => id.toUpperCase() === upper);
+    if (exactMatch) {
+      setTimeout(() => {
+        // Sembunyikan dropdown
+        resultsBox.innerHTML = '';
+        
+        if (exactMatch.includes('_')) {
+          focusKavling(exactMatch);
+        } else {
+          focusBlok(exactMatch);
+        }
+      }, 100);
+      return; // HENTIKAN eksekusi, jangan tampilkan dropdown
+    }
 
-  // AUTO-SELECT: Jika query persis sama dengan salah satu item
-  const exactMatch = kavlingIndex.find(id => id.toUpperCase() === upper);
-  if (exactMatch) {
-    setTimeout(() => {
-      if (exactMatch.includes('_')) {
-        focusKavling(exactMatch);
-      } else {
-        focusBlok(exactMatch);
-      }
-    }, 100);
-    return;
-  }
-
-  // BLOK OTOMATIS (kode yang sudah ada)
-  const blokItems = kavlingIndex.filter(id => id.startsWith(upper + '_'));
-  if (blokItems.length && !q.includes('_')) {
-    const liBlok = document.createElement('li');
-    liBlok.textContent = `${upper} (${blokItems.length} kavling)`;
-    liBlok.style.fontWeight = 'bold';
-    liBlok.onclick = () => focusBlok(upper);
-    resultsBox.appendChild(liBlok);
-  }
-
-  // KAVLING DETAIL (kode yang sudah ada)
-  kavlingIndex
-    .filter(id => id.toLowerCase().includes(q))
-    .slice(0, 20)
-    .forEach(name => {
-      const li = document.createElement('li');
-      li.textContent = name;
-      li.onclick = () => focusKavling(name);
-      resultsBox.appendChild(li);
-    });
-
-  if (!resultsBox.children.length) {
-    resultsBox.innerHTML = '<li style="color:#777">Tidak ditemukan</li>';
-  }
-});
     // BLOK OTOMATIS
     const blokItems = kavlingIndex.filter(id => id.startsWith(upper + '_'));
     if (blokItems.length && !q.includes('_')) {
@@ -235,52 +204,7 @@ searchInput.addEventListener('input', () => {
       liBlok.onclick = () => focusBlok(upper);
       resultsBox.appendChild(liBlok);
     }
-// ===============================
-// ENTER KEY SUPPORT
-// ===============================
-searchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    const query = searchInput.value.trim().toUpperCase();
-    
-    if (!query) return;
-    
-    // Tutup dropdown jika terbuka
-    resultsBox.innerHTML = '';
-    
-    // Cari berdasarkan tipe query
-    if (query.includes('_')) {
-      // Jika mengandung underscore, cari kavling spesifik
-      if (kavlingIndex.includes(query)) {
-        focusKavling(query);
-      } else {
-        // Jika tidak ditemukan, tampilkan pesan
-        hasilDataBox.innerHTML = `
-          <div style="padding:10px; background:#ffebee; border-radius:4px; color:#c62828;">
-            <strong>Kavling tidak ditemukan:</strong> ${query}
-          </div>
-        `;
-      }
-    } else {
-      // Jika tanpa underscore, cari blok
-      const blokItems = kavlingIndex.filter(id => id.startsWith(query + '_'));
-      if (blokItems.length > 0) {
-        focusBlok(query);
-      } else {
-        // Coba cari sebagai kavling tanpa underscore
-        if (kavlingIndex.includes(query)) {
-          focusKavling(query);
-        } else {
-          hasilDataBox.innerHTML = `
-            <div style="padding:10px; background:#ffebee; border-radius:4px; color:#c62828;">
-              <strong>Blok/Kavling tidak ditemukan:</strong> ${query}
-            </div>
-          `;
-        }
-      }
-    }
-  }
-});
+
     // KAVLING DETAIL
     kavlingIndex
       .filter(id => id.toLowerCase().includes(q))
@@ -294,6 +218,57 @@ searchInput.addEventListener('keydown', (e) => {
 
     if (!resultsBox.children.length) {
       resultsBox.innerHTML = '<li style="color:#777">Tidak ditemukan</li>';
+    }
+  });
+
+  // ===============================
+  // ENTER KEY SUPPORT
+  // ===============================
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const query = searchInput.value.trim().toUpperCase();
+      
+      if (!query) return;
+      
+      // Tutup dropdown jika terbuka
+      resultsBox.innerHTML = '';
+      
+      // Cari berdasarkan tipe query
+      if (query.includes('_')) {
+        // Jika mengandung underscore, cari kavling spesifik
+        if (kavlingIndex.includes(query)) {
+          focusKavling(query);
+        } else {
+          // Jika tidak ditemukan, tampilkan pesan
+          if (hasilDataBox) {
+            hasilDataBox.innerHTML = `
+              <div style="padding:10px; background:#ffebee; border-radius:4px; color:#c62828;">
+                <strong>Kavling tidak ditemukan:</strong> ${query}
+              </div>
+            `;
+          }
+        }
+      } else {
+        // Jika tanpa underscore, cari blok
+        const blokItems = kavlingIndex.filter(id => id.startsWith(query + '_'));
+        if (blokItems.length > 0) {
+          focusBlok(query);
+        } else {
+          // Coba cari sebagai kavling tanpa underscore
+          if (kavlingIndex.includes(query)) {
+            focusKavling(query);
+          } else {
+            if (hasilDataBox) {
+              hasilDataBox.innerHTML = `
+                <div style="padding:10px; background:#ffebee; border-radius:4px; color:#c62828;">
+                  <strong>Blok/Kavling tidak ditemukan:</strong> ${query}
+                </div>
+              `;
+            }
+          }
+        }
+      }
     }
   });
 
@@ -805,4 +780,4 @@ searchInput.addEventListener('keydown', (e) => {
     if (hasilDataBox) hasilDataBox.innerHTML = '';
   };
 
-}); 
+}); // <-- PENUTUP DOMContentLoaded
