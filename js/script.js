@@ -1,8 +1,8 @@
 // ===============================
-// FINAL CLEAN SCRIPT – SVG MAP
 // Search blok & kavling, zoom, pan, click sync
-// Perbaikan: case-insensitive search, simpan ID asli,
-// klik robust (closest), dan abaikan klik angka dalam kotak.
+// case-insensitive search, simpan ID asli,
+// klik robust (closest), abaikan klik angka dalam kotak,
+// fitur export (SVG / PNG) yang terpilih
 // ===============================
 
 let kavlingIndex = [];
@@ -36,6 +36,107 @@ function isNumericString(s) {
   return /^\d+$/.test(String(s).trim());
 }
 
+function downloadBlob(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ===============================
+// EXPORT: SVG (serialisasi viewBox saat ini)
+// ===============================
+function exportCurrentViewAsSVG(svgEl, filename = 'map-view.svg') {
+  // clone svg to avoid mutating original
+  const clone = svgEl.cloneNode(true);
+
+  // set current viewBox on clone
+  clone.setAttribute('viewBox', `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`);
+
+  // inline computed styles for visible fills/strokes so exported SVG looks same
+  // iterate elements that may have inline styles applied by script
+  clone.querySelectorAll('[style]').forEach(el => {
+    // keep existing inline style
+  });
+
+  // serialize
+  const serializer = new XMLSerializer();
+  let svgString = serializer.serializeToString(clone);
+
+  // add XML prolog and namespace if missing
+  if (!svgString.match(/^<\?xml/)) {
+    svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
+  }
+  if (!svgString.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+
+  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  downloadBlob(blob, filename);
+}
+
+// ===============================
+// EXPORT: PNG (render current viewBox to canvas)
+// ===============================
+function exportCurrentViewAsPNG(svgEl, filename = 'map-view.png') {
+  // clone and set viewBox like SVG export
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('viewBox', `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`);
+
+  // ensure width/height for rasterization: use current svg client size or viewBox ratio
+  const rect = svgEl.getBoundingClientRect();
+  const width = Math.max(800, Math.round(rect.width)); // minimal width for quality
+  const height = Math.max(600, Math.round(rect.height));
+
+  // serialize clone
+  const serializer = new XMLSerializer();
+  let svgString = serializer.serializeToString(clone);
+  if (!svgString.match(/^<\?xml/)) {
+    svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
+  }
+  if (!svgString.includes('xmlns="http://www.w3.org/2000/svg"')) {
+    svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  const img = new Image();
+  // handle CORS-safe rendering
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      // white background (optional)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // draw image scaled to canvas
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(blob => {
+        if (blob) downloadBlob(blob, filename);
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    } catch (err) {
+      console.error('Gagal mengekspor PNG', err);
+      URL.revokeObjectURL(url);
+    }
+  };
+  img.onerror = (err) => {
+    console.error('Gagal memuat SVG untuk konversi PNG', err);
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
 // ===============================
 // DOM READY
 // ===============================
@@ -44,8 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search');
   const resultsBox = document.getElementById('search-results');
   const resetBtn = document.getElementById('resetZoom');
+
+  // tombol zoom lama (jika ada) akan diubah fungsinya menjadi export
   const zoomInBtn = document.getElementById('zoomIn');
   const zoomOutBtn = document.getElementById('zoomOut');
+
+  // juga dukung tombol khusus export jika sudah ada
+  const exportSvgBtn = document.getElementById('exportSvg');
+  const exportPngBtn = document.getElementById('exportPng');
 
   searchInput.disabled = true;
 
@@ -82,6 +189,26 @@ document.addEventListener('DOMContentLoaded', () => {
       )].sort((a, b) => a.localeCompare(b));
 
       searchInput.disabled = false;
+
+      // Setup export buttons behavior:
+      // Jika ada tombol zoomIn/zoomOut, ubah label & aksi menjadi export
+      const svgElement = svg; // capture
+
+      if (zoomInBtn) {
+        zoomInBtn.textContent = 'Export SVG';
+        zoomInBtn.title = 'Export tampilan saat ini sebagai file SVG';
+        zoomInBtn.onclick = () => exportCurrentViewAsSVG(svgElement, 'map-view.svg');
+      } else if (exportSvgBtn) {
+        exportSvgBtn.onclick = () => exportCurrentViewAsSVG(svgElement, 'map-view.svg');
+      }
+
+      if (zoomOutBtn) {
+        zoomOutBtn.textContent = 'Export PNG';
+        zoomOutBtn.title = 'Export tampilan saat ini sebagai file PNG';
+        zoomOutBtn.onclick = () => exportCurrentViewAsPNG(svgElement, 'map-view.png');
+      } else if (exportPngBtn) {
+        exportPngBtn.onclick = () => exportCurrentViewAsPNG(svgElement, 'map-view.png');
+      }
     })
     .catch(err => {
       console.error('Gagal memuat sitemap.svg', err);
@@ -289,21 +416,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applyViewBox(map.querySelector('svg'));
   }, { passive: false });
-
-  // ===============================
-  // ZOOM BUTTON
-  // ===============================
-  zoomInBtn.onclick = () => {
-    if (!lastFocusedEl) return;
-    zoomPadding = (zoomPadding || Math.max(lastFocusedEl.getBBox().width, lastFocusedEl.getBBox().height) * 0.6) * 0.8;
-    focusKavling(lastFocusedEl.id);
-  };
-
-  zoomOutBtn.onclick = () => {
-    if (!lastFocusedEl) return;
-    zoomPadding = (zoomPadding || Math.max(lastFocusedEl.getBBox().width, lastFocusedEl.getBBox().height) * 0.6) * 1.25;
-    focusKavling(lastFocusedEl.id);
-  };
 
   // ===============================
   // RESET
