@@ -361,7 +361,7 @@ async function fetchDataForAddress(address) {
     
     const res = await fetch(fetchUrl, { 
       method: 'GET',
-      mode: 'no-cors',
+      mode: 'cors',
       signal: controller.signal,
           });
     
