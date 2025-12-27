@@ -179,23 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const upper = q.toUpperCase();
 
-    // AUTO-SELECT: Jika query persis sama dengan salah satu item
-    const exactMatch = kavlingIndex.find(id => id.toUpperCase() === upper);
-    if (exactMatch) {
-      setTimeout(() => {
-        // Sembunyikan dropdown
-        resultsBox.innerHTML = '';
-        
-        if (exactMatch.includes('_')) {
-          focusKavling(exactMatch);
-        } else {
-          focusBlok(exactMatch);
-        }
-      }, 100);
-      return; // HENTIKAN eksekusi, jangan tampilkan dropdown
-    }
-
-    // BLOK OTOMATIS
+      // BLOK OTOMATIS
     const blokItems = kavlingIndex.filter(id => id.startsWith(upper + '_'));
     if (blokItems.length && !q.includes('_')) {
       const liBlok = document.createElement('li');
