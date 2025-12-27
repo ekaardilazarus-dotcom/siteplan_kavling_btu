@@ -69,44 +69,24 @@ h1 {
 }
 
 /* =============================== */
-/* PERBAIKAN SEARCH CONTAINER */
+/* CONTAINER TOMBOL DI KIRI */
 /* =============================== */
-#search-container {
+#button-container {
   position: fixed;
   top: 20px;
-  right: 20px;
-  width: 380px; /* diperbesar untuk tombol tambahan */
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
   background: #fff;
   padding: 12px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  width: 200px;
 }
 
-/* PERBAIKAN: Row utama */
-.search-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: nowrap; /* UBAH: dari wrap ke nowrap */
-}
-
-/* Input pencarian */
-#search {
-  flex: 1;
-  min-width: 150px;
-  padding: 10px 12px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #f8f9fa;
-  box-sizing: border-box;
-}
-
-/* Tombol-tombol */
+/* Tombol-tombol di container kiri */
 #resetZoom,
 .cert-btn {
   padding: 10px 16px;
@@ -121,7 +101,8 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  flex-shrink: 0; /* TAMBAHKAN: agar tidak mengecil */
+  width: 100%;
+  text-align: center;
 }
 
 /* Tombol Lihat Semua Area */
@@ -140,7 +121,6 @@ h1 {
 .cert-btn {
   background: #2196F3;
   color: white;
-  min-width: 180px; /* TAMBAHKAN: Lebar minimum */
 }
 
 .cert-btn:hover {
@@ -149,11 +129,41 @@ h1 {
   box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2);
 }
 
-/* HAPUS: Baris kedua untuk tombol jika wrap - TIDAK DIPERLUKAN LAGI */
-/* .search-row:last-child {
-  margin-top: 8px;
-  justify-content: flex-start;
-} */
+/* =============================== */
+/* SEARCH CONTAINER DI KANAN */
+/* =============================== */
+#search-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 380px;
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Row untuk input search saja */
+.search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Input pencarian */
+#search {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f8f9fa;
+  box-sizing: border-box;
+}
 
 /* dropdown hasil */
 #search-results {
@@ -187,7 +197,7 @@ h1 {
 /* hasil info di bawah kotak pencarian */
 .rekap-box {
   position: fixed;
-  top: 100px; /* sesuaikan jika perlu; kotak pencarian berada di top:20px */
+  top: 100px;
   right: 20px;
   width: 360px;
   max-height: 320px;
@@ -390,10 +400,10 @@ h1 {
   padding: 20px;
   background: #f8f9fa;
   display: flex;
-  justify-content: space-between; /* diubah dari flex-end ke space-between */
+  justify-content: space-between;
   gap: 12px;
   border-top: 1px solid #e0e0e0;
-  flex-wrap: wrap; /* tambahkan wrap untuk responsif */
+  flex-wrap: wrap;
 }
 
 .primary-btn {
@@ -433,7 +443,7 @@ h1 {
 
 /* Tombol Kembali ke Awal di dalam modal */
 #backToHome {
-  background: #FF9800 !important; /* !important untuk override warna default */
+  background: #FF9800 !important;
 }
 
 #backToHome:hover {
@@ -441,72 +451,62 @@ h1 {
 }
 
 /* =============================== */
-/* RESPONSIVE ADJUSTMENTS YANG DIPERBAIKI */
+/* RESPONSIVE ADJUSTMENTS */
 /* =============================== */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  /* Untuk tablet/layar sedang */
   #search-container {
-    width: calc(100% - 40px);
-    max-width: 400px;
+    width: 320px;
   }
   
-  /* PERBAIKAN: Atur layout untuk mobile */
-  .search-row {
-    flex-direction: row; /* Tetap row di mobile, tapi wrap */
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  
-  #search {
-    width: 100%;
-    order: 1; /* Input di atas */
-  }
-  
-  #resetZoom {
-    order: 2;
-    flex: 1;
-    min-width: auto;
-  }
-  
-  .cert-btn {
-    order: 3;
-    flex: 1;
-    min-width: auto;
-    justify-content: center;
-    padding: 10px 12px;
-    font-size: 12px;
+  #button-container {
+    width: 180px;
   }
   
   .rekap-box {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Untuk mobile */
+  #search-container {
+    position: static;
     width: calc(100% - 40px);
-    top: 140px; /* Turunkan karena search container lebih tinggi di mobile */
+    margin: 20px auto;
+    max-width: 400px;
   }
   
-  .modal-body {
-    flex-direction: column;
+  #button-container {
+    position: static;
+    width: calc(100% - 40px);
+    margin: 20px auto;
+    max-width: 400px;
+    order: 1; /* Tombol di atas */
   }
   
-  .cert-column {
-    min-width: 100%;
+  .rekap-box {
+    position: static;
+    width: calc(100% - 40px);
+    margin: 20px auto;
+    max-width: 400px;
   }
   
-  .modal-footer {
-    flex-direction: column;
+  h1 {
+    font-size: 22px;
+    margin: 15px;
   }
   
-  .modal-footer button {
-    width: 100%;
+  #map {
+    margin-top: 0;
+    height: 60vh;
   }
 }
 
 /* PERBAIKAN TAMBAHAN: Untuk layar sangat kecil */
 @media (max-width: 480px) {
   .cert-btn span:last-child {
-    display: none; /* Sembunyikan teks, tampilkan hanya icon */
-  }
-  
-  .cert-btn {
-    min-width: 40px;
-    padding: 10px;
+    display: none;
   }
   
   .cert-btn::after {
