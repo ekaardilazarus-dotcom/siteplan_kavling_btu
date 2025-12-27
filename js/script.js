@@ -345,47 +345,6 @@ async function fetchDataForAddress(address) {
   // Tampilkan loading
   renderHasilData(cleanAddress, { status: 'loading' });
 
-  try {
-    // URL API yang sudah terbukti berfungsi
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
-    
-    // Encode address untuk URL
-    const encodedAddress = encodeURIComponent(cleanAddress);
-    const url = `${API_URL}?address=${encodedAddress}`;
-    
-    console.log('🌐 Mengambil data dari:', url);
-    
-    // Tambahkan timestamp untuk menghindari cache
-    const fetchUrl = url + '&_t=' + Date.now();
-    
-    // Fetch data dengan timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik timeout
-    
-    const res = await fetch(fetchUrl, { 
-      method: 'GET',
-      mode: 'cors',
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-    
-    clearTimeout(timeoutId);
-
-    console.log('📊 Status respons:', res.status, res.statusText);
-    
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    // Parse JSON
-    const data = await res.json();
-    console.log('📦 Data diterima:', data);
-    
-    // ANALISIS RESPONS DARI API AWAL:
-// Di dalam fetchDataForAddress, setelah const data = await res.json();
-
 // Handle berdasarkan status dari API baru
 switch (data.status) {
   case 'success':
