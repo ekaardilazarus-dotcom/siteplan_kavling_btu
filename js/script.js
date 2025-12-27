@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.add('loading');
     }, 500);
 
-    fetch('sitemap.svg?v=' + Date.now())
+    fetch('sitemap.svg?v=' + Date.now(), { cache: 'no-store' })
       .then(r => r.text())
       .then(svgText => {
         clearTimeout(loadTimeout);
