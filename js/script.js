@@ -128,7 +128,45 @@ document.addEventListener('DOMContentLoaded', () => {
         map.innerHTML = '<div style="padding:40px;text-align:center;color:#666">Gagal memuat peta. Silakan refresh halaman.</div>';
       });
   }
-
+  // MODAL SERTIFIKAT
+  // ===============================
+  
+  // Buka modal
+  document.getElementById('searchByCertificate')?.addEventListener('click', () => {
+    document.getElementById('certificateModal').style.display = 'flex';
+  });
+  
+  // Tutup modal
+  document.querySelector('.close-modal')?.addEventListener('click', () => {
+    document.getElementById('certificateModal').style.display = 'none';
+  });
+  
+  document.getElementById('closeModal')?.addEventListener('click', () => {
+    document.getElementById('certificateModal').style.display = 'none';
+  });
+  
+  // Tutup modal kalau klik di luar konten
+  document.getElementById('certificateModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'certificateModal') {
+      document.getElementById('certificateModal').style.display = 'none';
+    }
+  });
+  
+  // Tombol bersihkan
+  document.getElementById('clearAll')?.addEventListener('click', () => {
+    document.querySelectorAll('.cert-input').forEach(input => input.value = '');
+    document.getElementById('certificateResults').innerHTML = 
+      '<p class="placeholder">Hasil akan ditampilkan di sini...</p>';
+  });
+  
+  // Tombol kembali ke awal (dalam modal)
+  document.getElementById('backToHome')?.addEventListener('click', () => {
+    // Tutup modal
+    document.getElementById('certificateModal').style.display = 'none';
+    // Panggil fungsi reset
+    document.getElementById('resetZoom').click();
+  });
+});
   // ===============================
   // SEARCH (BLOK + KAVLING)
   // ===============================
