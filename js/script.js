@@ -4,7 +4,7 @@
 // Menambahkan: fetch data dari API dan render hasil di #hasilData (uji koneksi)
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxJlk6tZ5kFfFFlLwaSXXh6VBqev3KcX_DkhGq_fcW85bfHR-1iK_9ABmu9264_tLuo/exec';
 
 let kavlingIndex = [];
 let originalViewBox = null;
