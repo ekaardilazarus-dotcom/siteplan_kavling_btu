@@ -100,8 +100,7 @@ h1 {
 
 /* Tombol-tombol */
 #resetZoom,
-.cert-btn,
-.home-btn {
+.cert-btn {
   padding: 10px 16px;
   font-size: 13px;
   border: none;
@@ -139,8 +138,8 @@ h1 {
   box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2);
 }
 
-/* Tombol Kembali ke Awal */
-.home-btn {
+/* HAPUS styling .home-btn dari sini (karena sudah dipindah ke modal) */
+/* .home-btn {
   background: #FF9800;
   color: white;
 }
@@ -149,7 +148,7 @@ h1 {
   background: #F57C00;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(255, 152, 0, 0.2);
-}
+} */
 
 /* Baris kedua untuk tombol jika wrap */
 .search-row:last-child {
@@ -392,9 +391,10 @@ h1 {
   padding: 20px;
   background: #f8f9fa;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between; /* diubah dari flex-end ke space-between */
   gap: 12px;
   border-top: 1px solid #e0e0e0;
+  flex-wrap: wrap; /* tambahkan wrap untuk responsif */
 }
 
 .primary-btn {
@@ -423,10 +423,22 @@ h1 {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .secondary-btn:hover {
   background: #616161;
+}
+
+/* Tombol Kembali ke Awal di dalam modal */
+#backToHome {
+  background: #FF9800 !important; /* !important untuk override warna default */
+}
+
+#backToHome:hover {
+  background: #F57C00 !important;
 }
 
 /* Responsive adjustments */
@@ -451,5 +463,13 @@ h1 {
   
   .cert-column {
     min-width: 100%;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .modal-footer button {
+    width: 100%;
   }
 }
