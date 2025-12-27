@@ -1,7 +1,13 @@
+//### Script lengkap (gabungan dan penambahan fitur popup data di bawah kotak pencarian)
+
+```javascript
 // ===============================
 // FINAL CLEAN SCRIPT – SVG MAP
 // Search blok & kavling, zoom, pan, click sync
+// Menambahkan: fetch data dari API dan render hasil di #hasilData
 // ===============================
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
 
 let kavlingIndex = [];
 let originalViewBox = null;
@@ -32,6 +38,16 @@ function clearHighlight() {
     .forEach(el => el.style.cssText = '');
 }
 
+// sanitize sederhana untuk mencegah injeksi HTML
+function sanitizeText(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ===============================
 // DOM READY
 // ===============================
@@ -40,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search');
   const resultsBox = document.getElementById('search-results');
   const resetBtn = document.getElementById('resetZoom');
+  const hasilDataBox = document.getElementById('hasilData');
 
   searchInput.disabled = true;
 
@@ -48,7 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   function setupSVG(container) {
     const svg = container.querySelector('svg');
-    
+    if (!svg) return;
+
     svg.removeAttribute('width');
     svg.removeAttribute('height');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
@@ -73,15 +91,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const ids = container.querySelectorAll('[id]');
     kavlingIndex = [];
     const seen = new Set();
-    
+
     ids.forEach(el => {
       const id = el.id.trim().toUpperCase();
-      if (id && /^(GA|UJ|KR|M)/.test(id) && !seen.has(id)) {
+      if (id && /^(GA|UJ|KR|M|BLOK)/.test(id) && !seen.has(id)) {
         seen.add(id);
         kavlingIndex.push(id);
       }
     });
-    
+
     kavlingIndex.sort((a, b) => a.localeCompare(b, 'id'));
     isSvgLoaded = true;
   }
@@ -155,6 +173,61 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
+  // TAMPILKAN DATA DARI DATABASE
+  // ===============================
+  function renderHasilData(address, rawText) {
+    if (!hasilDataBox) return;
+    hasilDataBox.innerHTML = ''; // reset
+
+    const header = document.createElement('div');
+    header.style.fontWeight = '700';
+    header.style.marginBottom = '6px';
+    header.textContent = `Alamat: ${address}`;
+    hasilDataBox.appendChild(header);
+
+    if (!rawText) {
+      const empty = document.createElement('div');
+      empty.style.color = '#666';
+      empty.textContent = 'Tidak ada data.';
+      hasilDataBox.appendChild(empty);
+      return;
+    }
+
+    // Pecah berdasarkan newline (\r\n, \n)
+    const lines = String(rawText).split(/\r?\n/).filter(Boolean);
+    lines.forEach(line => {
+      const p = document.createElement('div');
+      p.style.marginBottom = '6px';
+      p.innerHTML = sanitizeText(line);
+      hasilDataBox.appendChild(p);
+    });
+  }
+
+  async function fetchDataForAddress(address) {
+    if (!address) return;
+    if (hasilDataBox) {
+      hasilDataBox.innerHTML = '<div style="color:#333">Memuat data...</div>';
+    }
+
+    try {
+      const url = `${API_URL}?address=${encodeURIComponent(address)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Network response not ok');
+
+      const data = await res.json();
+
+      // Cek beberapa kemungkinan struktur respons
+      const aiText = data.ai ?? data.AI ?? data.ai_text ?? (Array.isArray(data) && data[0] && (data[0].ai ?? data[0].AI)) ?? '';
+      renderHasilData(address, aiText);
+    } catch (err) {
+      console.error('Gagal mengambil data:', err);
+      if (hasilDataBox) {
+        hasilDataBox.innerHTML = '<div style="color:#a00">Gagal memuat data. Coba lagi.</div>';
+      }
+    }
+  }
+
+  // ===============================
   // FOCUS KAVLING
   // ===============================
   function focusKavling(id) {
@@ -189,6 +262,9 @@ document.addEventListener('DOMContentLoaded', () => {
     lastFocusedEl = el;
     searchInput.value = id;
     applyViewBox(svg);
+
+    // Panggil API untuk menampilkan data detail kavling
+    fetchDataForAddress(id);
   }
 
   // ===============================
@@ -236,6 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
     zoomPadding = null;
     searchInput.value = prefix;
     applyViewBox(svg);
+
+    // Panggil API untuk menampilkan ringkasan blok (mengirim prefix)
+    fetchDataForAddress(prefix);
   }
 
   // ===============================
@@ -245,23 +324,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isDragging) return;
 
     let t = e.target;
-    
+
     // Cari elemen dengan ID yang valid
     while (t && t !== map) {
       if (t.id && /^(GA|UJ|KR|M|BLOK)/i.test(t.id)) {
         const id = t.id.toUpperCase();
         resultsBox.innerHTML = '';
-        
+
         // Isi kotak pencarian
         searchInput.value = id;
-        
+
         // Fokus berdasarkan tipe
         if (id.includes('_')) {
           focusKavling(id);
         } else {
           focusBlok(id);
         }
-        
+
         return;
       }
       t = t.parentElement;
@@ -326,14 +405,15 @@ document.addEventListener('DOMContentLoaded', () => {
   resetBtn.onclick = () => {
     const svg = map.querySelector('svg');
     clearHighlight();
-    svg.setAttribute('viewBox', originalViewBox);
-    viewBoxState = parseViewBox(originalViewBox);
+    if (svg && originalViewBox) {
+      svg.setAttribute('viewBox', originalViewBox);
+      viewBoxState = parseViewBox(originalViewBox);
+    }
     lastFocusedEl = null;
     zoomPadding = null;
     searchInput.value = '';
     resultsBox.innerHTML = '';
+    if (hasilDataBox) hasilDataBox.innerHTML = '';
   };
 });
-
-// DATABASE API (jika diperlukan)
-const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
+```
