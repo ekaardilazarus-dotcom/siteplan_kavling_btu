@@ -18,6 +18,12 @@ let svgCache = null;
 let isSvgLoaded = false;
 
 // ===============================
+// CACHE SYSTEM
+// ===============================
+const searchCache = new Map();
+const CACHE_DURATION = 10 * 60 * 1000; // 10 menit
+
+// ===============================
 // HELPERS
 // ===============================
 function parseViewBox(vb) {
@@ -306,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===============================
-  // FUNGSI UTAMA: AMBIL DATA DARI API
+  // FUNGSI UTAMA: AMBIL DATA DARI API (DENGAN CACHE)
   // ===============================
   async function fetchDataForAddress(address) {
     if (!address || !address.trim()) {
@@ -317,7 +323,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const cleanAddress = address.trim().toUpperCase();
     console.log('🔍 Mencari data untuk:', cleanAddress);
     
-    // Tampilkan loading
+    // CEK CACHE PERTAMA
+    const cached = searchCache.get(cleanAddress);
+    if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+      console.log('⚡ HIT CACHE:', cleanAddress);
+      renderHasilData(cleanAddress, {
+        status: 'success',
+        data: cached.data,
+        message: 'Data ditemukan (Cached)'
+      });
+      return; // Jangan lanjut fetch API
+    }
+    
+    // Tampilkan loading jika tidak ada di cache
     renderHasilData(cleanAddress, { status: 'loading' });
 
     try {
@@ -354,6 +372,15 @@ document.addEventListener('DOMContentLoaded', () => {
       // Parse JSON
       const data = await res.json();
       console.log('📦 Data diterima:', data);
+      
+      // SIMPAN KE CACHE jika success
+      if (data.status === 'success' && data.data) {
+        console.log('💾 Menyimpan ke cache:', cleanAddress);
+        searchCache.set(cleanAddress, {
+          data: data.data || '',
+          timestamp: Date.now()
+        });
+      }
       
       // HANDLE BERDASARKAN STATUS DARI API BARU
       switch (data.status) {
@@ -461,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.value = id;
     applyViewBox(svg);
 
-    // Panggil API
+    // Panggil API dengan cache
     fetchDataForAddress(id);
   }
 
@@ -511,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.value = prefix;
     applyViewBox(svg);
 
-    // Panggil API
+    // Panggil API dengan cache
     fetchDataForAddress(prefix);
   }
 
