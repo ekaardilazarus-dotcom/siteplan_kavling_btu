@@ -361,12 +361,9 @@ async function fetchDataForAddress(address) {
     
     const res = await fetch(fetchUrl, { 
       method: 'GET',
-      mode: 'cors',
+      mode: 'no-cors',
       signal: controller.signal,
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+          });
     
     clearTimeout(timeoutId);
 
