@@ -384,12 +384,54 @@ async function fetchDataForAddress(address) {
     console.log('📦 Data diterima:', data);
     
     // ANALISIS RESPONS DARI API AWAL:
-    // Struktur API awal:
-    // 1. Jika ditemukan: { address: "...", ai: "..." }
-    // 2. Jika tidak ditemukan: { address: "...", error: "Data tidak ditemukan" }
-    // 3. Jika error lain: { error: "...", message: "..." }
+// Di dalam fetchDataForAddress, setelah const data = await res.json();
+
+// Handle berdasarkan status dari API baru
+switch (data.status) {
+  case 'success':
+    renderHasilData(cleanAddress, { 
+      status: 'success',
+      message: data.message || 'Data ditemukan',
+      data: data.data || ''  // PERHATIAN: 'data' bukan 'ai'
+    });
+    break;
     
-    // Cek jika ada error property
+  case 'empty':
+    renderHasilData(cleanAddress, { 
+      status: 'empty',
+      message: data.message || 'Data ditemukan tetapi kolom kosong',
+      data: data.data || ''
+    });
+    break;
+    
+  case 'not_found':
+    renderHasilData(cleanAddress, { 
+      status: 'notfound',
+      message: data.message || 'Kode tidak ditemukan'
+    });
+    break;
+    
+  case 'error':
+    renderHasilData(cleanAddress, { 
+      status: 'error', 
+      message: data.message || 'Error dari server'
+    });
+    break;
+    
+  default:
+    // Fallback untuk format lama
+    if (data.error) {
+      renderHasilData(cleanAddress, { 
+        status: 'error', 
+        message: data.error
+      });
+    } else {
+      renderHasilData(cleanAddress, { 
+        status: 'error', 
+        message: 'Format respons tidak dikenal'
+      });
+    }
+}
     if (data.error) {
       if (data.error === 'Data tidak ditemukan') {
         renderHasilData(cleanAddress, { 
