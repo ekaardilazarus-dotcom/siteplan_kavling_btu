@@ -345,93 +345,87 @@ async function fetchDataForAddress(address) {
   // Tampilkan loading
   renderHasilData(cleanAddress, { status: 'loading' });
 
-// Handle berdasarkan status dari API baru
-switch (data.status) {
-  case 'success':
-    renderHasilData(cleanAddress, { 
-      status: 'success',
-      message: data.message || 'Data ditemukan',
-      data: data.data || ''  // PERHATIAN: 'data' bukan 'ai'
-    });
-    break;
+  try {
+    // Encode address untuk URL
+    const encodedAddress = encodeURIComponent(cleanAddress);
+    const url = `${API_URL}?address=${encodedAddress}`;
     
-  case 'empty':
-    renderHasilData(cleanAddress, { 
-      status: 'empty',
-      message: data.message || 'Data ditemukan tetapi kolom kosong',
-      data: data.data || ''
-    });
-    break;
+    console.log('🌐 Mengambil data dari:', url);
     
-  case 'not_found':
-    renderHasilData(cleanAddress, { 
-      status: 'notfound',
-      message: data.message || 'Kode tidak ditemukan'
-    });
-    break;
+    // Tambahkan timestamp untuk menghindari cache
+    const fetchUrl = url + '&_t=' + Date.now();
     
-  case 'error':
-    renderHasilData(cleanAddress, { 
-      status: 'error', 
-      message: data.message || 'Error dari server'
-    });
-    break;
+    // Fetch data dengan timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 detik timeout (karena API lambat)
     
-  default:
-    // Fallback untuk format lama
-    if (data.error) {
-      renderHasilData(cleanAddress, { 
-        status: 'error', 
-        message: data.error
-      });
-    } else {
-      renderHasilData(cleanAddress, { 
-        status: 'error', 
-        message: 'Format respons tidak dikenal'
-      });
-    }
-}
-    if (data.error) {
-      if (data.error === 'Data tidak ditemukan') {
-        renderHasilData(cleanAddress, { 
-          status: 'notfound',
-          message: 'Kode tidak ditemukan di database'
-        });
-      } else {
-        renderHasilData(cleanAddress, { 
-          status: 'error', 
-          message: data.message || data.error || 'Error dari server'
-        });
+    const res = await fetch(fetchUrl, { 
+      method: 'GET',
+      mode: 'cors',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json'
       }
-      return;
-    }
+    });
     
-    // Cek jika data ditemukan (ada property 'ai')
-    if (data.hasOwnProperty('ai')) {
-      const aiData = data.ai || '';
-      
-      if (aiData === '') {
-        renderHasilData(cleanAddress, { 
-          status: 'empty',
-          message: 'Data ditemukan tetapi kolom AI kosong',
-          data: ''
-        });
-      } else {
+    clearTimeout(timeoutId);
+
+    console.log('📊 Status respons:', res.status, res.statusText);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+
+    // Parse JSON
+    const data = await res.json();
+    console.log('📦 Data diterima:', data);
+    
+    // HANDLE BERDASARKAN STATUS DARI API BARU
+    switch (data.status) {
+      case 'success':
         renderHasilData(cleanAddress, { 
           status: 'success',
-          message: 'Data ditemukan',
-          data: aiData
+          message: data.message || 'Data ditemukan',
+          data: data.data || ''  // PERHATIAN: 'data' bukan 'ai'
         });
-      }
-      return;
+        break;
+        
+      case 'empty':
+        renderHasilData(cleanAddress, { 
+          status: 'empty',
+          message: data.message || 'Data ditemukan tetapi kolom kosong',
+          data: data.data || ''
+        });
+        break;
+        
+      case 'not_found':
+        renderHasilData(cleanAddress, { 
+          status: 'notfound',
+          message: data.message || 'Kode tidak ditemukan'
+        });
+        break;
+        
+      case 'error':
+        renderHasilData(cleanAddress, { 
+          status: 'error', 
+          message: data.message || 'Error dari server'
+        });
+        break;
+        
+      default:
+        // Fallback untuk format lama
+        if (data.error) {
+          renderHasilData(cleanAddress, { 
+            status: 'error', 
+            message: data.error
+          });
+        } else {
+          renderHasilData(cleanAddress, { 
+            status: 'error', 
+            message: 'Format respons tidak dikenal'
+          });
+        }
     }
-    
-    // Jika format tidak dikenali
-    console.warn('Format respons tidak dikenali:', data);
-    renderHasilData(cleanAddress, { 
-      status: 'error', 
-      message: 'Format respons tidak valid dari server'
-    });
 
   } catch (err) {
     console.error('❌ Error fetch data:', err);
@@ -440,7 +434,7 @@ switch (data.status) {
     let errorMessage = 'Gagal mengambil data';
     
     if (err.name === 'AbortError') {
-      errorMessage = 'Timeout: Server tidak merespons dalam 10 detik';
+      errorMessage = 'Timeout: Server tidak merespons dalam 15 detik';
     } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
       errorMessage = 'Gagal terhubung ke server. Periksa koneksi internet.';
     } else if (err.message.includes('CORS')) {
@@ -455,6 +449,7 @@ switch (data.status) {
     });
   }
 }
+
   // ===============================
   // FOCUS KAVLING
   // ===============================
@@ -491,7 +486,7 @@ switch (data.status) {
     searchInput.value = id;
     applyViewBox(svg);
 
-    // Panggil API untuk menampilkan data detail kavling (uji koneksi)
+    // Panggil API untuk menampilkan data detail kavling
     fetchDataForAddress(id);
   }
 
@@ -541,49 +536,50 @@ switch (data.status) {
     searchInput.value = prefix;
     applyViewBox(svg);
 
-    // Panggil API untuk menampilkan ringkasan blok (uji koneksi)
+    // Panggil API untuk menampilkan ringkasan blok
     fetchDataForAddress(prefix);
   }
-// ===============================
-// FUNGSI TESTING (bisa dipanggil di Console)
-// ===============================
-window.testAPI = async function(kode) {
-  const testAddress = kode || 'KR_15';
-  console.log('🧪 Testing API dengan kode:', testAddress);
-  
-  const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
-  const url = `${API_URL}?address=${encodeURIComponent(testAddress)}&_t=${Date.now()}`;
-  
-  console.log('URL:', url);
-  
-  try {
-    const res = await fetch(url);
-    console.log('Status:', res.status, res.statusText);
+
+  // ===============================
+  // FUNGSI TESTING (bisa dipanggil di Console)
+  // ===============================
+  window.testAPI = async function(kode) {
+    const testAddress = kode || 'UJ35_29';
+    console.log('🧪 Testing API dengan kode:', testAddress);
     
-    const text = await res.text();
-    console.log('Raw response:', text);
+    const url = `${API_URL}?address=${encodeURIComponent(testAddress)}&_t=${Date.now()}`;
+    
+    console.log('URL:', url);
     
     try {
-      const json = JSON.parse(text);
-      console.log('Parsed JSON:', json);
-      return json;
-    } catch (e) {
-      console.error('Gagal parse JSON:', e);
-      return text;
+      const res = await fetch(url);
+      console.log('Status:', res.status, res.statusText);
+      
+      const text = await res.text();
+      console.log('Raw response:', text);
+      
+      try {
+        const json = JSON.parse(text);
+        console.log('Parsed JSON:', json);
+        return json;
+      } catch (e) {
+        console.error('Gagal parse JSON:', e);
+        return text;
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+      return null;
     }
-  } catch (err) {
-    console.error('Fetch error:', err);
-    return null;
-  }
-};
+  };
 
-// Auto-test saat halaman dimuat (opsional)
-document.addEventListener('DOMContentLoaded', () => {
-  // Tunggu 2 detik lalu test koneksi
-  setTimeout(() => {
-    console.log('🚀 Script loaded. Test dengan: testAPI("KR_15") di Console');
-  }, 2000);
-});
+  // Auto-test saat halaman dimuat (opsional)
+  document.addEventListener('DOMContentLoaded', () => {
+    // Tunggu 2 detik lalu test koneksi
+    setTimeout(() => {
+      console.log('🚀 Script loaded. Test dengan: testAPI("UJ35_29") di Console');
+    }, 2000);
+  });
+
   // ===============================
   // CLICK MAP (SYNC FIXED)
   // ===============================
