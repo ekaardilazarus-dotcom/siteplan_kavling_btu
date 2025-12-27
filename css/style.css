@@ -1,20 +1,28 @@
 body {
   font-family: Arial, sans-serif;
   margin: 0;
+  background: #f5f5f5;
 }
 
 h1 {
-  margin: 16px;
+  margin: 20px;
+  text-align: center;
+  color: #333;
+  font-size: 28px;
 }
 
+/* Map container */
 #map {
   width: 100%;
-  height: 80vh; 
+  height: 75vh; /* dikurangi sedikit untuk memberi ruang */
   overflow: hidden;
   cursor: grab;
   border: 1px solid #ddd;
   margin-top: 16px;
   position: relative;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 #map:active {
@@ -65,9 +73,9 @@ h1 {
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 360px;
+  width: 380px; /* diperbesar untuk tombol tambahan */
   background: #fff;
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 9999;
@@ -77,28 +85,76 @@ h1 {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 #search {
   flex: 1;
-  padding: 8px 10px;
+  min-width: 150px;
+  padding: 10px 12px;
   font-size: 14px;
   border: 1px solid #ccc;
   border-radius: 4px;
+  background: #f8f9fa;
 }
 
-#resetZoom {
-  padding: 8px 16px;
-  font-size: 14px;
-  border: 1px solid #ccc;
+/* Tombol-tombol */
+#resetZoom,
+.cert-btn,
+.home-btn {
+  padding: 10px 16px;
+  font-size: 13px;
+  border: none;
   border-radius: 4px;
-  background: #f5f5f5;
   cursor: pointer;
   white-space: nowrap;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Tombol Lihat Semua Area */
+#resetZoom {
+  background: #4CAF50;
+  color: white;
 }
 
 #resetZoom:hover {
-  background: #e0e0e0;
+  background: #45a049;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
+}
+
+/* Tombol Cari berdasarkan Sertifikat */
+.cert-btn {
+  background: #2196F3;
+  color: white;
+}
+
+.cert-btn:hover {
+  background: #1976D2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2);
+}
+
+/* Tombol Kembali ke Awal */
+.home-btn {
+  background: #FF9800;
+  color: white;
+}
+
+.home-btn:hover {
+  background: #F57C00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 152, 0, 0.2);
+}
+
+/* Baris kedua untuk tombol jika wrap */
+.search-row:last-child {
+  margin-top: 8px;
+  justify-content: flex-start;
 }
 
 /* dropdown hasil */
@@ -129,7 +185,7 @@ h1 {
 #search-results li:hover {
   background: #f5f5f5;
 }
-/* hasil info di bawah kotak pencarian */
+
 /* hasil info di bawah kotak pencarian */
 .rekap-box {
   position: fixed;
@@ -160,3 +216,240 @@ h1 {
 .status-warning { color: #FF9800; }
 .status-error { color: #F44336; }
 .status-info { color: #2196F3; }
+
+/* MODAL SERTIFIKAT */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10001;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+
+.modal-content {
+  background: white;
+  width: 90%;
+  max-width: 900px;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal Header */
+.modal-header {
+  background: #2196F3;
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-modal {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+
+.close-modal:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 25px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.cert-column {
+  flex: 1;
+  min-width: 220px;
+}
+
+.cert-column h4 {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #2196F3;
+}
+
+.cert-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  transition: border 0.3s;
+  background: #f8f9fa;
+}
+
+.cert-input:focus {
+  outline: none;
+  border-color: #2196F3;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.search-btn {
+  width: 100%;
+  padding: 12px;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+}
+
+.search-btn:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+/* Hasil Pencarian */
+.results-section {
+  flex: 100%;
+  margin-top: 20px;
+}
+
+.results-section h4 {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #666;
+}
+
+.results-box {
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 150px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: 14px;
+}
+
+.results-box .placeholder {
+  color: #757575;
+  text-align: center;
+  font-style: italic;
+  margin: 0;
+  padding: 40px 0;
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: 20px;
+  background: #f8f9fa;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.primary-btn {
+  padding: 10px 24px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.primary-btn:hover {
+  background: #1976D2;
+}
+
+.secondary-btn {
+  padding: 10px 24px;
+  background: #757575;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.secondary-btn:hover {
+  background: #616161;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #search-container {
+    width: calc(100% - 40px);
+    max-width: 400px;
+  }
+  
+  .search-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  #search {
+    width: 100%;
+  }
+  
+  .modal-body {
+    flex-direction: column;
+  }
+  
+  .cert-column {
+    min-width: 100%;
+  }
+}
