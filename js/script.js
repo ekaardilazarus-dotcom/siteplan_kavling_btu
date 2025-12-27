@@ -12,6 +12,8 @@ let zoomPadding = null;
 let isPanning = false;
 let isDragging = false;
 let panStart = { x: 0, y: 0 };
+let svgCache = null;
+let isSvgLoaded = false;
 
 // ===============================
 // HELPERS
@@ -38,43 +40,83 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search');
   const resultsBox = document.getElementById('search-results');
   const resetBtn = document.getElementById('resetZoom');
-  const zoomInBtn = document.getElementById('zoomIn');
-  const zoomOutBtn = document.getElementById('zoomOut');
 
   searchInput.disabled = true;
 
   // ===============================
-  // LOAD SVG
+  // LOAD SVG DENGAN CACHE
   // ===============================
-  fetch('sitemap.svg')
-    .then(r => r.text())
-    .then(svgText => {
-      map.innerHTML = svgText;
-      const svg = map.querySelector('svg');
+  function setupSVG(container) {
+    const svg = container.querySelector('svg');
+    
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-      svg.removeAttribute('width');
-      svg.removeAttribute('height');
-      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
+    // Setup viewbox dengan fallback
+    try {
       originalViewBox = svg.getAttribute('viewBox');
       if (!originalViewBox) {
         const b = svg.getBBox();
         originalViewBox = `${b.x} ${b.y} ${b.width} ${b.height}`;
         svg.setAttribute('viewBox', originalViewBox);
       }
-
       viewBoxState = parseViewBox(originalViewBox);
+    } catch (e) {
+      console.warn("ViewBox error:", e);
+      originalViewBox = "0 0 1000 1000";
+      svg.setAttribute('viewBox', originalViewBox);
+      viewBoxState = parseViewBox(originalViewBox);
+    }
 
-      // indexing ID kavling
-      const ids = map.querySelectorAll('g[id], rect[id], path[id], polygon[id]');
-      kavlingIndex = [...new Set(
-        Array.from(ids)
-          .map(el => el.id.trim().toUpperCase())
-          .filter(id => /^(GA|UJ|KR|M)/.test(id))
-      )].sort((a, b) => a.localeCompare(b, 'id'));
-
-      searchInput.disabled = false;
+    // Indexing kavling
+    const ids = container.querySelectorAll('[id]');
+    kavlingIndex = [];
+    const seen = new Set();
+    
+    ids.forEach(el => {
+      const id = el.id.trim().toUpperCase();
+      if (id && /^(GA|UJ|KR|M)/.test(id) && !seen.has(id)) {
+        seen.add(id);
+        kavlingIndex.push(id);
+      }
     });
+    
+    kavlingIndex.sort((a, b) => a.localeCompare(b, 'id'));
+    isSvgLoaded = true;
+  }
+
+  // Gunakan cache jika sudah pernah load
+  if (svgCache) {
+    map.innerHTML = svgCache;
+    setupSVG(map);
+    searchInput.disabled = false;
+  } else {
+    // Load SVG dengan timeout untuk prevent hang
+    const loadTimeout = setTimeout(() => {
+      searchInput.placeholder = "Memuat peta...";
+      document.body.classList.add('loading');
+    }, 500);
+
+    fetch('sitemap.svg?v=' + Date.now())
+      .then(r => r.text())
+      .then(svgText => {
+        clearTimeout(loadTimeout);
+        document.body.classList.remove('loading');
+        svgCache = svgText;
+        map.innerHTML = svgText;
+        setupSVG(map);
+        searchInput.disabled = false;
+        searchInput.placeholder = "Cari kavling...";
+      })
+      .catch(err => {
+        clearTimeout(loadTimeout);
+        document.body.classList.remove('loading');
+        console.error("Gagal memuat SVG:", err);
+        searchInput.placeholder = "Gagal memuat peta";
+        map.innerHTML = '<div style="padding:40px;text-align:center;color:#666">Gagal memuat peta. Silakan refresh halaman.</div>';
+      });
+  }
 
   // ===============================
   // SEARCH (BLOK + KAVLING)
@@ -197,20 +239,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===============================
-  // CLICK MAP (SYNC)
+  // CLICK MAP (SYNC FIXED)
   // ===============================
   map.addEventListener('click', e => {
     if (isDragging) return;
 
     let t = e.target;
-    if (t.tagName.toLowerCase() === 'text') t = t.parentElement;
-    if (!t || !t.id) return;
-
-    const id = t.id.toUpperCase();
-    resultsBox.innerHTML = '';
-
-    if (id.includes('_')) focusKavling(id);
-    else focusBlok(id);
+    
+    // Cari elemen dengan ID yang valid
+    while (t && t !== map) {
+      if (t.id && /^(GA|UJ|KR|M|BLOK)/i.test(t.id)) {
+        const id = t.id.toUpperCase();
+        resultsBox.innerHTML = '';
+        
+        // Isi kotak pencarian
+        searchInput.value = id;
+        
+        // Fokus berdasarkan tipe
+        if (id.includes('_')) {
+          focusKavling(id);
+        } else {
+          focusBlok(id);
+        }
+        
+        return;
+      }
+      t = t.parentElement;
+    }
   });
 
   // ===============================
@@ -266,21 +321,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { passive: false });
 
   // ===============================
-  // ZOOM BUTTON
-  // ===============================
-  zoomInBtn.onclick = () => {
-    if (!lastFocusedEl) return;
-    zoomPadding *= 0.8;
-    focusKavling(lastFocusedEl.id);
-  };
-
-  zoomOutBtn.onclick = () => {
-    if (!lastFocusedEl) return;
-    zoomPadding *= 1.25;
-    focusKavling(lastFocusedEl.id);
-  };
-
-  // ===============================
   // RESET
   // ===============================
   resetBtn.onclick = () => {
@@ -295,8 +335,5 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 });
 
-
-
-//DATABASE
-//======
+// DATABASE API (jika diperlukan)
 const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
