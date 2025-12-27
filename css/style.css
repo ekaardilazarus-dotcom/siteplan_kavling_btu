@@ -129,3 +129,19 @@ h1 {
 #search-results li:hover {
   background: #f5f5f5;
 }
+/* hasil info di bawah kotak pencarian */
+.rekap-box {
+  position: fixed;
+  top: 100px; /* sesuaikan jika perlu; kotak pencarian berada di top:20px */
+  right: 20px;
+  width: 360px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  z-index: 9998;
+  font-size: 13px;
+  line-height: 1.4;
+}
