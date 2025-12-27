@@ -128,6 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
         map.innerHTML = '<div style="padding:40px;text-align:center;color:#666">Gagal memuat peta. Silakan refresh halaman.</div>';
       });
   }
+
+  // ===============================
   // MODAL SERTIFIKAT
   // ===============================
   
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Panggil fungsi reset
     document.getElementById('resetZoom').click();
   });
-});
+
   // ===============================
   // SEARCH (BLOK + KAVLING)
   // ===============================
@@ -710,4 +712,5 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsBox.innerHTML = '';
     if (hasilDataBox) hasilDataBox.innerHTML = '';
   };
-});
+
+}); // <-- INI SATU-SATUNYA PENUTUP DOMContentLoaded
