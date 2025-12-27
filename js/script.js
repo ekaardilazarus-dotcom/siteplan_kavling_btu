@@ -542,7 +542,6 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }
-
   // ===============================
   // FOCUS KAVLING
   // ===============================
@@ -763,5 +762,71 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsBox.innerHTML = '';
     if (hasilDataBox) hasilDataBox.innerHTML = '';
   };
-
+// ===============================
+// PENCARIAN SERTIFIKAT INDUK
+// ===============================
+document.getElementById('searchInduk')?.addEventListener('click', async () => {
+  const certNumber = document.getElementById('certInduk').value.trim();
+  
+  if (!certNumber) {
+    alert('Mohon masukkan nomor sertifikat induk');
+    return;
+  }
+  
+  console.log('🔍 Mencari sertifikat induk:', certNumber);
+  
+  // Tampilkan loading di modal
+  const resultsBox = document.getElementById('certificateResults');
+  resultsBox.innerHTML = '<div style="padding:20px;text-align:center;color:#666;">⏳ Mencari data...</div>';
+  
+  try {
+    // Panggil API khusus untuk sertifikat induk
+    const encodedCert = encodeURIComponent(certNumber);
+    const url = `${API_URL}?certificate=${encodedCert}&type=induk&_t=${Date.now()}`;
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    // Tampilkan hasil
+    if (data.status === 'success' && data.data) {
+      // Format hasil dengan layout yang sama seperti pencarian kavling
+      resultsBox.innerHTML = `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e0e0e0;color:#1a237e;">
+            <span>📋</span> Sertifikat Induk: <strong>${certNumber}</strong>
+          </div>
+          <div style="font-size:13px;margin-bottom:12px;padding:8px 10px;border-radius:6px;background:#e8f5e9;color:#1b5e20;border-left:4px solid #4caf50;">
+            ✅ Data ditemukan
+          </div>
+          <div style="font-family:monospace;font-size:12px;line-height:1.4;white-space:pre-wrap;background:#f9f9f9;padding:12px;border-radius:3px;border:1px solid #ddd;max-height:250px;overflow-y:auto;">
+            ${data.data.trim()}
+          </div>
+        </div>
+      `;
+    } else if (data.status === 'not_found') {
+      resultsBox.innerHTML = `
+        <div style="padding:20px;text-align:center;color:#e65100;">
+          <div style="font-size:16px;margin-bottom:10px;">🔍 Sertifikat tidak ditemukan</div>
+          <div style="font-size:14px;">Nomor sertifikat: <strong>${certNumber}</strong></div>
+        </div>
+      `;
+    } else {
+      resultsBox.innerHTML = `
+        <div style="padding:20px;text-align:center;color:#c62828;">
+          <div style="font-size:16px;margin-bottom:10px;">❌ Terjadi kesalahan</div>
+          <div style="font-size:14px;">${data.message || 'Gagal mengambil data'}</div>
+        </div>
+      `;
+    }
+    
+  } catch (error) {
+    console.error('❌ Error mencari sertifikat induk:', error);
+    resultsBox.innerHTML = `
+      <div style="padding:20px;text-align:center;color:#c62828;">
+        <div style="font-size:16px;margin-bottom:10px;">❌ Gagal terhubung ke server</div>
+        <div style="font-size:14px;">${error.message}</div>
+      </div>
+    `;
+  }
+});
 }); // <-- PENUTUP DOMContentLoaded
