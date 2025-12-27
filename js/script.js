@@ -1,10 +1,7 @@
-//### Script lengkap (gabungan dan penambahan fitur popup data di bawah kotak pencarian)
-
-```javascript
 // ===============================
 // FINAL CLEAN SCRIPT – SVG MAP
 // Search blok & kavling, zoom, pan, click sync
-// Menambahkan: fetch data dari API dan render hasil di #hasilData
+// Menambahkan: fetch data dari API dan render hasil di #hasilData (uji koneksi)
 // ===============================
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
@@ -30,6 +27,7 @@ function parseViewBox(vb) {
 }
 
 function applyViewBox(svg) {
+  if (!svg || !viewBoxState) return;
   svg.setAttribute('viewBox', `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`);
 }
 
@@ -38,7 +36,7 @@ function clearHighlight() {
     .forEach(el => el.style.cssText = '');
 }
 
-// sanitize sederhana untuk mencegah injeksi HTML
+// sanitize sederhana untuk mencegah injeksi HTML jika diperlukan
 function sanitizeText(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;')
@@ -173,9 +171,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // TAMPILKAN DATA DARI DATABASE
+  // TAMPILKAN DATA DARI DATABASE (UI + LOGIKA)
+  // - renderHasilData: tampilkan header segera, status, dan baris data
+  // - fetchDataForAddress: panggil API, tangani JSON/text, fallback pesan
   // ===============================
-  function renderHasilData(address, rawText) {
+  function renderHasilData(address, rawText, status = '') {
     if (!hasilDataBox) return;
     hasilDataBox.innerHTML = ''; // reset
 
@@ -185,6 +185,14 @@ document.addEventListener('DOMContentLoaded', () => {
     header.textContent = `Alamat: ${address}`;
     hasilDataBox.appendChild(header);
 
+    if (status) {
+      const st = document.createElement('div');
+      st.style.color = '#333';
+      st.style.marginBottom = '8px';
+      st.textContent = status;
+      hasilDataBox.appendChild(st);
+    }
+
     if (!rawText) {
       const empty = document.createElement('div');
       empty.style.color = '#666';
@@ -193,39 +201,55 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Pecah berdasarkan newline (\r\n, \n)
+    // Pecah berdasarkan newline dan tampilkan tiap baris
     const lines = String(rawText).split(/\r?\n/).filter(Boolean);
     lines.forEach(line => {
       const p = document.createElement('div');
       p.style.marginBottom = '6px';
-      p.innerHTML = sanitizeText(line);
+      p.innerText = line;
       hasilDataBox.appendChild(p);
     });
   }
 
   async function fetchDataForAddress(address) {
     if (!address) return;
-    if (hasilDataBox) {
-      hasilDataBox.innerHTML = '<div style="color:#333">Memuat data...</div>';
-    }
+    // tampilkan header segera dan status loading
+    renderHasilData(address, '', 'Memuat data dari database...');
 
     try {
       const url = `${API_URL}?address=${encodeURIComponent(address)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Network response not ok');
+      const res = await fetch(url, { method: 'GET' });
 
-      const data = await res.json();
+      if (!res.ok) throw new Error('HTTP ' + res.status);
 
-      // Cek beberapa kemungkinan struktur respons
+      // coba parse JSON, jika gagal ambil text mentah
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        const txt = await res.text();
+        renderHasilData(address, txt || '', 'Respons bukan JSON, menampilkan teks mentah');
+        return;
+      }
+
+      // ambil properti AI dari beberapa kemungkinan struktur
       const aiText = data.ai ?? data.AI ?? data.ai_text ?? (Array.isArray(data) && data[0] && (data[0].ai ?? data[0].AI)) ?? '';
-      renderHasilData(address, aiText);
+
+      if (!aiText) {
+        // respons OK tapi kolom AI kosong
+        renderHasilData(address, '', 'Terkoneksi tetapi data tidak ada di kolom AI');
+      } else {
+        renderHasilData(address, aiText, 'Terkoneksi, menampilkan data kolom AI');
+      }
     } catch (err) {
       console.error('Gagal mengambil data:', err);
-      if (hasilDataBox) {
-        hasilDataBox.innerHTML = '<div style="color:#a00">Gagal memuat data. Coba lagi.</div>';
-      }
+      // tetap tampilkan header alamat dan pesan error
+      renderHasilData(address, '', 'Tidak terkoneksi ke database atau terjadi kesalahan');
     }
   }
+
+  // ekspos untuk pengujian manual di Console
+  window.fetchDataForAddress = fetchDataForAddress;
 
   // ===============================
   // FOCUS KAVLING
@@ -263,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.value = id;
     applyViewBox(svg);
 
-    // Panggil API untuk menampilkan data detail kavling
+    // Panggil API untuk menampilkan data detail kavling (uji koneksi)
     fetchDataForAddress(id);
   }
 
@@ -313,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.value = prefix;
     applyViewBox(svg);
 
-    // Panggil API untuk menampilkan ringkasan blok (mengirim prefix)
+    // Panggil API untuk menampilkan ringkasan blok (uji koneksi)
     fetchDataForAddress(prefix);
   }
 
@@ -416,4 +440,3 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hasilDataBox) hasilDataBox.innerHTML = '';
   };
 });
-```
