@@ -9,26 +9,16 @@
 
   <h1>DATA SITE BTU MALANG</h1>
 
-  <!-- Search box + tombol (zoom lama akan diubah menjadi export oleh script) -->
   <div id="search-container">
     <div class="search-row">
       <input id="search" placeholder="Cari kavling..." disabled>
-      <!-- Tombol ini akan otomatis diubah label & fungsinya menjadi "Export SVG" oleh script jika ada -->
-      <button id="zoomIn">+</button>
-      <!-- Tombol ini akan otomatis diubah label & fungsinya menjadi "Export PNG" oleh script jika ada -->
-      <button id="zoomOut">-</button>
-
-      <!-- Tombol export eksplisit (script juga akan mengikat jika ada) -->
-      <button id="exportSvg">Export SVG</button>
-      <button id="exportPng">Export PNG</button>
-
-      <button id="resetZoom">Lihat Semua Area</button>
+          <button id="exportPng">Export PNG</button>
+          <button id="resetZoom">Lihat Semua Area</button>
     </div>
     <ul id="search-results"></ul>
   </div>
-
   <div id="hasilData" class="rekap-box"></div>
-
+  <div id="infoCard" class="info-card hidden" role="dialog" aria-hidden="true"></div>
   <!-- Map container -->
   <div id="map"></div>
 
