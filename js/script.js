@@ -1,10 +1,9 @@
-// ===============================
-// Search blok & kavling, zoom, pan, click sync
-// case-insensitive search, simpan ID asli,
-// klik robust (closest), abaikan klik angka dalam kotak,
-// fitur export (SVG / PNG) yang terpilih
-// ===============================
+```javascript
+// script.js
+// Versi lengkap dengan perbaikan export PNG, penghapusan export SVG binding,
+// dan penambahan info card (popup) minimal untuk menampilkan nama kavling/blok.
 
+// Global state
 let kavlingIndex = [];
 let originalViewBox = null;
 let viewBoxState = null;
@@ -47,51 +46,35 @@ function downloadBlob(blob, filename) {
 }
 
 // ===============================
-// EXPORT: SVG (serialisasi viewBox saat ini)
-// ===============================
-function exportCurrentViewAsSVG(svgEl, filename = 'map-view.svg') {
-  // clone svg to avoid mutating original
-  const clone = svgEl.cloneNode(true);
-
-  // set current viewBox on clone
-  clone.setAttribute('viewBox', `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`);
-
-  // inline computed styles for visible fills/strokes so exported SVG looks same
-  // iterate elements that may have inline styles applied by script
-  clone.querySelectorAll('[style]').forEach(el => {
-    // keep existing inline style
-  });
-
-  // serialize
-  const serializer = new XMLSerializer();
-  let svgString = serializer.serializeToString(clone);
-
-  // add XML prolog and namespace if missing
-  if (!svgString.match(/^<\?xml/)) {
-    svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
-  }
-  if (!svgString.includes('xmlns="http://www.w3.org/2000/svg"')) {
-    svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
-  }
-
-  const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-  downloadBlob(blob, filename);
-}
-
-// ===============================
 // EXPORT: PNG (render current viewBox to canvas)
+// Perbaikan: menjaga rasio viewBox, gunakan devicePixelRatio, set width/height pada clone
 // ===============================
 function exportCurrentViewAsPNG(svgEl, filename = 'map-view.png') {
-  // clone and set viewBox like SVG export
+  if (!svgEl || !viewBoxState) return;
+
+  // clone dan set viewBox
   const clone = svgEl.cloneNode(true);
   clone.setAttribute('viewBox', `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`);
 
-  // ensure width/height for rasterization: use current svg client size or viewBox ratio
-  const rect = svgEl.getBoundingClientRect();
-  const width = Math.max(800, Math.round(rect.width)); // minimal width for quality
-  const height = Math.max(600, Math.round(rect.height));
+  // Hitung rasio viewBox (unit SVG) untuk menjaga proporsi
+  const vbW = viewBoxState.w;
+  const vbH = viewBoxState.h;
+  if (!vbW || !vbH) return;
 
-  // serialize clone
+  // Tentukan skala pixel per unit SVG. Gunakan devicePixelRatio untuk ketajaman.
+  const dpr = window.devicePixelRatio || 1;
+  // target minimal lebar pixel (sesuaikan jika perlu)
+  const minPixelWidth = 1000;
+  const scale = Math.max(dpr, minPixelWidth / vbW);
+
+  const pixelWidth = Math.round(vbW * scale);
+  const pixelHeight = Math.round(vbH * scale);
+
+  // set explicit width/height pada clone agar renderer tahu ukuran
+  clone.setAttribute('width', pixelWidth);
+  clone.setAttribute('height', pixelHeight);
+
+  // Serialize
   const serializer = new XMLSerializer();
   let svgString = serializer.serializeToString(clone);
   if (!svgString.match(/^<\?xml/)) {
@@ -101,20 +84,18 @@ function exportCurrentViewAsPNG(svgEl, filename = 'map-view.png') {
     svgString = svgString.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
   }
 
-  const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
+  // Gunakan data URL (encode)
+  const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
 
   const img = new Image();
-  // handle CORS-safe rendering
-  img.crossOrigin = 'anonymous';
   img.onload = () => {
     try {
       const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = pixelWidth;
+      canvas.height = pixelHeight;
       const ctx = canvas.getContext('2d');
 
-      // white background (optional)
+      // optional white background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -123,18 +104,16 @@ function exportCurrentViewAsPNG(svgEl, filename = 'map-view.png') {
 
       canvas.toBlob(blob => {
         if (blob) downloadBlob(blob, filename);
-        URL.revokeObjectURL(url);
       }, 'image/png');
     } catch (err) {
       console.error('Gagal mengekspor PNG', err);
-      URL.revokeObjectURL(url);
     }
   };
   img.onerror = (err) => {
     console.error('Gagal memuat SVG untuk konversi PNG', err);
-    URL.revokeObjectURL(url);
   };
-  img.src = url;
+
+  img.src = svgDataUrl;
 }
 
 // ===============================
@@ -146,13 +125,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const resultsBox = document.getElementById('search-results');
   const resetBtn = document.getElementById('resetZoom');
 
-  // tombol zoom lama (jika ada) akan diubah fungsinya menjadi export
+  // tombol zoom lama (jika ada) akan diubah fungsinya menjadi export (kita sembunyikan export SVG)
   const zoomInBtn = document.getElementById('zoomIn');
   const zoomOutBtn = document.getElementById('zoomOut');
 
-  // juga dukung tombol khusus export jika sudah ada
-  const exportSvgBtn = document.getElementById('exportSvg');
+  // juga dukung tombol khusus export PNG jika sudah ada
   const exportPngBtn = document.getElementById('exportPng');
+
+  // info card element (harus ditambahkan di HTML)
+  const infoCard = document.getElementById('infoCard');
 
   searchInput.disabled = true;
 
@@ -191,23 +172,21 @@ document.addEventListener('DOMContentLoaded', () => {
       searchInput.disabled = false;
 
       // Setup export buttons behavior:
-      // Jika ada tombol zoomIn/zoomOut, ubah label & aksi menjadi export
-      const svgElement = svg; // capture
-
+      // Sembunyikan atau non-aktifkan tombol zoomIn (sebelumnya dipakai untuk export SVG)
       if (zoomInBtn) {
-        zoomInBtn.textContent = 'Export SVG';
-        zoomInBtn.title = 'Export tampilan saat ini sebagai file SVG';
-        zoomInBtn.onclick = () => exportCurrentViewAsSVG(svgElement, 'map-view.svg');
-      } else if (exportSvgBtn) {
-        exportSvgBtn.onclick = () => exportCurrentViewAsSVG(svgElement, 'map-view.svg');
+        zoomInBtn.classList.add('hidden');
       }
 
+      // Pastikan export PNG tetap diikat
+      if (exportPngBtn) {
+        exportPngBtn.onclick = () => exportCurrentViewAsPNG(svg, 'map-view.png');
+      }
+
+      // Jika ada zoomOutBtn (tombol lama), kita biarkan tersembunyi agar tidak menumpuk UI
       if (zoomOutBtn) {
-        zoomOutBtn.textContent = 'Export PNG';
-        zoomOutBtn.title = 'Export tampilan saat ini sebagai file PNG';
-        zoomOutBtn.onclick = () => exportCurrentViewAsPNG(svgElement, 'map-view.png');
-      } else if (exportPngBtn) {
-        exportPngBtn.onclick = () => exportCurrentViewAsPNG(svgElement, 'map-view.png');
+        // Jika Anda ingin tombol zoom lama tetap ada, ubah fungsinya di sini.
+        // Untuk sekarang, sembunyikan agar tidak menumpuk UI.
+        zoomOutBtn.classList.add('hidden');
       }
     })
     .catch(err => {
@@ -231,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const liBlok = document.createElement('li');
       liBlok.textContent = `${upper} (${blokItems.length} kavling)`;
       liBlok.style.fontWeight = 'bold';
-      liBlok.onclick = () => focusBlok(upper);
+      liBlok.onclick = () => focusBlok(upper, window.innerWidth * 0.6, window.innerHeight * 0.4);
       resultsBox.appendChild(liBlok);
     }
 
@@ -242,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .forEach(name => {
         const li = document.createElement('li');
         li.textContent = name; // tampilkan ID asli
-        li.onclick = () => focusKavling(name);
+        li.onclick = () => focusKavling(name, window.innerWidth / 2, window.innerHeight / 2);
         resultsBox.appendChild(li);
       });
 
@@ -253,8 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ===============================
   // FOCUS KAVLING
+  // menerima optional clientX, clientY untuk posisi infoCard
   // ===============================
-  function focusKavling(id) {
+  function focusKavling(id, clientX, clientY) {
     const svg = map.querySelector('svg');
     // pastikan id ada
     const el = document.getElementById(id);
@@ -287,12 +267,20 @@ document.addEventListener('DOMContentLoaded', () => {
     lastFocusedEl = el;
     searchInput.value = id;
     applyViewBox(svg);
+
+    // tampilkan info card minimal (hanya nama kavling jika DB belum ada)
+    showInfoCard({
+      id: id,
+      type: el.tagName.toLowerCase() === 'g' ? 'Blok / Grup' : 'Kavling',
+      notes: 'Data detail belum tersedia. Hanya menampilkan nama kavling.'
+    }, clientX, clientY);
   }
 
   // ===============================
   // FOCUS BLOK
+  // menerima optional clientX, clientY untuk posisi infoCard
   // ===============================
-  function focusBlok(prefix) {
+  function focusBlok(prefix, clientX, clientY) {
     const svg = map.querySelector('svg');
     clearHighlight();
 
@@ -336,6 +324,13 @@ document.addEventListener('DOMContentLoaded', () => {
     zoomPadding = null;
     searchInput.value = prefix;
     applyViewBox(svg);
+
+    // tampilkan info card ringkasan blok
+    showInfoCard({
+      id: prefix,
+      type: 'Blok',
+      notes: 'Ringkasan blok. Detail kavling akan tersedia setelah integrasi database.'
+    }, clientX, clientY);
   }
 
   // ===============================
@@ -361,8 +356,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const actualId = elWithId.id; // gunakan ID asli, jangan ubah case
     resultsBox.innerHTML = '';
 
-    if (actualId.includes('_')) focusKavling(actualId);
-    else focusBlok(actualId);
+    // pass client coords so infoCard can position near pointer
+    if (actualId.includes('_')) focusKavling(actualId, e.clientX, e.clientY);
+    else focusBlok(actualId, e.clientX, e.clientY);
   });
 
   // ===============================
@@ -429,5 +425,61 @@ document.addEventListener('DOMContentLoaded', () => {
     zoomPadding = null;
     searchInput.value = '';
     resultsBox.innerHTML = '';
+    hideInfoCard();
   };
+
+  // ===============================
+  // INFO CARD (minimal)
+  // ===============================
+  function renderInfoCardContent(data) {
+    return `
+      <div class="title">${data.id}</div>
+      <div class="row"><div class="muted">Tipe</div><div>${data.type || '-'}</div></div>
+      <div style="margin-top:8px;font-size:13px;color:#374151">${data.notes || 'Informasi detail akan tersedia dari database.'}</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px;gap:8px">
+        <button id="infoCloseBtn" style="padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:#fff">Tutup</button>
+      </div>
+    `;
+  }
+
+  function showInfoCard(data, clientX = window.innerWidth / 2, clientY = window.innerHeight / 2) {
+    if (!infoCard) return;
+    infoCard.innerHTML = renderInfoCardContent(data);
+    infoCard.classList.remove('hidden');
+    infoCard.setAttribute('aria-hidden', 'false');
+
+    const cardWidth = 320;
+    const cardHeight = 180;
+    const margin = 12;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let left = (typeof clientX === 'number') ? clientX + 12 : window.innerWidth / 2 - cardWidth / 2;
+    let top = (typeof clientY === 'number') ? clientY + 12 : window.innerHeight / 2 - cardHeight / 2;
+
+    if (left + cardWidth + margin > vw) left = vw - cardWidth - margin;
+    if (top + cardHeight + margin > vh) top = vh - cardHeight - margin;
+    if (left < margin) left = margin;
+    if (top < margin) top = margin;
+
+    infoCard.style.left = left + 'px';
+    infoCard.style.top = top + 'px';
+
+    const closeBtn = document.getElementById('infoCloseBtn');
+    if (closeBtn) closeBtn.onclick = hideInfoCard;
+  }
+
+  function hideInfoCard() {
+    if (!infoCard) return;
+    infoCard.classList.add('hidden');
+    infoCard.setAttribute('aria-hidden', 'true');
+  }
+
+  // tutup saat klik di luar infoCard, kecuali klik di search-container
+  document.addEventListener('click', (ev) => {
+    if (!infoCard || infoCard.classList.contains('hidden')) return;
+    if (ev.target.closest && (ev.target.closest('#infoCard') || ev.target.closest('#search-container'))) return;
+    hideInfoCard();
+  });
 });
+```
