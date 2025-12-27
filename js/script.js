@@ -1,6 +1,8 @@
 // ===============================
 // FINAL CLEAN SCRIPT – SVG MAP
 // Search blok & kavling, zoom, pan, click sync
+// Perbaikan: case-insensitive search, simpan ID asli,
+// klik robust (closest), dan abaikan klik angka dalam kotak.
 // ===============================
 
 let kavlingIndex = [];
@@ -26,8 +28,12 @@ function applyViewBox(svg) {
 }
 
 function clearHighlight() {
-  document.querySelectorAll('#map rect, #map path, #map polygon')
+  document.querySelectorAll('#map rect, #map path, #map polygon, #map g')
     .forEach(el => el.style.cssText = '');
+}
+
+function isNumericString(s) {
+  return /^\d+$/.test(String(s).trim());
 }
 
 // ===============================
@@ -52,10 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
       map.innerHTML = svgText;
       const svg = map.querySelector('svg');
 
+      // make responsive
       svg.removeAttribute('width');
       svg.removeAttribute('height');
       svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
+      // ensure viewBox exists
       originalViewBox = svg.getAttribute('viewBox');
       if (!originalViewBox) {
         const b = svg.getBBox();
@@ -65,14 +73,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       viewBoxState = parseViewBox(originalViewBox);
 
-      // indexing ID kavling
+      // indexing ID kavling — simpan ID asli (preserve case)
       const ids = map.querySelectorAll('g[id], rect[id], path[id], polygon[id]');
       kavlingIndex = [...new Set(
         Array.from(ids)
-          .map(el => el.id.trim().toUpperCase())
-          .filter(id => /^(GA|UJ|KR|M)/.test(id))
-      )].sort((a, b) => a.localeCompare(b, 'id'));
+          .map(el => el.id.trim()) // simpan ID asli
+          .filter(id => /^(GA|UJ|KR|M)/i.test(id)) // case-insensitive filter
+      )].sort((a, b) => a.localeCompare(b));
 
+      searchInput.disabled = false;
+    })
+    .catch(err => {
+      console.error('Gagal memuat sitemap.svg', err);
       searchInput.disabled = false;
     });
 
@@ -86,8 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const upper = q.toUpperCase();
 
-    // BLOK OTOMATIS (uj10, ga34)
-    const blokItems = kavlingIndex.filter(id => id.startsWith(upper + '_'));
+    // BLOK OTOMATIS (uj10, ga34) — case-insensitive
+    const blokItems = kavlingIndex.filter(id => id.toUpperCase().startsWith(upper + '_'));
     if (blokItems.length && !q.includes('_')) {
       const liBlok = document.createElement('li');
       liBlok.textContent = `${upper} (${blokItems.length} kavling)`;
@@ -96,13 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
       resultsBox.appendChild(liBlok);
     }
 
-    // KAVLING DETAIL
+    // KAVLING DETAIL (case-insensitive)
     kavlingIndex
       .filter(id => id.toLowerCase().includes(q))
       .slice(0, 20)
       .forEach(name => {
         const li = document.createElement('li');
-        li.textContent = name;
+        li.textContent = name; // tampilkan ID asli
         li.onclick = () => focusKavling(name);
         resultsBox.appendChild(li);
       });
@@ -117,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   function focusKavling(id) {
     const svg = map.querySelector('svg');
+    // pastikan id ada
     const el = document.getElementById(id);
     if (!el) return;
 
@@ -156,7 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const svg = map.querySelector('svg');
     clearHighlight();
 
-    const els = [...map.querySelectorAll(`[id^="${prefix}_"]`)];
+    // ambil semua elemen ber-id lalu filter case-insensitive
+    const all = Array.from(map.querySelectorAll('[id]'));
+    const els = all.filter(el => el.id.toUpperCase().startsWith(prefix.toUpperCase() + '_'));
     if (!els.length) return;
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -197,20 +212,30 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===============================
-  // CLICK MAP (SYNC)
+  // CLICK MAP (SYNC) — robust, ignore numeric-only clicks
   // ===============================
   map.addEventListener('click', e => {
     if (isDragging) return;
 
-    let t = e.target;
-    if (t.tagName.toLowerCase() === 'text') t = t.parentElement;
-    if (!t || !t.id) return;
+    // jika target adalah teks angka di dalam kotak, abaikan
+    const t = e.target;
+    if (t && t.tagName && t.tagName.toLowerCase() === 'text') {
+      const txt = t.textContent || '';
+      if (isNumericString(txt)) return; // abaikan klik angka
+    }
 
-    const id = t.id.toUpperCase();
+    // cari ancestor terdekat yang punya id
+    const elWithId = (e.target && e.target.closest) ? e.target.closest('[id]') : null;
+    if (!elWithId) return;
+
+    // jika id hanya angka, abaikan
+    if (isNumericString(elWithId.id)) return;
+
+    const actualId = elWithId.id; // gunakan ID asli, jangan ubah case
     resultsBox.innerHTML = '';
 
-    if (id.includes('_')) focusKavling(id);
-    else focusBlok(id);
+    if (actualId.includes('_')) focusKavling(actualId);
+    else focusBlok(actualId);
   });
 
   // ===============================
@@ -270,13 +295,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   zoomInBtn.onclick = () => {
     if (!lastFocusedEl) return;
-    zoomPadding *= 0.8;
+    zoomPadding = (zoomPadding || Math.max(lastFocusedEl.getBBox().width, lastFocusedEl.getBBox().height) * 0.6) * 0.8;
     focusKavling(lastFocusedEl.id);
   };
 
   zoomOutBtn.onclick = () => {
     if (!lastFocusedEl) return;
-    zoomPadding *= 1.25;
+    zoomPadding = (zoomPadding || Math.max(lastFocusedEl.getBBox().width, lastFocusedEl.getBBox().height) * 0.6) * 1.25;
     focusKavling(lastFocusedEl.id);
   };
 
@@ -294,9 +319,3 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsBox.innerHTML = '';
   };
 });
-
-
-
-//DATABASE
-//======
-const API_URL = 'https://script.google.com/macros/s/AKfycbzfy6vbrVBdWnmdwxh5I68BGDz2GmP3UORC8xQlb49GAe-hsQ3QTGUBj9Ezz8de2dY2/exec';
