@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // SEARCH (BLOK + KAVLING) DENGAN AUTO-SELECT
+  // SEARCH (BLOK + KAVLING) TANPA AUTO-SELECT
   // ===============================
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const upper = q.toUpperCase();
 
-      // BLOK OTOMATIS
+    // BLOK OTOMATIS
     const blokItems = kavlingIndex.filter(id => id.startsWith(upper + '_'));
     if (blokItems.length && !q.includes('_')) {
       const liBlok = document.createElement('li');
