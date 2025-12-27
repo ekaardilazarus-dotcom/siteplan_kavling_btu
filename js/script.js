@@ -357,7 +357,7 @@ async function fetchDataForAddress(address) {
     
     // Fetch data dengan timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 detik timeout (karena API lambat)
+    const timeoutId = setTimeout(() => controller.abort(), 40000); // 40 detik timeout (karena API lambat)
     
     const res = await fetch(fetchUrl, { 
       method: 'GET',
