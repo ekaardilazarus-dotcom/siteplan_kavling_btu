@@ -270,12 +270,11 @@ function displayCertificateResults(data, certNumber, certType, displayName) {
   
   if (data.status === 'success' && data.results && data.results.length > 0) {
     let html = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif;">
-        <div style="font-weight:700;font-size:15px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #4caf50;color:#1a237e;">
-          <span>📋</span> ${displayName}: <strong>${certNumber}</strong>
-          <div style="font-size:12px;font-weight:normal;color:#666;margin-top:4px;">
-            Ditemukan ${data.totalFound} hasil
-          </div>
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <!-- JUMLAH DATA DITEMUKAN (BOLD & BESAR) -->
+        <div class="cert-total-found">
+          ✅ Ditemukan: <strong>${data.totalFound}</strong> hasil untuk 
+          <strong>${displayName}: "${certNumber}"</strong>
         </div>
     `;
     
@@ -283,24 +282,36 @@ function displayCertificateResults(data, certNumber, certType, displayName) {
     data.results.forEach((result, index) => {
       const nomorDisplay = certType === 'nama_shm' ? result.nama : result.nomor;
       html += `
-        <div style="margin-bottom:16px;padding:12px;border:1px solid #e0e0e0;border-radius:6px;background:#f9f9f9;">
-          <div style="font-weight:600;margin-bottom:6px;color:#2196f3;">
-            ${index + 1}. ${certType === 'nama_shm' ? 'Nama' : 'Nomor'}: ${nomorDisplay}
-            ${result.nama && certType !== 'nama_shm' ? `<br><small>Nama: ${result.nama}</small>` : ''}
-            <span style="font-size:11px;color:#757575;float:right;">Baris: ${result.row}</span>
+        <div class="cert-result-item">
+          <div style="font-weight:600; margin-bottom:8px; color:#2196f3; font-size:14px;">
+            <span style="background:#e3f2fd; padding:2px 8px; border-radius:4px; margin-right:8px;">${index + 1}</span>
+            ${certType === 'nama_shm' ? 'Nama' : 'Nomor'}: <strong>${nomorDisplay}</strong>
+          </div>
+          
+          ${result.nama && certType !== 'nama_shm' ? 
+            `<div style="font-size:13px; color:#666; margin-bottom:8px;">
+               👤 <strong>Nama:</strong> ${result.nama}
+             </div>` : ''}
+          
+          <div style="font-size:12px; color:#999; margin-bottom:10px;">
+            📍 <strong>Baris database:</strong> ${result.row}
           </div>
       `;
       
       if (result.data && result.data.trim() !== '') {
         html += `
-          <div style="font-family:monospace;font-size:12px;line-height:1.4;white-space:pre-wrap;background:#fff;padding:10px;border-radius:3px;border:1px dashed #ddd;margin-top:8px;">
+          <div style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
+                     font-size:12px; line-height:1.5; white-space:pre-wrap; 
+                     background:#f9f9f9; padding:12px; border-radius:6px; 
+                     border:1px dashed #ddd; margin-top:8px;">
             ${result.data.trim()}
           </div>
         `;
       } else {
         html += `
-          <div style="text-align:center;padding:12px;color:#757575;font-style:italic;">
-            Kolom AI kosong untuk data ini
+          <div style="text-align:center; padding:15px; color:#757575; font-style:italic; 
+                     background:#f5f5f5; border-radius:6px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+            📭 Kolom AI kosong untuk data ini
           </div>
         `;
       }
@@ -313,19 +324,27 @@ function displayCertificateResults(data, certNumber, certType, displayName) {
     
   } else if (data.status === 'not_found') {
     resultsBox.innerHTML = `
-      <div style="padding:20px;text-align:center;color:#e65100;">
-        <div style="font-size:16px;margin-bottom:10px;">🔍 ${displayName} tidak ditemukan</div>
-        <div style="font-size:14px;margin-bottom:15px;">${certType === 'nama_shm' ? 'Nama' : 'Nomor'}: <strong>${certNumber}</strong></div>
-        <div style="font-size:13px;color:#757575;background:#f5f5f5;padding:10px;border-radius:4px;">
+      <div style="padding:30px; text-align:center; color:#e65100; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <div style="font-size:18px; margin-bottom:15px; font-weight:600;">
+          🔍 ${displayName} tidak ditemukan
+        </div>
+        <div style="font-size:15px; margin-bottom:20px; background:#fff3e0; padding:12px; border-radius:6px;">
+          ${certType === 'nama_shm' ? 'Nama' : 'Nomor'}: <strong>${certNumber}</strong>
+        </div>
+        <div style="font-size:14px; color:#757575; background:#f5f5f5; padding:12px; border-radius:6px;">
           Periksa kembali ${certType === 'nama_shm' ? 'nama' : 'nomor'} yang dimasukkan
         </div>
       </div>
     `;
   } else {
     resultsBox.innerHTML = `
-      <div style="padding:20px;text-align:center;color:#c62828;">
-        <div style="font-size:16px;margin-bottom:10px;">❌ Terjadi kesalahan</div>
-        <div style="font-size:14px;">${data.message || 'Gagal mengambil data'}</div>
+      <div style="padding:30px; text-align:center; color:#c62828; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        <div style="font-size:18px; margin-bottom:15px; font-weight:600;">
+          ❌ Terjadi kesalahan
+        </div>
+        <div style="font-size:14px; background:#ffebee; padding:15px; border-radius:6px;">
+          ${data.message || 'Gagal mengambil data'}
+        </div>
       </div>
     `;
   }
