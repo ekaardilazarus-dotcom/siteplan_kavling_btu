@@ -4,7 +4,7 @@
 // ===============================
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxJlk6tZ5kFfFFlLwaSXXh6VBqev3KcX_DkhGq_fcW85bfHR-1iK_9ABmu9264_tLuo/exec';
-const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxGcR1WN6SYqzfaiPhL2KRfIa-xzF39RR3xSosmeRY2tayd56-ZRC7TOQdBMW-8syi_3w/exec';
+const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbyEPaUBAg2n3732mTnukOnoxA6eN6eTEjso929InZZEbIqjycGzb8zuSJdLmyfaFEJf3w/exec';
 
 let kavlingIndex = [];
 let originalViewBox = null;
