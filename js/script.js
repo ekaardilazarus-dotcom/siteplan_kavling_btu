@@ -993,7 +993,7 @@ document.getElementById('searchExOwner')?.addEventListener('click', async () => 
       document.getElementById('searchExOwner').click();
     }
   });
-
+}); // <-- PENUTUP DOMContentLoaded
   // JS - CEK KLIK LUAR PADA POPUP
 document.addEventListener('click', function(e) {
   const popup = document.querySelector('.kavling-popup');
@@ -1014,7 +1014,7 @@ document.addEventListener('click', function(e) {
     }
   }
   
-}); // <-- PENUTUP DOMContentLoaded
+
 // Untuk modal sertifikat
   if (modal && modal.style.display === 'flex') {
     const content = modal.querySelector('.modal-content');
