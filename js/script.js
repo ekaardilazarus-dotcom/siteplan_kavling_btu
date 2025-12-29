@@ -600,11 +600,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   // Tombol bersihkan
-  document.getElementById('clearAll')?.addEventListener('click', () => {
-    document.querySelectorAll('.cert-input').forEach(input => input.value = '');
-    document.getElementById('certificateResults').innerHTML = 
-      '<p class="placeholder">Hasil akan ditampilkan di sini...</p>';
-  });
+// Tombol bersihkan
+document.getElementById('clearAll')?.addEventListener('click', () => {
+  document.querySelectorAll('.compact-input').forEach(input => input.value = '');
+  document.getElementById('certificateResults').innerHTML = 
+    '<p class="placeholder" style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px 20px; color: #757575; font-style: italic;">Hasil pencarian akan ditampilkan di sini...</p>';
+});
   
   // ===============================
   // PENCARIAN SERTIFIKAT (SEMUA TIPE)
