@@ -63,6 +63,24 @@ function showKavlingPopup(address, result) {
   
   // Set berdasarkan status
   switch (result.status) {
+    case 'loading':
+      statusClass = 'kavling-status-loading';
+      statusText = '⏳ Mencari data...';
+      dataContent = `
+        <div style="text-align:center;padding:40px 20px;">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">
+            Mencari data untuk: <strong>${address}</strong>
+            <span class="loading-dots"></span>
+          </div>
+          <div style="font-size:12px;color:#999;margin-top:15px;">
+            Mohon tunggu, proses mungkin memakan waktu hingga 30 detik
+          </div>
+        </div>
+      `;
+      popup.classList.add('kavling-popup-loading');
+      break;
+      
     case 'success':
       statusClass = 'kavling-status-success';
       statusText = '✅ Data ditemukan';
@@ -102,9 +120,17 @@ function showKavlingPopup(address, result) {
       break;
       
     default:
-      statusClass = 'kavling-status-error';
-      statusText = '❓ Status tidak diketahui';
-      dataContent = '<div style="text-align:center;padding:30px;color:#666;">Status tidak dikenal</div>';
+      statusClass = 'kavling-status-loading';
+      statusText = '⏳ Memproses...';
+      dataContent = `
+        <div style="text-align:center;padding:40px 20px;">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">
+            Mohon tunggu<span class="loading-dots"></span>
+          </div>
+        </div>
+      `;
+      popup.classList.add('kavling-popup-loading');
   }
   
   popup.innerHTML = `
@@ -114,35 +140,39 @@ function showKavlingPopup(address, result) {
         <button class="close-kavling-popup">&times;</button>
       </div>
       <div class="kavling-popup-body">
-        <div class="${statusClass}">${statusText}</div>
+        ${statusText ? `<div class="${statusClass}">${statusText}</div>` : ''}
         ${dataContent}
       </div>
+      ${result.status !== 'loading' ? `
       <div class="kavling-popup-footer">
         <button class="kavling-close-btn">Tutup</button>
       </div>
+      ` : ''}
     </div>
   `;
   
   // Tambahkan ke body
   document.body.appendChild(popup);
   
-  // Event listeners untuk popup
-  const closeBtn = popup.querySelector('.close-kavling-popup');
-  const closeBtn2 = popup.querySelector('.kavling-close-btn');
-  
-  const closePopup = () => {
-    document.body.removeChild(popup);
-  };
-  
-  closeBtn.addEventListener('click', closePopup);
-  closeBtn2.addEventListener('click', closePopup);
-  
-  // Tutup jika klik di luar konten
-  popup.addEventListener('click', (e) => {
-    if (e.target === popup) {
-      closePopup();
-    }
-  });
+  // Event listeners untuk popup (kecuali jika loading)
+  if (result.status !== 'loading') {
+    const closeBtn = popup.querySelector('.close-kavling-popup');
+    const closeBtn2 = popup.querySelector('.kavling-close-btn');
+    
+    const closePopup = () => {
+      document.body.removeChild(popup);
+    };
+    
+    if (closeBtn) closeBtn.addEventListener('click', closePopup);
+    if (closeBtn2) closeBtn2.addEventListener('click', closePopup);
+    
+    // Tutup jika klik di luar konten
+    popup.addEventListener('click', (e) => {
+      if (e.target === popup) {
+        closePopup();
+      }
+    });
+  }
   
   // Tampilkan popup
   setTimeout(() => {
@@ -305,8 +335,11 @@ async function fetchDataForAddress(address) {
   const cleanAddress = address.trim().toUpperCase();
   console.log('🔍 Mencari data kavling untuk:', cleanAddress);
   
-  // Tampilkan loading di popup
-  showKavlingPopup(cleanAddress, { status: 'loading' });
+  // Tampilkan loading di popup (status: 'loading')
+  showKavlingPopup(cleanAddress, { 
+    status: 'loading',
+    message: 'Sedang mencari data...'
+  });
   
   // CEK CACHE PERTAMA
   const cached = searchCache.get(cleanAddress);
@@ -320,6 +353,8 @@ async function fetchDataForAddress(address) {
     return;
   }
   
+  // ... (kode fetch API tetap sama)
+}
   try {
     // Encode address untuk URL
     const encodedAddress = encodeURIComponent(cleanAddress);
