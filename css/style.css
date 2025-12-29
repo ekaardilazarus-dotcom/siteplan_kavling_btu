@@ -711,6 +711,6 @@ h1 {
   border-top: 3px solid #2196F3;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 15px;
+  margin-bottom: 15px auto;
 }
 
