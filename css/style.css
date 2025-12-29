@@ -439,14 +439,6 @@ h1 {
   overflow-y: auto;
   flex-grow: 1;
 }
-/* LAYOUT BARU: Modal dengan 2 kolom */
-.modal-body-new {
-  padding: 20px;
-  display: flex;
-  gap: 30px;
-  min-height: 500px;
-}
-/* Tambahkan di CSS setelah .modal-body-new */
 
 /* LAYOUT BARU YANG LEBIH RAPAT */
 .modal-compact-layout {
@@ -643,21 +635,6 @@ h1 {
     min-height: 350px;
     max-height: 50vh;
   }
-}
-/* Kolom kiri untuk input pencarian */
-.modal-left-column {
-  flex: 0 0 280px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  border-right: 1px solid #e0e0e0;
-  padding-right: 25px;
-}
-
-/* Kolom kanan untuk hasil */
-.modal-right-column {
-  flex: 1;
-  min-width: 300px;
 }
 
 /* Responsive untuk layout baru */
@@ -954,7 +931,7 @@ h1 {
   border-top: 3px solid #2196F3;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 0 auto 15px auto;
+  margin: 0 auto 15px auto;
 }
 
 .cert-total-found {
