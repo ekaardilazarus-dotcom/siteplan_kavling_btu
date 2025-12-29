@@ -442,9 +442,9 @@ h1 {
 
 /* LAYOUT BARU YANG LEBIH RAPAT */
 .modal-compact-layout {
-  padding: 20px;
+  padding: 15px;
   display: flex;
-  gap: 25px;
+  gap: 15px;
   min-height: 500px;
   max-height: 70vh;
 }
@@ -454,11 +454,11 @@ h1 {
   flex: 0 0 300px;
   display: flex;
   flex-direction: column;
-  gap: 12px; /* Diperkecil dari 15px */
+  gap: 8px; /* Diperkecil dari 15px */
   border-right: 1px solid #e0e0e0;
   padding-right: 20px;
   overflow-y: auto;
-  max-height: 65vh;
+  max-height: 60vh;
 }
 
 /* Kolom kanan - Hasil pencarian */
@@ -471,8 +471,8 @@ h1 {
 
 /* Grup input yang lebih kompak */
 .input-group {
-  margin-bottom: 8px; /* Diperkecil */
-  padding: 12px;
+  margin-bottom: 4px; /* Diperkecil */
+  padding: 10px;
   background: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e9ecef;
@@ -925,6 +925,9 @@ h1 {
   min-height: 200px;
 }
 
+.kavling-popup .kavling-popup-content {
+  cursor: auto;
+}
 /* Loading untuk modal sertifikat */
 .cert-loading {
   text-align: center;
