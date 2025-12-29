@@ -14,7 +14,7 @@ h1 {
 /* Map container */
 #map {
   width: 100%;
-  height: 75vh; /* dikurangi sedikit untuk memberi ruang */
+  height: 75vh;
   overflow: hidden;
   cursor: grab;
   border: 1px solid #ddd;
@@ -194,38 +194,180 @@ h1 {
   background: #f5f5f5;
 }
 
-/* hasil info di bawah kotak pencarian */
+/* HAPUS .rekap-box KARENA DIGANTI POPUP */
 .rekap-box {
+  display: none;
+}
+
+/* POPUP HASIL KAVLING (MODAL) */
+.kavling-popup {
+  display: none;
   position: fixed;
-  top: 100px;
-  right: 20px;
-  width: 360px;
-  max-height: 320px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10002;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+
+.kavling-popup-content {
+  background: white;
+  width: 90%;
+  max-width: 700px;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease-out;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Popup Header */
+.kavling-popup-header {
+  background: #4CAF50;
+  color: white;
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.kavling-popup-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-kavling-popup {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+
+.close-kavling-popup:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Popup Body */
+.kavling-popup-body {
+  padding: 24px;
   overflow-y: auto;
-  background: #fff;
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-  z-index: 9998;
+  flex-grow: 1;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* Status colors dalam popup */
+.kavling-status-success {
+  color: #1b5e20;
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.kavling-status-empty {
+  color: #e65100;
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.kavling-status-error {
+  color: #c62828;
+  background: #ffebee;
+  border-left: 4px solid #f44336;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.kavling-status-notfound {
+  color: #e65100;
+  background: #fff3e0;
+  border-left: 4px solid #ff9800;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+/* Data content dalam popup */
+.kavling-data-content {
+  font-family: monospace;
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  background: #f9f9f9;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
-.rekap-box div {
-  margin-bottom: 4px;
+/* Popup Footer */
+.kavling-popup-footer {
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
-.rekap-box div:last-child {
-  margin-bottom: 0;
+.kavling-close-btn {
+  padding: 10px 24px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s;
 }
 
-/* Status colors */
-.status-success { color: #4CAF50; }
-.status-warning { color: #FF9800; }
-.status-error { color: #F44336; }
-.status-info { color: #2196F3; }
+.kavling-close-btn:hover {
+  background: #1976D2;
+}
 
-/* MODAL SERTIFIKAT */
+/* =============================== */
+/* MODAL SERTIFIKAT (TETAP ADA) */
+/* =============================== */
 .modal {
   display: none;
   position: fixed;
@@ -248,17 +390,9 @@ h1 {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: modalSlideIn 0.3s ease-out;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Modal Header */
@@ -302,8 +436,8 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
-  max-height: 70vh;
   overflow-y: auto;
+  flex-grow: 1;
 }
 
 .cert-column {
@@ -400,7 +534,7 @@ h1 {
   padding: 20px;
   background: #f8f9fa;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 12px;
   border-top: 1px solid #e0e0e0;
   flex-wrap: wrap;
@@ -441,20 +575,10 @@ h1 {
   background: #616161;
 }
 
-/* Tombol Kembali ke Awal di dalam modal */
-#backToHome {
-  background: #FF9800 !important;
-}
-
-#backToHome:hover {
-  background: #F57C00 !important;
-}
-
 /* =============================== */
 /* RESPONSIVE ADJUSTMENTS */
 /* =============================== */
 @media (max-width: 1024px) {
-  /* Untuk tablet/layar sedang */
   #search-container {
     width: 320px;
   }
@@ -462,14 +586,9 @@ h1 {
   #button-container {
     width: 180px;
   }
-  
-  .rekap-box {
-    width: 320px;
-  }
 }
 
 @media (max-width: 768px) {
-  /* Untuk mobile */
   #search-container {
     position: static;
     width: calc(100% - 40px);
@@ -482,14 +601,7 @@ h1 {
     width: calc(100% - 40px);
     margin: 20px auto;
     max-width: 400px;
-    order: 1; /* Tombol di atas */
-  }
-  
-  .rekap-box {
-    position: static;
-    width: calc(100% - 40px);
-    margin: 20px auto;
-    max-width: 400px;
+    order: 1;
   }
   
   h1 {
@@ -501,9 +613,16 @@ h1 {
     margin-top: 0;
     height: 60vh;
   }
+  
+  .modal-body {
+    flex-direction: column;
+  }
+  
+  .cert-column {
+    min-width: 100%;
+  }
 }
 
-/* PERBAIKAN TAMBAHAN: Untuk layar sangat kecil */
 @media (max-width: 480px) {
   .cert-btn span:last-child {
     display: none;
@@ -512,5 +631,13 @@ h1 {
   .cert-btn::after {
     content: '📋';
     font-size: 14px;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .modal-footer button {
+    width: 100%;
   }
 }
