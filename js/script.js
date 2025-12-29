@@ -200,7 +200,15 @@ async function searchCertificateNew(certNumber, certType, displayName) {
   
   // Tampilkan loading di modal
   const resultsBox = document.getElementById('certificateResults');
-  resultsBox.innerHTML = '<div style="padding:20px;text-align:center;color:#666;">⏳ Mencari data...</div>';
+  resultsBox.innerHTML = `
+  <div class="cert-loading">
+    <div class="cert-loading-spinner"></div>
+    <div style="color:#666;font-size:14px;margin-top:10px;">
+      Mencari ${displayName}: <strong>${certNumber}</strong>
+      <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
+    </div>
+  </div>
+`;
   
   try {
     // Cek cache dulu
