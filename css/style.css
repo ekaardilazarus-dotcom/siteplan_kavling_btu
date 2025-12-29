@@ -641,3 +641,58 @@ h1 {
     width: 100%;
   }
 }
+
+/* ANIMASI LOADING */
+.loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4CAF50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.loading-dots {
+  display: inline-block;
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: "."; }
+  40% { content: ".."; }
+  60%, 100% { content: "..."; }
+}
+
+.kavling-status-loading {
+  color: #1976D2;
+  background: #E3F2FD;
+  border-left: 4px solid #2196F3;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Popup loading state */
+.kavling-popup-loading .kavling-popup-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
