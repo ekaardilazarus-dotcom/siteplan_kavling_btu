@@ -629,16 +629,17 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
     await searchCertificateNew(certNumber, 'shm', 'SHM');
   });
 
-  // Nama SHM (BARU)
+  // Nama SHM
   document.getElementById('searchNamaSHM')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certNamaSHM').value.trim();
     await searchCertificateNew(certNumber, 'nama_shm', 'Nama SHM');
   });
-  // Event listener untuk pencarian Nama Pemilik Lama
-document.getElementById('searchExOwner')?.addEventListener('click', async () => {
-  const certNumber = document.getElementById('certExOwner').value.trim();
-  await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
-});
+
+  // Nama Pemilik Lama / EX - HANYA SATU DI SINI
+  document.getElementById('searchExOwner')?.addEventListener('click', async () => {
+    const certNumber = document.getElementById('certExOwner').value.trim();
+    await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
+  });
 
   // ===============================
   // ENTER KEY SUPPORT UNTUK SEMUA INPUT SERTIFIKAT
@@ -668,6 +669,14 @@ document.getElementById('searchExOwner')?.addEventListener('click', async () => 
     if (e.key === 'Enter') {
       e.preventDefault();
       document.getElementById('searchNamaSHM').click();
+    }
+  });
+
+  // ENTER KEY SUPPORT untuk Nama Pemilik Lama
+  document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('searchExOwner').click();
     }
   });
 
@@ -974,56 +983,31 @@ document.getElementById('searchExOwner')?.addEventListener('click', async () => 
       return null;
     }
   };
-// Tambah di DOMContentLoaded:
-document.getElementById('searchExOwner')?.addEventListener('click', async () => {
-  const certNumber = document.getElementById('certExOwner').value.trim();
-  await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
-});
-
-// Enter key support:
-  document.getElementById('searchExOwner')?.addEventListener('click', async () => {
-    const certNumber = document.getElementById('certExOwner').value.trim();
-    await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
-  });
-
-  // Enter key support:
-  document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      document.getElementById('searchExOwner').click();
-    }
-  });
 }); // <-- PENUTUP DOMContentLoaded
-  // JS - CEK KLIK LUAR PADA POPUP
-document.addEventListener('click', function(e) {
+  document.addEventListener('click', function(e) {
   const popup = document.querySelector('.kavling-popup');
   const modal = document.getElementById('certificateModal');
   
   // Untuk kavling popup
   if (popup && popup.style.display === 'flex') {
     const content = popup.querySelector('.kavling-popup-content');
-    const isClickInside = content.contains(e.target);
     const isCloseBtn = e.target.classList.contains('close-kavling-popup') || 
                        e.target.classList.contains('kavling-close-btn');
     
-    if (!isClickInside && !isCloseBtn) {
-      return; // Jangan tutup
-    }
+    // HANYA tutup jika klik tombol close
     if (isCloseBtn) {
       popup.remove();
     }
   }
   
-
-// Untuk modal sertifikat
+  // Untuk modal sertifikat - HANYA tutup via tombol
   if (modal && modal.style.display === 'flex') {
-    const content = modal.querySelector('.modal-content');
-    const isClickInside = content.contains(e.target);
     const isCloseBtn = e.target.classList.contains('close-modal') ||
                        e.target.id === 'closeModal';
     
-    if (!isClickInside && !isCloseBtn && e.target.id === 'certificateModal') {
-      return; // Jangan tutup
+    if (isCloseBtn) {
+      modal.style.display = 'none';
     }
+    // Abaikan klik di luar - jangan tutup
   }
 });
