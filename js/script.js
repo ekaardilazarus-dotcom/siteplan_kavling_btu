@@ -969,5 +969,17 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
       return null;
     }
   };
+// Tambah di DOMContentLoaded:
+document.getElementById('searchExOwner')?.addEventListener('click', async () => {
+  const certNumber = document.getElementById('certExOwner').value.trim();
+  await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
+});
 
+// Enter key support:
+document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('searchExOwner').click();
+  }
+});
 }); // <-- PENUTUP DOMContentLoaded
