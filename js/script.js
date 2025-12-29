@@ -634,6 +634,11 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
     const certNumber = document.getElementById('certNamaSHM').value.trim();
     await searchCertificateNew(certNumber, 'nama_shm', 'Nama SHM');
   });
+  // Event listener untuk pencarian Nama Pemilik Lama
+document.getElementById('searchExOwner')?.addEventListener('click', async () => {
+  const certNumber = document.getElementById('certExOwner').value.trim();
+  await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
+});
 
   // ===============================
   // ENTER KEY SUPPORT UNTUK SEMUA INPUT SERTIFIKAT
