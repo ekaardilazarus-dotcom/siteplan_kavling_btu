@@ -4,6 +4,7 @@
 // ===============================
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxJlk6tZ5kFfFFlLwaSXXh6VBqev3KcX_DkhGq_fcW85bfHR-1iK_9ABmu9264_tLuo/exec';
+const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxGcR1WN6SYqzfaiPhL2KRfIa-xzF39RR3xSosmeRY2tayd56-ZRC7TOQdBMW-8syi_3w/exec';
 
 let kavlingIndex = [];
 let originalViewBox = null;
@@ -21,6 +22,7 @@ let isSvgLoaded = false;
 // CACHE SYSTEM
 // ===============================
 const searchCache = new Map();
+const certSearchCache = new Map();
 const CACHE_DURATION = 10 * 60 * 1000; // 10 menit
 
 // ===============================
@@ -42,11 +44,125 @@ function clearHighlight() {
 }
 
 // ===============================
-// FUNGSI UMUM UNTUK PENCARIAN SERTIFIKAT
+// POPUP MANAGEMENT
 // ===============================
-async function searchCertificate(certNumber, certType, displayName) {
+function showKavlingPopup(address, result) {
+  // Hapus popup lama jika ada
+  const oldPopup = document.querySelector('.kavling-popup');
+  if (oldPopup) {
+    document.body.removeChild(oldPopup);
+  }
+  
+  // Buat popup baru
+  const popup = document.createElement('div');
+  popup.className = 'kavling-popup';
+  
+  let statusClass = '';
+  let statusText = '';
+  let dataContent = '';
+  
+  // Set berdasarkan status
+  switch (result.status) {
+    case 'success':
+      statusClass = 'kavling-status-success';
+      statusText = '✅ Data ditemukan';
+      if (result.data && result.data.trim() !== '') {
+        dataContent = `<div class="kavling-data-content">${result.data.trim()}</div>`;
+      } else {
+        dataContent = '<div style="text-align:center;padding:30px;color:#666;">Data kosong</div>';
+      }
+      break;
+      
+    case 'empty':
+      statusClass = 'kavling-status-empty';
+      statusText = 'ℹ️ Data ditemukan tetapi kolom kosong';
+      dataContent = '<div style="text-align:center;padding:30px;color:#666;">Tidak ada data di kolom AI</div>';
+      break;
+      
+    case 'notfound':
+      statusClass = 'kavling-status-notfound';
+      statusText = '🔍 Data tidak ditemukan';
+      dataContent = `
+        <div style="text-align:center;padding:20px;">
+          <div style="margin-bottom:10px;color:#e65100;">⚠️ Kode <strong>${address}</strong> tidak terdaftar</div>
+          <div style="color:#757575;font-size:13px;">Periksa kembali penulisan kode</div>
+        </div>
+      `;
+      break;
+      
+    case 'error':
+      statusClass = 'kavling-status-error';
+      statusText = '❌ Kesalahan';
+      dataContent = `
+        <div style="text-align:center;padding:20px;">
+          <div style="margin-bottom:10px;color:#c62828;">Gagal mengambil data</div>
+          <div style="color:#757575;font-size:13px;">${result.message || 'Terjadi kesalahan tidak diketahui'}</div>
+        </div>
+      `;
+      break;
+      
+    default:
+      statusClass = 'kavling-status-error';
+      statusText = '❓ Status tidak diketahui';
+      dataContent = '<div style="text-align:center;padding:30px;color:#666;">Status tidak dikenal</div>';
+  }
+  
+  popup.innerHTML = `
+    <div class="kavling-popup-content">
+      <div class="kavling-popup-header">
+        <h3>Hasil Pencarian: ${address}</h3>
+        <button class="close-kavling-popup">&times;</button>
+      </div>
+      <div class="kavling-popup-body">
+        <div class="${statusClass}">${statusText}</div>
+        ${dataContent}
+      </div>
+      <div class="kavling-popup-footer">
+        <button class="kavling-close-btn">Tutup</button>
+      </div>
+    </div>
+  `;
+  
+  // Tambahkan ke body
+  document.body.appendChild(popup);
+  
+  // Event listeners untuk popup
+  const closeBtn = popup.querySelector('.close-kavling-popup');
+  const closeBtn2 = popup.querySelector('.kavling-close-btn');
+  
+  const closePopup = () => {
+    document.body.removeChild(popup);
+  };
+  
+  closeBtn.addEventListener('click', closePopup);
+  closeBtn2.addEventListener('click', closePopup);
+  
+  // Tutup jika klik di luar konten
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      closePopup();
+    }
+  });
+  
+  // Tampilkan popup
+  setTimeout(() => {
+    popup.style.display = 'flex';
+  }, 10);
+}
+
+function closeKavlingPopup() {
+  const popup = document.querySelector('.kavling-popup');
+  if (popup) {
+    document.body.removeChild(popup);
+  }
+}
+
+// ===============================
+// FUNGSI PENCARIAN SERTIFIKAT (DATABASE BARU)
+// ===============================
+async function searchCertificateNew(certNumber, certType, displayName) {
   if (!certNumber) {
-    alert(`Mohon masukkan nomor ${displayName}`);
+    alert(`Mohon masukkan ${displayName}`);
     return;
   }
   
@@ -57,86 +173,256 @@ async function searchCertificate(certNumber, certType, displayName) {
   resultsBox.innerHTML = '<div style="padding:20px;text-align:center;color:#666;">⏳ Mencari data...</div>';
   
   try {
-    // Panggil API khusus untuk sertifikat
-    const encodedCert = encodeURIComponent(certNumber);
-    const url = `${API_URL}?certificate=${encodedCert}&type=${certType}&_t=${Date.now()}`;
+    // Cek cache dulu
+    const cacheKey = `${certType}:${certNumber.toUpperCase()}`;
+    const cached = certSearchCache.get(cacheKey);
     
-    console.log('🌐 Mengakses API:', url);
+    if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+      console.log('⚡ HIT CACHE SERTIFIKAT:', cacheKey);
+      displayCertificateResults(cached.data, certNumber, certType, displayName);
+      return;
+    }
+    
+    // Panggil API database sertifikat
+    const encodedCert = encodeURIComponent(certNumber);
+    const url = `${CERT_API_URL}?certificate=${encodedCert}&type=${certType}&_t=${Date.now()}`;
+    
+    console.log('🌐 Mengakses API Sertifikat:', url);
     
     const res = await fetch(url);
     const data = await res.json();
     
-    console.log('📦 Response API:', data);
+    console.log('📦 Response API Sertifikat:', data);
+    
+    // Simpan ke cache jika sukses
+    if (data.status === 'success') {
+      certSearchCache.set(cacheKey, {
+        data: data,
+        timestamp: Date.now()
+      });
+    }
     
     // Tampilkan hasil
-    if (data.status === 'success' && data.data) {
-      resultsBox.innerHTML = `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif;">
-          <div style="font-weight:700;font-size:15px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e0e0e0;color:#1a237e;">
-            <span>📋</span> ${displayName}: <strong>${certNumber}</strong>
-            ${data.kavling ? `<br><small>Kavling: ${data.kavling}</small>` : ''}
-          </div>
-          <div style="font-size:13px;margin-bottom:12px;padding:8px 10px;border-radius:6px;background:#e8f5e9;color:#1b5e20;border-left:4px solid #4caf50;">
-            ✅ ${data.message || 'Data ditemukan'}
-            ${data.totalFound > 1 ? `<br><small>(${data.totalFound} kavling ditemukan)</small>` : ''}
-          </div>
-          <div style="font-family:monospace;font-size:12px;line-height:1.4;white-space:pre-wrap;background:#f9f9f9;padding:12px;border-radius:3px;border:1px solid #ddd;max-height:250px;overflow-y:auto;">
-            ${data.data.trim()}
-          </div>
-        </div>
-      `;
-    } else if (data.status === 'empty') {
-      resultsBox.innerHTML = `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif;">
-          <div style="font-weight:700;font-size:15px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e0e0e0;color:#1a237e;">
-            <span>📋</span> ${displayName}: <strong>${certNumber}</strong>
-            ${data.kavling ? `<br><small>Kavling: ${data.kavling}</small>` : ''}
-          </div>
-          <div style="font-size:13px;margin-bottom:12px;padding:8px 10px;border-radius:6px;background:#fff3e0;color:#e65100;border-left:4px solid #ff9800;">
-            ℹ️ ${data.message || 'Data ditemukan tetapi kolom kosong'}
-          </div>
-          <div style="text-align:center;padding:20px;color:#757575;">
-            Kolom AI kosong untuk sertifikat ini
-          </div>
-        </div>
-      `;
-    } else if (data.status === 'not_found') {
-      resultsBox.innerHTML = `
-        <div style="padding:20px;text-align:center;color:#e65100;">
-          <div style="font-size:16px;margin-bottom:10px;">🔍 ${displayName} tidak ditemukan</div>
-          <div style="font-size:14px;margin-bottom:15px;">Nomor sertifikat: <strong>${certNumber}</strong></div>
-          <div style="font-size:13px;color:#757575;background:#f5f5f5;padding:10px;border-radius:4px;">
-            Periksa kembali nomor sertifikat
-          </div>
-        </div>
-      `;
-    } else {
-      resultsBox.innerHTML = `
-        <div style="padding:20px;text-align:center;color:#c62828;">
-          <div style="font-size:16px;margin-bottom:10px;">❌ Terjadi kesalahan</div>
-          <div style="font-size:14px;">${data.message || 'Gagal mengambil data'}</div>
-        </div>
-      `;
-    }
+    displayCertificateResults(data, certNumber, certType, displayName);
     
   } catch (error) {
     console.error(`❌ Error mencari ${displayName}:`, error);
     
     let errorMessage = 'Gagal terhubung ke server';
     if (error.name === 'AbortError') {
-      errorMessage = 'Timeout: Server tidak merespons dalam 30 detik';
+      errorMessage = 'Timeout: Server tidak merespons';
     } else if (error.message.includes('Failed to fetch')) {
       errorMessage = 'Gagal terhubung. Periksa koneksi internet.';
     } else {
       errorMessage = `Error: ${error.message}`;
     }
     
+    const resultsBox = document.getElementById('certificateResults');
     resultsBox.innerHTML = `
       <div style="padding:20px;text-align:center;color:#c62828;">
         <div style="font-size:16px;margin-bottom:10px;">❌ ${errorMessage}</div>
         <div style="font-size:14px;">Coba refresh halaman atau coba lagi nanti</div>
       </div>
     `;
+  }
+}
+
+function displayCertificateResults(data, certNumber, certType, displayName) {
+  const resultsBox = document.getElementById('certificateResults');
+  
+  if (data.status === 'success' && data.results && data.results.length > 0) {
+    let html = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif;">
+        <div style="font-weight:700;font-size:15px;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #4caf50;color:#1a237e;">
+          <span>📋</span> ${displayName}: <strong>${certNumber}</strong>
+          <div style="font-size:12px;font-weight:normal;color:#666;margin-top:4px;">
+            Ditemukan ${data.totalFound} hasil
+          </div>
+        </div>
+    `;
+    
+    // Tampilkan semua hasil
+    data.results.forEach((result, index) => {
+      const nomorDisplay = certType === 'nama_shm' ? result.nama : result.nomor;
+      html += `
+        <div style="margin-bottom:16px;padding:12px;border:1px solid #e0e0e0;border-radius:6px;background:#f9f9f9;">
+          <div style="font-weight:600;margin-bottom:6px;color:#2196f3;">
+            ${index + 1}. ${certType === 'nama_shm' ? 'Nama' : 'Nomor'}: ${nomorDisplay}
+            ${result.nama && certType !== 'nama_shm' ? `<br><small>Nama: ${result.nama}</small>` : ''}
+            <span style="font-size:11px;color:#757575;float:right;">Baris: ${result.row}</span>
+          </div>
+      `;
+      
+      if (result.data && result.data.trim() !== '') {
+        html += `
+          <div style="font-family:monospace;font-size:12px;line-height:1.4;white-space:pre-wrap;background:#fff;padding:10px;border-radius:3px;border:1px dashed #ddd;margin-top:8px;">
+            ${result.data.trim()}
+          </div>
+        `;
+      } else {
+        html += `
+          <div style="text-align:center;padding:12px;color:#757575;font-style:italic;">
+            Kolom AI kosong untuk data ini
+          </div>
+        `;
+      }
+      
+      html += `</div>`;
+    });
+    
+    html += `</div>`;
+    resultsBox.innerHTML = html;
+    
+  } else if (data.status === 'not_found') {
+    resultsBox.innerHTML = `
+      <div style="padding:20px;text-align:center;color:#e65100;">
+        <div style="font-size:16px;margin-bottom:10px;">🔍 ${displayName} tidak ditemukan</div>
+        <div style="font-size:14px;margin-bottom:15px;">${certType === 'nama_shm' ? 'Nama' : 'Nomor'}: <strong>${certNumber}</strong></div>
+        <div style="font-size:13px;color:#757575;background:#f5f5f5;padding:10px;border-radius:4px;">
+          Periksa kembali ${certType === 'nama_shm' ? 'nama' : 'nomor'} yang dimasukkan
+        </div>
+      </div>
+    `;
+  } else {
+    resultsBox.innerHTML = `
+      <div style="padding:20px;text-align:center;color:#c62828;">
+        <div style="font-size:16px;margin-bottom:10px;">❌ Terjadi kesalahan</div>
+        <div style="font-size:14px;">${data.message || 'Gagal mengambil data'}</div>
+      </div>
+    `;
+  }
+}
+
+// ===============================
+// FUNGSI UTAMA: AMBIL DATA KAVLING DARI API (DENGAN CACHE)
+// ===============================
+async function fetchDataForAddress(address) {
+  if (!address || !address.trim()) {
+    console.log('❌ Address kosong');
+    return;
+  }
+  
+  const cleanAddress = address.trim().toUpperCase();
+  console.log('🔍 Mencari data kavling untuk:', cleanAddress);
+  
+  // Tampilkan loading di popup
+  showKavlingPopup(cleanAddress, { status: 'loading' });
+  
+  // CEK CACHE PERTAMA
+  const cached = searchCache.get(cleanAddress);
+  if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+    console.log('⚡ HIT CACHE KAVLING:', cleanAddress);
+    showKavlingPopup(cleanAddress, {
+      status: 'success',
+      data: cached.data,
+      message: 'Data ditemukan (Cached)'
+    });
+    return;
+  }
+  
+  try {
+    // Encode address untuk URL
+    const encodedAddress = encodeURIComponent(cleanAddress);
+    const url = `${API_URL}?address=${encodedAddress}`;
+    
+    console.log('🌐 Mengambil data kavling dari:', url);
+    
+    // Tambahkan timestamp untuk menghindari cache
+    const fetchUrl = url + '&_t=' + Date.now();
+    
+    // Fetch data dengan timeout 40 DETIK
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 40000);
+    
+    const res = await fetch(fetchUrl, { 
+      method: 'GET',
+      mode: 'cors',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    clearTimeout(timeoutId);
+
+    console.log('📊 Status respons:', res.status, res.statusText);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    }
+
+    // Parse JSON
+    const data = await res.json();
+    console.log('📦 Data kavling diterima:', data);
+    
+    // SIMPAN KE CACHE jika success
+    if (data.status === 'success' && data.data) {
+      console.log('💾 Menyimpan kavling ke cache:', cleanAddress);
+      searchCache.set(cleanAddress, {
+        data: data.data || '',
+        timestamp: Date.now()
+      });
+    }
+    
+    // HANDLE BERDASARKAN STATUS DARI API
+    switch (data.status) {
+      case 'success':
+        showKavlingPopup(cleanAddress, { 
+          status: 'success',
+          message: data.message || 'Data ditemukan',
+          data: data.data || ''
+        });
+        break;
+        
+      case 'empty':
+        showKavlingPopup(cleanAddress, { 
+          status: 'empty',
+          message: data.message || 'Data ditemukan tetapi kolom kosong',
+          data: data.data || ''
+        });
+        break;
+        
+      case 'not_found':
+        showKavlingPopup(cleanAddress, { 
+          status: 'notfound',
+          message: data.message || 'Kode tidak ditemukan'
+        });
+        break;
+        
+      case 'error':
+        showKavlingPopup(cleanAddress, { 
+          status: 'error', 
+          message: data.message || 'Error dari server'
+        });
+        break;
+        
+      default:
+        showKavlingPopup(cleanAddress, { 
+          status: 'error', 
+          message: 'Format respons tidak dikenal'
+        });
+    }
+
+  } catch (err) {
+    console.error('❌ Error fetch data kavling:', err);
+    
+    // Deteksi jenis error
+    let errorMessage = 'Gagal mengambil data';
+    
+    if (err.name === 'AbortError') {
+      errorMessage = 'Timeout: Server tidak merespons dalam 40 detik';
+    } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      errorMessage = 'Gagal terhubung ke server. Periksa koneksi internet.';
+    } else if (err.message.includes('CORS')) {
+      errorMessage = 'Error CORS. Coba deploy ulang Google Apps Script.';
+    } else {
+      errorMessage = `Error: ${err.message}`;
+    }
+    
+    showKavlingPopup(cleanAddress, { 
+      status: 'error', 
+      message: errorMessage 
+    });
   }
 }
 
@@ -148,12 +434,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search');
   const resultsBox = document.getElementById('search-results');
   const resetBtn = document.getElementById('resetZoom');
-  const hasilDataBox = document.getElementById('hasilData');
 
   searchInput.disabled = true;
 
   // ===============================
-  // LOAD SVG DENGAN CACHE
+  // LOAD SVG DENGAN CACHE (SAMA SEPERTI SEBELUMNYA)
   // ===============================
   function setupSVG(container) {
     const svg = container.querySelector('svg');
@@ -229,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===============================
-  // MODAL SERTIFIKAT
+  // MODAL SERTIFIKAT (DATABASE BARU)
   // ===============================
   
   // Buka modal
@@ -260,40 +545,36 @@ document.addEventListener('DOMContentLoaded', () => {
       '<p class="placeholder">Hasil akan ditampilkan di sini...</p>';
   });
   
-  // Tombol kembali ke awal (dalam modal)
-  document.getElementById('backToHome')?.addEventListener('click', () => {
-    // Tutup modal
-    document.getElementById('certificateModal').style.display = 'none';
-    // Panggil fungsi reset
-    document.getElementById('resetZoom').click();
-  });
-
   // ===============================
-  // PENCARIAN SERTIFIKAT INDUK - DIPERBAIKI & DI DALAM DOMContentLoaded
+  // PENCARIAN SERTIFIKAT (SEMUA TIPE)
   // ===============================
+  
+  // Sertifikat Induk
   document.getElementById('searchInduk')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certInduk').value.trim();
-    await searchCertificate(certNumber, 'induk', 'Sertifikat Induk');
+    await searchCertificateNew(certNumber, 'induk', 'Sertifikat Induk');
   });
 
-  // ===============================
-  // PENCARIAN SHGB - TAMBAHAN BARU
-  // ===============================
+  // SHGB
   document.getElementById('searchSHGB')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certSHGB').value.trim();
-    await searchCertificate(certNumber, 'shgb', 'SHGB');
+    await searchCertificateNew(certNumber, 'shgb', 'SHGB');
   });
 
-  // ===============================
-  // PENCARIAN SHM - TAMBAHAN BARU
-  // ===============================
+  // SHM
   document.getElementById('searchSHM')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certSHM').value.trim();
-    await searchCertificate(certNumber, 'shm', 'SHM');
+    await searchCertificateNew(certNumber, 'shm', 'SHM');
+  });
+
+  // Nama SHM (BARU)
+  document.getElementById('searchNamaSHM')?.addEventListener('click', async () => {
+    const certNumber = document.getElementById('certNamaSHM').value.trim();
+    await searchCertificateNew(certNumber, 'nama_shm', 'Nama SHM');
   });
 
   // ===============================
-  // ENTER KEY SUPPORT UNTUK SEMUA INPUT SERTIFIKAT - TAMBAHAN BARU
+  // ENTER KEY SUPPORT UNTUK SEMUA INPUT SERTIFIKAT
   // ===============================
   document.getElementById('certInduk')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -316,7 +597,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ===============================
+  document.getElementById('certNamaSHM')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('searchNamaSHM').click();
+    }
+  });
+
+    // ===============================
   // SEARCH (BLOK + KAVLING) TANPA AUTO-SELECT
   // ===============================
   searchInput.addEventListener('input', () => {
@@ -353,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // ENTER KEY SUPPORT UNTUK SEARCH INPUT
+  // ENTER KEY SUPPORT UNTUK SEARCH INPUT KAVLING
   // ===============================
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -371,14 +659,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (kavlingIndex.includes(query)) {
           focusKavling(query);
         } else {
-          // Jika tidak ditemukan, tampilkan pesan
-          if (hasilDataBox) {
-            hasilDataBox.innerHTML = `
-              <div style="padding:10px; background:#ffebee; border-radius:4px; color:#c62828;">
-                <strong>Kavling tidak ditemukan:</strong> ${query}
-              </div>
-            `;
-          }
+          // Jika tidak ditemukan, tampilkan popup not found
+          showKavlingPopup(query, { 
+            status: 'notfound',
+            message: `Kode "${query}" tidak ditemukan`
+          });
         }
       } else {
         // Jika tanpa underscore, cari blok
@@ -390,305 +675,15 @@ document.addEventListener('DOMContentLoaded', () => {
           if (kavlingIndex.includes(query)) {
             focusKavling(query);
           } else {
-            if (hasilDataBox) {
-              hasilDataBox.innerHTML = `
-                <div style="padding:10px; background:#ffebee; border-radius:4px; color:#c62828;">
-                  <strong>Blok/Kavling tidak ditemukan:</strong> ${query}
-                </div>
-              `;
-            }
+            showKavlingPopup(query, { 
+              status: 'notfound',
+              message: `Blok/Kavling "${query}" tidak ditemukan`
+            });
           }
         }
       }
     }
   });
-
-  // ===============================
-  // RENDER DATA HASIL
-  // ===============================
-  function renderHasilData(address, result) {
-    if (!hasilDataBox) return;
-    
-    // Reset konten
-    hasilDataBox.innerHTML = '';
-    
-    // Buat container utama
-    const container = document.createElement('div');
-    container.style.cssText = `
-      font-family: 'Segoe UI', Arial, sans-serif;
-      color: #333;
-    `;
-    
-    // Header dengan kode
-    const header = document.createElement('div');
-    header.style.cssText = `
-      font-weight: 700;
-      font-size: 15px;
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #e0e0e0;
-      color: #1a237e;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    `;
-    
-    const iconSpan = document.createElement('span');
-    iconSpan.textContent = '📋';
-    
-    const textSpan = document.createElement('span');
-    textSpan.textContent = `Kode: ${address}`;
-    
-    header.appendChild(iconSpan);
-    header.appendChild(textSpan);
-    container.appendChild(header);
-    
-    // Status container
-    const statusDiv = document.createElement('div');
-    statusDiv.style.cssText = `
-      font-size: 13px;
-      margin-bottom: 12px;
-      padding: 8px 10px;
-      border-radius: 6px;
-      font-weight: 500;
-    `;
-    
-    // Data container
-    const dataDiv = document.createElement('div');
-    dataDiv.style.cssText = `
-      font-size: 13px;
-      line-height: 1.6;
-      max-height: 300px;
-      overflow-y: auto;
-      padding: 5px;
-    `;
-    
-    // Set berdasarkan status
-    switch (result.status) {
-      case 'loading':
-        statusDiv.textContent = '⏳ Memuat data dari database...';
-        statusDiv.style.backgroundColor = '#e3f2fd';
-        statusDiv.style.color = '#0d47a1';
-        statusDiv.style.borderLeft = '4px solid #2196f3';
-        dataDiv.innerHTML = '<div style="color:#666; padding:10px; text-align:center;">Mohon tunggu...</div>';
-        break;
-        
-      case 'success':
-        statusDiv.textContent = '✅ Data ditemukan';
-        statusDiv.style.backgroundColor = '#e8f5e9';
-        statusDiv.style.color = '#1b5e20';
-        statusDiv.style.borderLeft = '4px solid #4caf50';
-        
-        if (result.data && result.data.trim() !== '') {
-          // FORMAT SANGAT SIMPLE: Teks asli saja
-          const textContainer = document.createElement('div');
-          textContainer.style.cssText = `
-            font-family: monospace;
-            font-size: 12px;
-            line-height: 1.4;
-            white-space: pre-wrap;
-            background: #f9f9f9;
-            padding: 12px;
-            border-radius: 3px;
-            border: 1px solid #ddd;
-            max-height: 280px;
-            overflow-y: auto;
-          `;
-          
-          // Tampilkan teks asli dari spreadsheet
-          textContainer.textContent = result.data.trim();
-          dataDiv.appendChild(textContainer);
-          
-        } else {
-          dataDiv.innerHTML = '<div style="color:#666; padding:8px;">Data kosong</div>';
-        }
-        break;
-        
-      case 'empty':
-        statusDiv.textContent = 'ℹ️ Data ditemukan';
-        statusDiv.style.backgroundColor = '#fff3e0';
-        statusDiv.style.color = '#e65100';
-        statusDiv.style.borderLeft = '4px solid #ff9800';
-        dataDiv.innerHTML = '<div style="color:#666; padding:10px; text-align:center;">Tidak ada data di kolom AI</div>';
-        break;
-        
-      case 'notfound':
-        statusDiv.textContent = '🔍 Data tidak ditemukan';
-        statusDiv.style.backgroundColor = '#fff3e0';
-        statusDiv.style.color = '#e65100';
-        statusDiv.style.borderLeft = '4px solid #ff9800';
-        dataDiv.innerHTML = `
-          <div style="color:#e65100; padding:10px; text-align:center;">
-            <div style="margin-bottom:5px;">⚠️ Kode <strong>${address}</strong> tidak terdaftar</div>
-            <div style="font-size:12px; color:#757575;">Periksa kembali penulisan kode</div>
-          </div>
-        `;
-        break;
-        
-      case 'error':
-        statusDiv.textContent = '❌ Kesalahan';
-        statusDiv.style.backgroundColor = '#ffebee';
-        statusDiv.style.color = '#c62828';
-        statusDiv.style.borderLeft = '4px solid #f44336';
-        dataDiv.innerHTML = `
-          <div style="color:#c62828; padding:10px;">
-            <strong>Gagal mengambil data:</strong><br>
-            <span style="font-size:12px;">${result.message || 'Terjadi kesalahan tidak diketahui'}</span>
-          </div>
-        `;
-        break;
-        
-      default:
-        statusDiv.textContent = '❓ Status tidak diketahui';
-        statusDiv.style.backgroundColor = '#f5f5f5';
-        statusDiv.style.color = '#616161';
-    }
-    
-    container.appendChild(statusDiv);
-    container.appendChild(dataDiv);
-    hasilDataBox.appendChild(container);
-  }
-
-  // ===============================
-  // FUNGSI UTAMA: AMBIL DATA DARI API (DENGAN CACHE)
-  // ===============================
-  async function fetchDataForAddress(address) {
-    if (!address || !address.trim()) {
-      console.log('❌ Address kosong');
-      return;
-    }
-    
-    const cleanAddress = address.trim().toUpperCase();
-    console.log('🔍 Mencari data untuk:', cleanAddress);
-    
-    // CEK CACHE PERTAMA
-    const cached = searchCache.get(cleanAddress);
-    if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
-      console.log('⚡ HIT CACHE:', cleanAddress);
-      renderHasilData(cleanAddress, {
-        status: 'success',
-        data: cached.data,
-        message: 'Data ditemukan (Cached)'
-      });
-      return; // Jangan lanjut fetch API
-    }
-    
-    // Tampilkan loading jika tidak ada di cache
-    renderHasilData(cleanAddress, { status: 'loading' });
-
-    try {
-      // Encode address untuk URL
-      const encodedAddress = encodeURIComponent(cleanAddress);
-      const url = `${API_URL}?address=${encodedAddress}`;
-      
-      console.log('🌐 Mengambil data dari:', url);
-      
-      // Tambahkan timestamp untuk menghindari cache
-      const fetchUrl = url + '&_t=' + Date.now();
-      
-      // Fetch data dengan timeout 40 DETIK
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 40000);
-      
-      const res = await fetch(fetchUrl, { 
-        method: 'GET',
-        mode: 'cors',
-        signal: controller.signal,
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      clearTimeout(timeoutId);
-
-      console.log('📊 Status respons:', res.status, res.statusText);
-      
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-
-      // Parse JSON
-      const data = await res.json();
-      console.log('📦 Data diterima:', data);
-      
-      // SIMPAN KE CACHE jika success
-      if (data.status === 'success' && data.data) {
-        console.log('💾 Menyimpan ke cache:', cleanAddress);
-        searchCache.set(cleanAddress, {
-          data: data.data || '',
-          timestamp: Date.now()
-        });
-      }
-      
-      // HANDLE BERDASARKAN STATUS DARI API BARU
-      switch (data.status) {
-        case 'success':
-          renderHasilData(cleanAddress, { 
-            status: 'success',
-            message: data.message || 'Data ditemukan',
-            data: data.data || ''
-          });
-          break;
-          
-        case 'empty':
-          renderHasilData(cleanAddress, { 
-            status: 'empty',
-            message: data.message || 'Data ditemukan tetapi kolom kosong',
-            data: data.data || ''
-          });
-          break;
-          
-        case 'not_found':
-          renderHasilData(cleanAddress, { 
-            status: 'notfound',
-            message: data.message || 'Kode tidak ditemukan'
-          });
-          break;
-          
-        case 'error':
-          renderHasilData(cleanAddress, { 
-            status: 'error', 
-            message: data.message || 'Error dari server'
-          });
-          break;
-          
-        default:
-          // Fallback untuk format lama
-          if (data.error) {
-            renderHasilData(cleanAddress, { 
-              status: 'error', 
-              message: data.error
-            });
-          } else {
-            renderHasilData(cleanAddress, { 
-              status: 'error', 
-              message: 'Format respons tidak dikenal'
-            });
-          }
-      }
-
-    } catch (err) {
-      console.error('❌ Error fetch data:', err);
-      
-      // Deteksi jenis error - PERBAIKAN: UPDATE KE 40 DETIK
-      let errorMessage = 'Gagal mengambil data';
-      
-      if (err.name === 'AbortError') {
-        errorMessage = 'Timeout: Server tidak merespons dalam 40 detik';
-      } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        errorMessage = 'Gagal terhubung ke server. Periksa koneksi internet.';
-      } else if (err.message.includes('CORS')) {
-        errorMessage = 'Error CORS. Coba deploy ulang Google Apps Script.';
-      } else {
-        errorMessage = `Error: ${err.message}`;
-      }
-      
-      renderHasilData(cleanAddress, { 
-        status: 'error', 
-        message: errorMessage 
-      });
-    }
-  }
 
   // ===============================
   // FOCUS KAVLING
@@ -779,38 +774,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Panggil API dengan cache
     fetchDataForAddress(prefix);
   }
-
-  // ===============================
-  // FUNGSI TESTING
-  // ===============================
-  window.testAPI = async function(kode) {
-    const testAddress = kode || 'UJ35_29';
-    console.log('🧪 Testing API dengan kode:', testAddress);
-    
-    const url = `${API_URL}?address=${encodeURIComponent(testAddress)}&_t=${Date.now()}`;
-    
-    console.log('URL:', url);
-    
-    try {
-      const res = await fetch(url);
-      console.log('Status:', res.status, res.statusText);
-      
-      const text = await res.text();
-      console.log('Raw response:', text);
-      
-      try {
-        const json = JSON.parse(text);
-        console.log('Parsed JSON:', json);
-        return json;
-      } catch (e) {
-        console.error('Gagal parse JSON:', e);
-        return text;
-      }
-    } catch (err) {
-      console.error('Fetch error:', err);
-      return null;
-    }
-  };
 
   // ===============================
   // CLICK MAP
@@ -908,7 +871,41 @@ document.addEventListener('DOMContentLoaded', () => {
     zoomPadding = null;
     searchInput.value = '';
     resultsBox.innerHTML = '';
-    if (hasilDataBox) hasilDataBox.innerHTML = '';
+    closeKavlingPopup();
+  };
+
+  // ===============================
+  // FUNGSI TESTING
+  // ===============================
+  window.testCertificateAPI = async function(type, value) {
+    const testType = type || 'shm';
+    const testValue = value || 'B.00350';
+    
+    console.log(`🧪 Testing API Sertifikat: ${testType} = ${testValue}`);
+    
+    const url = `${CERT_API_URL}?certificate=${encodeURIComponent(testValue)}&type=${testType}&_t=${Date.now()}`;
+    
+    console.log('URL:', url);
+    
+    try {
+      const res = await fetch(url);
+      console.log('Status:', res.status, res.statusText);
+      
+      const text = await res.text();
+      console.log('Raw response:', text);
+      
+      try {
+        const json = JSON.parse(text);
+        console.log('Parsed JSON:', json);
+        return json;
+      } catch (e) {
+        console.error('Gagal parse JSON:', e);
+        return text;
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+      return null;
+    }
   };
 
 }); // <-- PENUTUP DOMContentLoaded
