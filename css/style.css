@@ -326,7 +326,7 @@ h1 {
 
 /* Data content dalam popup */
 .kavling-data-content {
-  font-family: monospace;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -439,7 +439,50 @@ h1 {
   overflow-y: auto;
   flex-grow: 1;
 }
+/* LAYOUT BARU: Modal dengan 2 kolom */
+.modal-body-new {
+  padding: 20px;
+  display: flex;
+  gap: 30px;
+  min-height: 500px;
+}
 
+/* Kolom kiri untuk input pencarian */
+.modal-left-column {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  border-right: 1px solid #e0e0e0;
+  padding-right: 25px;
+}
+
+/* Kolom kanan untuk hasil */
+.modal-right-column {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* Responsive untuk layout baru */
+@media (max-width: 1024px) {
+  .modal-body-new {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .modal-left-column {
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+    padding-right: 0;
+    padding-bottom: 20px;
+    width: 100%;
+  }
+  
+  .modal-right-column {
+    width: 100%;
+  }
+}
 .cert-column {
   flex: 1;
   min-width: 220px;
@@ -455,6 +498,7 @@ h1 {
 }
 
 .cert-input {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
   padding: 12px;
   border: 2px solid #e0e0e0;
@@ -522,6 +566,7 @@ h1 {
 }
 
 .results-box .placeholder {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #757575;
   text-align: center;
   font-style: italic;
@@ -690,6 +735,7 @@ h1 {
 
 /* Popup loading state */
 .kavling-popup-loading .kavling-popup-body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -711,6 +757,76 @@ h1 {
   border-top: 3px solid #2196F3;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: 15px auto;
+  margin-bottom: 0 auto 15px auto;
 }
 
+.cert-total-found {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #1a237e !important;
+  margin: 10px 0 !important;
+  padding: 8px 12px !important;
+  background: #e8f5e9 !important;
+  border-radius: 6px !important;
+  border-left: 4px solid #4caf50 !important;
+}
+
+/* Style untuk hasil pencarian sertifikat */
+.cert-result-item {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin-bottom: 15px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  transition: all 0.3s;
+}
+
+.cert-result-item:hover {
+  border-color: #2196F3;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Input sertifikat yang lebih baik */
+.cert-input-enhanced {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f8f9fa;
+  transition: all 0.3s;
+}
+
+.cert-input-enhanced:focus {
+  border-color: #2196F3;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  outline: none;
+}
+
+/* Tombol pencarian yang lebih baik */
+.search-btn-enhanced {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.search-btn-enhanced:hover {
+  background: linear-gradient(135deg, #1976D2 0%, #0d47a1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
