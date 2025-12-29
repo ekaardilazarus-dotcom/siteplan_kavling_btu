@@ -987,4 +987,37 @@ document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
     document.getElementById('searchExOwner').click();
   }
 });
+
+  // JS - CEK KLIK LUAR PADA POPUP
+document.addEventListener('click', function(e) {
+  const popup = document.querySelector('.kavling-popup');
+  const modal = document.getElementById('certificateModal');
+  
+  // Untuk kavling popup
+  if (popup && popup.style.display === 'flex') {
+    const content = popup.querySelector('.kavling-popup-content');
+    const isClickInside = content.contains(e.target);
+    const isCloseBtn = e.target.classList.contains('close-kavling-popup') || 
+                       e.target.classList.contains('kavling-close-btn');
+    
+    if (!isClickInside && !isCloseBtn) {
+      return; // Jangan tutup
+    }
+    if (isCloseBtn) {
+      popup.remove();
+    }
+  }
+  
+  // Untuk modal sertifikat
+  if (modal && modal.style.display === 'flex') {
+    const content = modal.querySelector('.modal-content');
+    const isClickInside = content.contains(e.target);
+    const isCloseBtn = e.target.classList.contains('close-modal') ||
+                       e.target.id === 'closeModal';
+    
+    if (!isClickInside && !isCloseBtn && e.target.id === 'certificateModal') {
+      return; // Jangan tutup
+    }
+  }
+});
 }); // <-- PENUTUP DOMContentLoaded
