@@ -362,7 +362,6 @@ async function fetchDataForAddress(address) {
   }
   
   // ... (kode fetch API tetap sama)
-}
   try {
     // Encode address untuk URL
     const encodedAddress = encodeURIComponent(cleanAddress);
