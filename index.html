@@ -6,7 +6,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>DATA BTU MALANG</title>
-  <link rel="stylesheet" href="css/style.css?v=3"> <!-- Update version -->
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
@@ -15,7 +15,6 @@
   <!-- CONTAINER TOMBOL DI KIRI -->
   <div id="button-container">
     <button id="resetZoom">Lihat Semua Area</button>
-    <!-- TOMBOL INI HARUS SAMA ID-NYA -->
     <button id="searchByCertificate" class="cert-btn">
       <span>📋</span>
       Cari berdasarkan Sertifikat
@@ -30,7 +29,8 @@
     <ul id="search-results"></ul>
   </div>
   
-  <div id="hasilData" class="rekap-box"></div>
+  <!-- POPUP HASIL KAVLING (AKAN DITAMBAHKAN OLEH JS) -->
+  <div id="kavlingPopupContainer"></div>
 
   <!-- Map container -->
   <div id="map"></div>
@@ -71,6 +71,15 @@
           </button>
         </div>
         
+        <!-- Kolom 4: Nama SHM (BARU) -->
+        <div class="cert-column">
+          <h4>Nama SHM</h4>
+          <input type="text" id="certNamaSHM" placeholder="Masukkan nama pemilik..." class="cert-input">
+          <button id="searchNamaSHM" class="search-btn">
+            <span>👤</span> Cari Nama
+          </button>
+        </div>
+        
         <!-- Area Hasil Pencarian -->
         <div class="results-section">
           <h4>Hasil Pencarian</h4>
@@ -81,16 +90,12 @@
       </div>
       
       <div class="modal-footer">
-        <button id="backToHome" class="home-btn secondary-btn">
-          <span>🏠</span>
-          Kembali ke Awal
-        </button>
         <button id="clearAll" class="secondary-btn">Bersihkan Semua</button>
         <button id="closeModal" class="primary-btn">Tutup</button>
       </div>
     </div>
   </div>
 
-  <script src="js/script.js?v=3"></script> <!-- Update version -->
+  <script src="js/script.js?v=4"></script>
 </body>
 </html>
