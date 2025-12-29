@@ -43,51 +43,59 @@
         <button class="close-modal">&times;</button>
       </div>
       
-      <div class="modal-body">
-        <!-- Kolom 1: Sertifikat Induk -->
-        <div class="cert-column">
-          <h4>Sertifikat Induk</h4>
-          <input type="text" id="certInduk" placeholder="Masukkan nomor sertifikat..." class="cert-input">
-          <button id="searchInduk" class="search-btn">
-            <span>🔎</span> Cari Induk
-          </button>
-        </div>
-        
-        <!-- Kolom 2: SHGB -->
-        <div class="cert-column">
-          <h4>SHGB</h4>
-          <input type="text" id="certSHGB" placeholder="Masukkan nomor SHGB..." class="cert-input">
-          <button id="searchSHGB" class="search-btn">
-            <span>📄</span> Cari SHGB
-          </button>
-        </div>
-        
-        <!-- Kolom 3: SHM -->
-        <div class="cert-column">
-          <h4>SHM</h4>
-          <input type="text" id="certSHM" placeholder="Masukkan nomor SHM..." class="cert-input">
-          <button id="searchSHM" class="search-btn">
-            <span>🏠</span> Cari SHM
-          </button>
-        </div>
-        
-        <!-- Kolom 4: Nama SHM (BARU) -->
-        <div class="cert-column">
-          <h4>Nama SHM</h4>
-          <input type="text" id="certNamaSHM" placeholder="Masukkan nama pemilik..." class="cert-input">
-          <button id="searchNamaSHM" class="search-btn">
-            <span>👤</span> Cari Nama
-          </button>
-        </div>
-        
-        <!-- Area Hasil Pencarian -->
-        <div class="results-section">
-          <h4>Hasil Pencarian</h4>
-          <div id="certificateResults" class="results-box">
-            <p class="placeholder">Hasil akan ditampilkan di sini...</p>
-          </div>
-        </div>
-      </div>
+    <!-- GANTI modal-body di dalam certificateModal -->
+<div class="modal-body modal-body-new">
+  <!-- KOLOM KIRI: Input Pencarian -->
+  <div class="modal-left-column">
+    <!-- Sertifikat Induk -->
+    <div class="cert-column">
+      <h4>Sertifikat Induk</h4>
+      <input type="text" id="certInduk" placeholder="Contoh: B.4462 atau 12.06.000001394.0" class="cert-input-enhanced">
+      <button id="searchInduk" class="search-btn-enhanced">
+        <span>🔎</span> Cari Induk
+      </button>
+    </div>
+    
+    <!-- SHGB -->
+    <div class="cert-column">
+      <h4>SHGB</h4>
+      <input type="text" id="certSHGB" placeholder="Contoh: B.00350 atau PH.C34" class="cert-input-enhanced">
+      <button id="searchSHGB" class="search-btn-enhanced">
+        <span>📄</span> Cari SHGB
+      </button>
+    </div>
+    
+    <!-- SHM -->
+    <div class="cert-column">
+      <h4>SHM</h4>
+      <input type="text" id="certSHM" placeholder="Contoh: 12.06.000000510.0 atau SHM 8088" class="cert-input-enhanced">
+      <button id="searchSHM" class="search-btn-enhanced">
+        <span>🏠</span> Cari SHM
+      </button>
+    </div>
+    
+    <!-- Nama SHM -->
+    <div class="cert-column">
+      <h4>Nama SHM</h4>
+      <input type="text" id="certNamaSHM" placeholder="Contoh: RACHEL RAGATA atau UMANG GIANTO" class="cert-input-enhanced">
+      <button id="searchNamaSHM" class="search-btn-enhanced">
+        <span>👤</span> Cari Nama
+      </button>
+    </div>
+  </div>
+  
+  <!-- KOLOM KANAN: Hasil Pencarian -->
+  <div class="modal-right-column">
+    <h4 style="margin: 0 0 15px 0; color: #333; font-size: 16px; font-weight: 600; padding-bottom: 10px; border-bottom: 2px solid #666; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      Hasil Pencarian
+    </h4>
+    <div id="certificateResults" class="results-box">
+      <p class="placeholder" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+        Hasil pencarian akan ditampilkan di sini...
+      </p>
+    </div>
+  </div>
+</div>
       
       <div class="modal-footer">
         <button id="clearAll" class="secondary-btn">Bersihkan Semua</button>
