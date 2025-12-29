@@ -1008,7 +1008,8 @@ document.addEventListener('click', function(e) {
     }
   }
   
-  // Untuk modal sertifikat
+}); // <-- PENUTUP DOMContentLoaded
+// Untuk modal sertifikat
   if (modal && modal.style.display === 'flex') {
     const content = modal.querySelector('.modal-content');
     const isClickInside = content.contains(e.target);
@@ -1020,4 +1021,3 @@ document.addEventListener('click', function(e) {
     }
   }
 });
-}); // <-- PENUTUP DOMContentLoaded
