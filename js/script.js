@@ -594,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Tutup modal kalau klik di luar konten
   document.getElementById('certificateModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'certificateModal') {
+    if (e.target.classList.contains('close-modal') || e.target.id === 'closeModal') {
       document.getElementById('certificateModal').style.display = 'none';
     }
   });
@@ -981,12 +981,18 @@ document.getElementById('searchExOwner')?.addEventListener('click', async () => 
 });
 
 // Enter key support:
-document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    document.getElementById('searchExOwner').click();
-  }
-});
+  document.getElementById('searchExOwner')?.addEventListener('click', async () => {
+    const certNumber = document.getElementById('certExOwner').value.trim();
+    await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
+  });
+
+  // Enter key support:
+  document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('searchExOwner').click();
+    }
+  });
 
   // JS - CEK KLIK LUAR PADA POPUP
 document.addEventListener('click', function(e) {
