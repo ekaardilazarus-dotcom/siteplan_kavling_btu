@@ -144,8 +144,6 @@ async function fetchKavlingStatus() {
   }
 }
 
-// Fungsi untuk update panel status (tanpa popup loading)
-// Fungsi untuk update panel status (tanpa popup loading)
 function updateStatusPanel(data) {
   const panelBody = document.querySelector('.status-panel-body');
   
@@ -153,6 +151,20 @@ function updateStatusPanel(data) {
     console.error('❌ Panel body tidak ditemukan');
     return;
   }
+  
+  // ========== DEBUG: TAMPILKAN SEMUA DATA ==========
+  console.log('=== DEBUG updateStatusPanel ===');
+  console.log('Data lengkap:', data);
+  console.log('Total Records:', data.totalRecords);
+  console.log('Data length:', data.data?.length);
+  
+  if (data.data && Array.isArray(data.data)) {
+    console.log('=== DAFTAR SEMUA ITEM DENGAN KATEGORI ===');
+    data.data.forEach((item, i) => {
+      console.log(`${i+1}. ${item.kode} - KATEGORI: "${item.kategori}" - Skema: "${item.skema || '-'}"`);
+    });
+  }
+  // ========== END DEBUG ==========
   
   // FUNGSI AMAN UNTUK UPDATE
   const safeUpdate = (elementId, value) => {
@@ -164,27 +176,40 @@ function updateStatusPanel(data) {
     }
   };
   
-  // JIKA TIDAK ADA SUMMARY, HITUNG MANUAL
+  // JIKA TIDAK ADA SUMMARY, HITUNG MANUAL DENGAN CASE-INSENSITIVE
   if (!data.summary && data.data && Array.isArray(data.data)) {
-    console.log('📊 Menghitung summary dari data...');
+    console.log('📊 Menghitung summary dari data (case-insensitive)...');
     
     const counts = {
       kpr: 0,
       stok: 0,
       rekom: 0,
       disewakan: 0,
+      lainnya: 0,
       total: data.totalRecords || data.data.length
     };
     
-    // Hitung kategori
+    // Hitung kategori dengan CASE-INSENSITIVE
     data.data.forEach(item => {
-      if (item.kategori === 'kpr') counts.kpr++;
-      else if (item.kategori === 'stok') counts.stok++;
-      else if (item.kategori === 'rekom') counts.rekom++;
-      else if (item.kategori === 'disewakan') counts.disewakan++;
+      if (!item.kategori) {
+        counts.lainnya++;
+        return;
+      }
+      
+      const kategoriLower = item.kategori.toLowerCase().trim();
+      
+      if (kategoriLower === 'kpr') counts.kpr++;
+      else if (kategoriLower === 'stok') counts.stok++;
+      else if (kategoriLower === 'rekom') counts.rekom++;
+      else if (kategoriLower === 'disewakan') counts.disewakan++;
+      else {
+        counts.lainnya++;
+        console.log(`ℹ️ Kategori tidak dikenal: "${item.kategori}" untuk kode ${item.kode}`);
+      }
     });
     
-    console.log('🧮 Hasil hitung:', counts);
+    console.log('🧮 Hasil hitung DETIL:', counts);
+    console.log(`📈 Summary: KPR=${counts.kpr}, STOK=${counts.stok}, REKOM=${counts.rekom}, DISEWAKAN=${counts.disewakan}`);
     
     // Update dengan cara aman
     safeUpdate('countKPR', counts.kpr);
@@ -211,8 +236,7 @@ function updateStatusPanel(data) {
     `;
     return;
   }
-  
-  // Buat HTML untuk panel
+    // Buat HTML untuk panel
   let html = '';
   
   // Data untuk setiap kategori
@@ -290,7 +314,7 @@ function colorizeKavling(kavlingData) {
       console.warn('⚠️ Item tanpa kode:', item);
       return;
     }
-    
+    console.log(`🎨 Processing: ${item.kode} - Kategori: "${item.kategori}"`);
     // Normalize kode (uppercase, trim)
     const kode = item.kode.trim().toUpperCase();
     
