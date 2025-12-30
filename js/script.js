@@ -1667,4 +1667,4 @@ document.addEventListener('DOMContentLoaded', () => {
       // Abaikan klik di luar - jangan tutup
     }
   });
-});
+}); // PENUTUP UNTUK DOMContentLoaded
