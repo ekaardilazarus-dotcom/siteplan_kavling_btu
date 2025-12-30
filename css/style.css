@@ -1270,3 +1270,64 @@ h1 {
     font-size: 14px;
   }
 }
+
+/* =============================== */
+/* LOADING STATE UNTUK STATUS PANEL */
+/* =============================== */
+
+.status-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.status-loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #9c27b0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px auto;
+}
+
+.status-progress {
+  width: 100%;
+  background: #f0f0f0;
+  border-radius: 10px;
+  height: 10px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+
+.status-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #9c27b0, #2196F3);
+  border-radius: 10px;
+  animation: progress 2s ease-in-out infinite;
+  width: 60%;
+}
+
+@keyframes progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.status-debug-info {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 15px;
+  font-family: monospace;
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.status-debug-info h5 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 13px;
+}
