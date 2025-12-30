@@ -49,18 +49,76 @@ function clearHighlight() {
 // FUNGSI BARU: STATUS KAVLING
 // ===============================
 
-// 1. Ambil data status dari API
+// ===============================
+// FUNGSI BARU: STATUS KAVLING (DIPERBAIKI)
+// ===============================
+
 async function fetchKavlingStatus() {
   try {
     console.log('🔍 Mengambil data status kavling...');
     
+    // Tampilkan loading di panel
+    const panelBody = document.querySelector('.status-panel-body');
+    if (panelBody) {
+      panelBody.innerHTML = `
+        <div class="status-loading">
+          <div class="status-loading-spinner"></div>
+          <div style="color:#666;font-size:14px;margin-top:10px;">
+            Memuat data status kavling...
+            <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Tampilkan popup loading
+    showKavlingPopup('STATUS KAVLING', { 
+      status: 'loading',
+      message: 'Mengambil data status dari server...'
+    });
+    
     const url = `${API_URL}?action=status&_t=${Date.now()}`;
-    const response = await fetch(url);
+    console.log('🌐 API URL:', url);
     
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    // Fetch dengan timeout 30 detik
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     
-    const data = await response.json();
-    console.log('📊 Data status diterima:', data);
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    console.log('📊 Response Status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    // Ambil data sebagai teks dulu untuk debugging
+    const responseText = await response.text();
+    console.log('📦 Raw Response:', responseText);
+    
+    // Parse JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ JSON Parse Error:', parseError);
+      console.error('Response text:', responseText);
+      throw new Error('Format response tidak valid');
+    }
+    
+    console.log('✅ Data status diterima:', data);
+    
+    // Tutup popup loading
+    closeKavlingPopup();
     
     // Simpan data ke variabel global
     statusData = data;
@@ -75,38 +133,119 @@ async function fetchKavlingStatus() {
     
   } catch (error) {
     console.error('❌ Gagal mengambil data status:', error);
-    alert('Gagal mengambil data status. Periksa koneksi atau coba lagi nanti.');
+    
+    // Update panel dengan error message
+    const panelBody = document.querySelector('.status-panel-body');
+    if (panelBody) {
+      panelBody.innerHTML = `
+        <div style="padding:20px;text-align:center;color:#c62828;">
+          <div style="font-size:16px;margin-bottom:10px;">❌ Gagal mengambil data</div>
+          <div style="font-size:14px;margin-bottom:15px;">${error.message}</div>
+          <button onclick="fetchKavlingStatus()" style="padding:8px 16px;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;">
+            🔄 Coba Lagi
+          </button>
+        </div>
+      `;
+    }
+    
+    // Tampilkan error di popup
+    showKavlingPopup('ERROR', { 
+      status: 'error', 
+      message: `Gagal mengambil data: ${error.message}<br><br>URL API: ${API_URL}?action=status` 
+    });
+    
     return null;
   }
 }
-
-// 2. Beri warna kavling berdasarkan kategori
+//beri warna
 function colorizeKavling(kavlingData) {
   const svgMap = document.querySelector('#map svg');
-  if (!svgMap) return;
+  if (!svgMap) {
+    console.error('❌ SVG map tidak ditemukan');
+    return;
+  }
   
-  // Hapus warna status sebelumnya (jika ada)
+  console.log(`🎨 Mulai mewarnai ${kavlingData.length} kavling`);
+  
+  // Reset semua warna
   clearStatusColors();
+  
+  let coloredCount = 0;
+  let notFoundCount = 0;
   
   // Loop setiap kavling dari data API
   kavlingData.forEach(item => {
-    const element = document.getElementById(item.kode);
+    if (!item.kode) {
+      console.warn('⚠️ Item tanpa kode:', item);
+      return;
+    }
+    
+    // Normalize kode (uppercase, trim)
+    const kode = item.kode.trim().toUpperCase();
+    
+    // Cari element di SVG
+    let element = document.getElementById(kode);
+    
+    // Jika tidak ditemukan dengan ID langsung, coba cari dengan selector lain
+    if (!element) {
+      // Coba cari dengan pola lain (misal: "GA" menjadi "GA_")
+      const elements = document.querySelectorAll(`[id*="${kode}"]`);
+      if (elements.length > 0) {
+        element = elements[0];
+        console.log(`🔍 Found alternative for ${kode}:`, element.id);
+      }
+    }
+    
     if (element) {
       // Tambahkan kelas CSS berdasarkan kategori
       if (item.kategori && item.kategori !== 'lainnya') {
-        element.classList.add(`kavling-status-${item.kategori}`);
+        const className = `kavling-status-${item.kategori}`;
         
-        // Jika elemen adalah group, warnai child-nya juga
+        // Tambah kelas ke element
+        element.classList.add(className);
+        
+        // Jika element adalah group, warnai child-nya juga
         if (element.tagName.toLowerCase() === 'g') {
-          element.querySelectorAll('rect, path, polygon').forEach(child => {
-            child.classList.add(`kavling-status-${item.kategori}`);
+          const children = element.querySelectorAll('rect, path, polygon, circle');
+          children.forEach(child => {
+            child.classList.add(className);
           });
         }
+        
+        coloredCount++;
+        
+        // Debug log setiap 10 kavling
+        if (coloredCount % 10 === 0) {
+          console.log(`✅ ${coloredCount} kavling diberi warna`);
+        }
+      }
+    } else {
+      notFoundCount++;
+      // Debug untuk kavling yang tidak ditemukan (max 5)
+      if (notFoundCount <= 5) {
+        console.warn(`❓ Kavling tidak ditemukan di SVG: "${kode}"`);
       }
     }
   });
   
-  console.log(`✅ ${kavlingData.length} kavling diberi warna`);
+  console.log(`🎨 Selesai: ${coloredCount} kavling berwarna, ${notFoundCount} tidak ditemukan`);
+  
+  // Jika banyak yang tidak ditemukan, tampilkan warning
+  if (notFoundCount > kavlingData.length * 0.5) {
+    console.warn(`⚠️ PERINGATAN: ${notFoundCount} dari ${kavlingData.length} kavling tidak ditemukan di peta!`);
+    console.warn('Mungkin ID di SVG berbeda dengan ID di database');
+    
+    // Tampilkan sample ID yang tidak ditemukan
+    const notFoundSamples = [];
+    kavlingData.slice(0, 5).forEach(item => {
+      const element = document.getElementById(item.kode.trim().toUpperCase());
+      if (!element) notFoundSamples.push(item.kode);
+    });
+    
+    if (notFoundSamples.length > 0) {
+      console.warn('Contoh ID yang tidak ditemukan:', notFoundSamples);
+    }
+  }
 }
 
 // 3. Hapus semua warna status
@@ -1277,14 +1416,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
   
-  // Test fungsi status
-  window.testStatusAPI = async function() {
-    console.log('🧪 Testing Status API...');
-    const result = await fetchKavlingStatus();
-    console.log('Status result:', result);
-    return result;
-  };
-});
+ // ===============================
+// FUNGSI DEBUG API
+// ===============================
+
+// Fungsi untuk test koneksi API
+window.testStatusAPI = async function() {
+  console.log('🧪 Testing Status API Connection...');
+  
+  const testUrls = [
+    `${API_URL}?action=status`,
+    `${API_URL}?action=status&callback=test`,
+    'https://script.google.com/macros/s/AKfycbwbBmXFoTtWa0XxK-ogxueDUkjzAKzhE7sPQaDMQvTIy7_FhA-DGMBJyYzzTyUVXw/exec?action=status'
+  ];
+  
+  for (let i = 0; i < testUrls.length; i++) {
+    const url = testUrls[i];
+    console.log(`\n🔗 Testing URL ${i+1}: ${url}`);
+    
+    try {
+      const startTime = Date.now();
+      const response = await fetch(url + '&_t=' + Date.now());
+      const endTime = Date.now();
+      
+      console.log(`⏱️ Response time: ${endTime - startTime}ms`);
+      console.log(`📊 Status: ${response.status} ${response.statusText}`);
+      
+      const text = await response.text();
+      console.log(`📄 Response length: ${text.length} characters`);
+      
+      // Coba parse JSON
+      try {
+        const json = JSON.parse(text);
+        console.log('✅ Valid JSON:', json);
+        
+        // Tampilkan summary jika ada
+        if (json.summary) {
+          console.log('📈 Summary:', json.summary);
+        }
+        if (json.data && Array.isArray(json.data)) {
+          console.log(`📊 Data count: ${json.data.length}`);
+          if (json.data.length > 0) {
+            console.log('📝 Sample data:', json.data[0]);
+          }
+        }
+        
+      } catch (e) {
+        console.log('⚠️ Not valid JSON, first 200 chars:', text.substring(0, 200));
+      }
+      
+    } catch (error) {
+      console.log(`❌ Error: ${error.message}`);
+    }
+  }
+  
+  console.log('\n📋 TEST COMPLETE');
+};
+
+// Fungsi untuk cek data langsung di Console
+window.checkStatusData = function() {
+  console.log('🔍 Checking statusData:', statusData);
+  console.log('🔍 Is Status Mode:', isStatusMode);
+  
+  if (statusData) {
+    console.log('📊 Data structure:', {
+      status: statusData.status,
+      totalRecords: statusData.totalRecords,
+      summary: statusData.summary,
+      dataLength: statusData.data ? statusData.data.length : 0
+    });
+    
+    // Hitung kategori manual
+    if (statusData.data && Array.isArray(statusData.data)) {
+      const counts = {
+        kpr: 0,
+        stok: 0,
+        rekom: 0,
+        disewakan: 0,
+        lainnya: 0
+      };
+      
+      statusData.data.forEach(item => {
+        counts[item.kategori] = (counts[item.kategori] || 0) + 1;
+      });
+      
+      console.log('🧮 Manual counts:', counts);
+    }
+  }
+};
 
 // Event listener untuk klik di luar popup
 document.addEventListener('click', function(e) {
