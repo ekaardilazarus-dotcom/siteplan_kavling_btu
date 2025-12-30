@@ -1,9 +1,9 @@
 // ===============================
 // FINAL CLEAN SCRIPT – SVG MAP
-// Search blok & kavling, zoom, pan, click sync
+// Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxJlk6tZ5kFfFFlLwaSXXh6VBqev3KcX_DkhGq_fcW85bfHR-1iK_9ABmu9264_tLuo/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwbBmXFoTtWa0XxK-ogxueDUkjzAKzhE7sPQaDMQvTIy7_FhA-DGMBJyYzzTyUVXw/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbyEPaUBAg2n3732mTnukOnoxA6eN6eTEjso929InZZEbIqjycGzb8zuSJdLmyfaFEJf3w/exec';
 
 let kavlingIndex = [];
@@ -17,6 +17,8 @@ let isDragging = false;
 let panStart = { x: 0, y: 0 };
 let svgCache = null;
 let isSvgLoaded = false;
+let isStatusMode = false; // Tambahan: flag untuk mode status
+let statusData = null; // Tambahan: simpan data status
 
 // ===============================
 // CACHE SYSTEM
@@ -44,7 +46,258 @@ function clearHighlight() {
 }
 
 // ===============================
-// POPUP MANAGEMENT
+// FUNGSI BARU: STATUS KAVLING
+// ===============================
+
+// 1. Ambil data status dari API
+async function fetchKavlingStatus() {
+  try {
+    console.log('🔍 Mengambil data status kavling...');
+    
+    const url = `${API_URL}?action=status&_t=${Date.now()}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    console.log('📊 Data status diterima:', data);
+    
+    // Simpan data ke variabel global
+    statusData = data;
+    
+    // Tampilkan panel statistik
+    showStatusPanel(data);
+    
+    // Beri warna pada kavling di peta
+    colorizeKavling(data.data || []);
+    
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Gagal mengambil data status:', error);
+    alert('Gagal mengambil data status. Periksa koneksi atau coba lagi nanti.');
+    return null;
+  }
+}
+
+// 2. Beri warna kavling berdasarkan kategori
+function colorizeKavling(kavlingData) {
+  const svgMap = document.querySelector('#map svg');
+  if (!svgMap) return;
+  
+  // Hapus warna status sebelumnya (jika ada)
+  clearStatusColors();
+  
+  // Loop setiap kavling dari data API
+  kavlingData.forEach(item => {
+    const element = document.getElementById(item.kode);
+    if (element) {
+      // Tambahkan kelas CSS berdasarkan kategori
+      if (item.kategori && item.kategori !== 'lainnya') {
+        element.classList.add(`kavling-status-${item.kategori}`);
+        
+        // Jika elemen adalah group, warnai child-nya juga
+        if (element.tagName.toLowerCase() === 'g') {
+          element.querySelectorAll('rect, path, polygon').forEach(child => {
+            child.classList.add(`kavling-status-${item.kategori}`);
+          });
+        }
+      }
+    }
+  });
+  
+  console.log(`✅ ${kavlingData.length} kavling diberi warna`);
+}
+
+// 3. Hapus semua warna status
+function clearStatusColors() {
+  // Hapus kelas warna dari semua elemen kavling
+  document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]')
+    .forEach(el => {
+      el.classList.remove(
+        'kavling-status-kpr',
+        'kavling-status-stok', 
+        'kavling-status-rekom',
+        'kavling-status-disewakan'
+      );
+      
+      // Hapus juga dari child elements jika group
+      if (el.tagName.toLowerCase() === 'g') {
+        el.querySelectorAll('rect, path, polygon').forEach(child => {
+          child.classList.remove(
+            'kavling-status-kpr',
+            'kavling-status-stok', 
+            'kavling-status-rekom',
+            'kavling-status-disewakan'
+          );
+        });
+      }
+    });
+}
+
+// 4. Tampilkan panel statistik
+function showStatusPanel(data) {
+  const panel = document.getElementById('statusPanel');
+  if (!panel) return;
+  
+  // Update angka di panel
+  if (data.summary) {
+    document.getElementById('countKPR').textContent = data.summary.kpr || 0;
+    document.getElementById('countSTOK').textContent = data.summary.stok || 0;
+    document.getElementById('countREKOM').textContent = data.summary.rekom || 0;
+    document.getElementById('countDISEWAKAN').textContent = data.summary.disewakan || 0;
+    document.getElementById('totalAll').textContent = data.summary.total || 0;
+  }
+  
+  // Tampilkan panel
+  panel.style.display = 'block';
+  isStatusMode = true;
+  
+  // Aktifkan tombol status
+  const statusBtn = document.getElementById('statusKavling');
+  if (statusBtn) statusBtn.classList.add('active');
+}
+
+// 5. Nonaktifkan mode status
+function resetStatusMode() {
+  // Reset warna kavling
+  clearStatusColors();
+  
+  // Sembunyikan panel
+  const panel = document.getElementById('statusPanel');
+  if (panel) panel.style.display = 'none';
+  
+  // Nonaktifkan tombol
+  const statusBtn = document.getElementById('statusKavling');
+  if (statusBtn) statusBtn.classList.remove('active');
+  
+  isStatusMode = false;
+  statusData = null;
+  console.log('🔄 Mode status dinonaktifkan');
+}
+
+// 6. Download data per kategori
+async function downloadKavlingData(type) {
+  try {
+    console.log(`📥 Memulai download data ${type}...`);
+    
+    // Tampilkan loading di panel
+    const resultsBox = document.getElementById('certificateResults');
+    if (resultsBox) {
+      resultsBox.innerHTML = `
+        <div class="cert-loading">
+          <div class="cert-loading-spinner"></div>
+          <div style="color:#666;font-size:14px;margin-top:10px;">
+            Memproses data ${type.toUpperCase()}...
+          </div>
+        </div>
+      `;
+    }
+    
+    const url = `${API_URL}?action=download&type=${type}&_t=${Date.now()}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    
+    // Tampilkan data di popup
+    showDownloadPopup(data, type);
+    
+  } catch (error) {
+    console.error(`❌ Gagal download data ${type}:`, error);
+    alert(`Gagal download data ${type}. Coba lagi nanti.`);
+  }
+}
+
+// 7. Popup untuk menampilkan data download
+function showDownloadPopup(data, type) {
+  // Hapus popup lama jika ada
+  const oldPopup = document.querySelector('.kavling-popup');
+  if (oldPopup) {
+    document.body.removeChild(oldPopup);
+  }
+  
+  // Buat popup baru
+  const popup = document.createElement('div');
+  popup.className = 'kavling-popup';
+  
+  let content = `<h3 style="margin-top:0;">Data ${type.toUpperCase()} (${data.count || 0} item)</h3>`;
+  
+  if (data.data && data.data.length > 0) {
+    // Format tabel sederhana
+    content += '<div style="overflow-x:auto;">';
+    content += '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+    content += '<tr style="background:#f5f5f5;">';
+    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">No</th>';
+    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">Kode Kavling</th>';
+    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">Skema</th>';
+    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">Tanggal</th>';
+    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">Data</th>';
+    content += '</tr>';
+    
+    data.data.forEach((item, index) => {
+      const rowColor = index % 2 === 0 ? '#fff' : '#f9f9f9';
+      content += `<tr style="background:${rowColor};">`;
+      content += `<td style="padding:8px; border:1px solid #ddd;">${index + 1}</td>`;
+      content += `<td style="padding:8px; border:1px solid #ddd;"><strong>${item.kode || ''}</strong></td>`;
+      content += `<td style="padding:8px; border:1px solid #ddd;">${item.skema || ''}</td>`;
+      content += `<td style="padding:8px; border:1px solid #ddd;">${item.tanggal || ''}</td>`;
+      content += `<td style="padding:8px; border:1px solid #ddd; font-family:monospace; font-size:12px;">${item.data || ''}</td>`;
+      content += '</tr>';
+    });
+    
+    content += '</table></div>';
+  } else {
+    content += '<p style="text-align:center; color:#666; padding:20px;">Tidak ada data</p>';
+  }
+  
+  popup.innerHTML = `
+    <div class="kavling-popup-content" style="max-width:800px;">
+      <div class="kavling-popup-header">
+        <h3>Download Data: ${type.toUpperCase()}</h3>
+        <button class="close-kavling-popup">&times;</button>
+      </div>
+      <div class="kavling-popup-body">
+        <div style="margin-bottom:15px; padding:10px; background:#e8f5e9; border-radius:6px;">
+          Total data: <strong>${data.count || 0}</strong> kavling
+        </div>
+        ${content}
+      </div>
+      <div class="kavling-popup-footer">
+        <button class="kavling-close-btn">Tutup</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(popup);
+  
+  // Event listeners untuk popup
+  const closePopup = () => {
+    document.body.removeChild(popup);
+  };
+  
+  const closeBtn = popup.querySelector('.close-kavling-popup');
+  const closeBtn2 = popup.querySelector('.kavling-close-btn');
+  
+  if (closeBtn) closeBtn.addEventListener('click', closePopup);
+  if (closeBtn2) closeBtn2.addEventListener('click', closePopup);
+  
+  // Tutup jika klik di luar konten
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      closePopup();
+    }
+  });
+  
+  // Tampilkan popup
+  setTimeout(() => {
+    popup.style.display = 'flex';
+  }, 10);
+}
+
+// ===============================
+// POPUP MANAGEMENT (ASLI)
 // ===============================
 function showKavlingPopup(address, result) {
   // Hapus popup lama jika ada
@@ -380,7 +633,6 @@ async function fetchDataForAddress(address) {
     return;
   }
   
-  // ... (kode fetch API tetap sama)
   try {
     // Encode address untuk URL
     const encodedAddress = encodeURIComponent(cleanAddress);
@@ -499,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
   searchInput.disabled = true;
 
   // ===============================
-  // LOAD SVG DENGAN CACHE (SAMA SEPERTI SEBELUMNYA)
+  // LOAD SVG DENGAN CACHE
   // ===============================
   function setupSVG(container) {
     const svg = container.querySelector('svg');
@@ -575,6 +827,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ===============================
+  // TOMBOL STATUS KAVLING (FITUR BARU)
+  // ===============================
+  
+  // Event listener untuk tombol Status Kavling
+  document.getElementById('statusKavling')?.addEventListener('click', async () => {
+    if (!isStatusMode) {
+      // Mode status aktif
+      await fetchKavlingStatus();
+    } else {
+      // Mode status nonaktif
+      resetStatusMode();
+    }
+  });
+  
+  // Event listener untuk tutup panel status
+  document.querySelector('.close-status-panel')?.addEventListener('click', () => {
+    resetStatusMode();
+  });
+  
+  // Event listener untuk tombol download di panel status
+  document.querySelectorAll('.download-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const type = this.getAttribute('data-type');
+      downloadKavlingData(type);
+    });
+  });
+
+  // ===============================
   // MODAL SERTIFIKAT (DATABASE BARU)
   // ===============================
   
@@ -600,12 +880,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   // Tombol bersihkan
-// Tombol bersihkan
-document.getElementById('clearAll')?.addEventListener('click', () => {
-  document.querySelectorAll('.compact-input').forEach(input => input.value = '');
-  document.getElementById('certificateResults').innerHTML = 
-    '<p class="placeholder" style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px 20px; color: #757575; font-style: italic;">Hasil pencarian akan ditampilkan di sini...</p>';
-});
+  document.getElementById('clearAll')?.addEventListener('click', () => {
+    document.querySelectorAll('.compact-input').forEach(input => input.value = '');
+    document.getElementById('certificateResults').innerHTML = 
+      '<p class="placeholder" style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px 20px; color: #757575; font-style: italic;">Hasil pencarian akan ditampilkan di sini...</p>';
+  });
   
   // ===============================
   // PENCARIAN SERTIFIKAT (SEMUA TIPE)
@@ -635,7 +914,7 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
     await searchCertificateNew(certNumber, 'nama_shm', 'Nama SHM');
   });
 
-  // Nama Pemilik Lama / EX - HANYA SATU DI SINI
+  // Nama Pemilik Lama / EX
   document.getElementById('searchExOwner')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certExOwner').value.trim();
     await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
@@ -680,7 +959,7 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
     }
   });
 
-    // ===============================
+  // ===============================
   // SEARCH (BLOK + KAVLING) TANPA AUTO-SELECT
   // ===============================
   searchInput.addEventListener('input', () => {
@@ -769,7 +1048,11 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
     const el = document.getElementById(id);
     if (!el) return;
 
+    // Hapus highlight warna sebelumnya
     clearHighlight();
+    
+    // Hapus juga warna status jika ada
+    clearStatusColors();
 
     if (el.tagName.toLowerCase() === 'g') {
       el.querySelectorAll('rect, path, polygon').forEach(c => {
@@ -807,6 +1090,9 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
   function focusBlok(prefix) {
     const svg = map.querySelector('svg');
     clearHighlight();
+    
+    // Hapus juga warna status jika ada
+    clearStatusColors();
 
     const els = [...map.querySelectorAll(`[id^="${prefix}_"]`)];
     if (!els.length) return;
@@ -939,6 +1225,8 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
   resetBtn.onclick = () => {
     const svg = map.querySelector('svg');
     clearHighlight();
+    clearStatusColors(); // Juga reset warna status
+    
     if (svg && originalViewBox) {
       svg.setAttribute('viewBox', originalViewBox);
       viewBoxState = parseViewBox(originalViewBox);
@@ -948,6 +1236,11 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
     searchInput.value = '';
     resultsBox.innerHTML = '';
     closeKavlingPopup();
+    
+    // Juga reset mode status jika aktif
+    if (isStatusMode) {
+      resetStatusMode();
+    }
   };
 
   // ===============================
@@ -983,8 +1276,18 @@ document.getElementById('clearAll')?.addEventListener('click', () => {
       return null;
     }
   };
-}); // <-- PENUTUP DOMContentLoaded
-  document.addEventListener('click', function(e) {
+  
+  // Test fungsi status
+  window.testStatusAPI = async function() {
+    console.log('🧪 Testing Status API...');
+    const result = await fetchKavlingStatus();
+    console.log('Status result:', result);
+    return result;
+  };
+});
+
+// Event listener untuk klik di luar popup
+document.addEventListener('click', function(e) {
   const popup = document.querySelector('.kavling-popup');
   const modal = document.getElementById('certificateModal');
   
