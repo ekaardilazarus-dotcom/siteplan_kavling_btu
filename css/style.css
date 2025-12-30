@@ -1269,6 +1269,33 @@ h1 {
     content: '🎨';
     font-size: 14px;
   }
+  /* Responsive untuk mobile */
+@media (max-width: 768px) {
+  #statusPanel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+  }
+  
+  .status-panel-body.minimized {
+    max-height: 100px;
+  }
+  
+  .status-panel-body {
+    transition: max-height 0.3s ease;
+  }
+  
+  .status-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+}
 }
 
 /* =============================== */
