@@ -152,20 +152,46 @@ function updateStatusPanel(data) {
     return;
   }
   
-  // ========== DEBUG: TAMPILKAN SEMUA DATA ==========
-  console.log('=== DEBUG updateStatusPanel ===');
-  console.log('Data lengkap:', data);
-  console.log('Total Records:', data.totalRecords);
-  console.log('Data length:', data.data?.length);
+  // ========== HITUNG LANGSUNG DARI WARNA DI PETA ==========
+  console.log('🎯 Menghitung kavling berdasarkan warna di peta...');
   
-  if (data.data && Array.isArray(data.data)) {
-    console.log('=== DAFTAR SEMUA ITEM DENGAN KATEGORI ===');
-    data.data.forEach((item, i) => {
-      console.log(`${i+1}. ${item.kode} - KATEGORI: "${item.kategori}" - Skema: "${item.skema || '-'}"`);
-    });
-  }
-  // ========== END DEBUG ==========
+  // Hitung elemen dengan kelas warna tertentu
+  const countByColor = {
+    kpr: 0,
+    stok: 0,
+    rekom: 0,
+    disewakan: 0,
+    total: 0
+  };
   
+  // Daftar kelas warna yang dicari
+  const colorClasses = [
+    'kavling-status-kpr',
+    'kavling-status-stok',
+    'kavling-status-rekom',
+    'kavling-status-disewakan'
+  ];
+  
+  // Hitung untuk setiap kelas warna
+  colorClasses.forEach(className => {
+    // Cari semua elemen dengan kelas ini
+    const elements = document.querySelectorAll(`.${className}`);
+    
+    // Ekstrak tipe dari nama kelas
+    const type = className.replace('kavling-status-', '');
+    
+    // Simpan jumlah
+    countByColor[type] = elements.length;
+    
+    console.log(`🎨 ${type.toUpperCase()}: ${elements.length} kavling`);
+  });
+  
+  // Hitung total semua kavling yang berwarna
+  countByColor.total = Object.values(countByColor).reduce((sum, count) => sum + count, 0);
+  
+  console.log('📊 Hasil hitung dari warna:', countByColor);
+  
+  // ========== UPDATE UI DENGAN HASIL HITUNGAN ==========
   // FUNGSI AMAN UNTUK UPDATE
   const safeUpdate = (elementId, value) => {
     const element = document.getElementById(elementId);
@@ -176,67 +202,14 @@ function updateStatusPanel(data) {
     }
   };
   
-  // JIKA TIDAK ADA SUMMARY, HITUNG MANUAL DENGAN CASE-INSENSITIVE
-  if (!data.summary && data.data && Array.isArray(data.data)) {
-    console.log('📊 Menghitung summary dari data (case-insensitive)...');
-    
-    const counts = {
-      kpr: 0,
-      stok: 0,
-      rekom: 0,
-      disewakan: 0,
-      lainnya: 0,
-      total: data.totalRecords || data.data.length
-    };
-    
-    // Hitung kategori dengan CASE-INSENSITIVE
-    data.data.forEach(item => {
-      if (!item.kategori) {
-        counts.lainnya++;
-        return;
-      }
-      
-      const kategoriLower = item.kategori.toLowerCase().trim();
-      
-      if (kategoriLower === 'kpr') counts.kpr++;
-      else if (kategoriLower === 'stok') counts.stok++;
-      else if (kategoriLower === 'rekom') counts.rekom++;
-      else if (kategoriLower === 'disewakan') counts.disewakan++;
-      else {
-        counts.lainnya++;
-        console.log(`ℹ️ Kategori tidak dikenal: "${item.kategori}" untuk kode ${item.kode}`);
-      }
-    });
-    
-    console.log('🧮 Hasil hitung DETIL:', counts);
-    console.log(`📈 Summary: KPR=${counts.kpr}, STOK=${counts.stok}, REKOM=${counts.rekom}, DISEWAKAN=${counts.disewakan}`);
-    
-    // Update dengan cara aman
-    safeUpdate('countKPR', counts.kpr);
-    safeUpdate('countSTOK', counts.stok);
-    safeUpdate('countREKOM', counts.rekom);
-    safeUpdate('countDISEWAKAN', counts.disewakan);
-    safeUpdate('totalAll', counts.total);
-    
-  } else if (data.summary) {
-    // Jika ada summary, gunakan
-    console.log('📊 Menggunakan summary dari API:', data.summary);
-    safeUpdate('countKPR', data.summary.kpr);
-    safeUpdate('countSTOK', data.summary.stok);
-    safeUpdate('countREKOM', data.summary.rekom);
-    safeUpdate('countDISEWAKAN', data.summary.disewakan);
-    safeUpdate('totalAll', data.summary.total);
-  } else {
-    console.error('❌ Data tidak valid:', data);
-    panelBody.innerHTML = `
-      <div style="padding:20px;text-align:center;color:#c62828;">
-        <div style="font-size:16px;margin-bottom:10px;">❌ Data tidak valid</div>
-        <div style="font-size:12px;color:#999;">Struktur data tidak sesuai</div>
-      </div>
-    `;
-    return;
-  }
-    // Buat HTML untuk panel
+  // Update dengan hasil hitungan dari warna
+  safeUpdate('countKPR', countByColor.kpr);
+  safeUpdate('countSTOK', countByColor.stok);
+  safeUpdate('countREKOM', countByColor.rekom);
+  safeUpdate('countDISEWAKAN', countByColor.disewakan);
+  safeUpdate('totalAll', countByColor.total);
+  
+  // ========== BUAT HTML PANEL ==========
   let html = '';
   
   // Data untuk setiap kategori
@@ -248,9 +221,8 @@ function updateStatusPanel(data) {
   ];
   
   categories.forEach(cat => {
-    // Ambil nilai yang sudah di-update
-    const countElement = document.getElementById(`count${cat.id.toUpperCase()}`);
-    const count = countElement ? countElement.textContent : 0;
+    // Gunakan hasil hitungan dari warna
+    const count = countByColor[cat.id] || 0;
     
     html += `
       <div class="status-item">
@@ -265,18 +237,33 @@ function updateStatusPanel(data) {
   });
   
   // Total
-  const totalElement = document.getElementById('totalAll');
-  const total = totalElement ? totalElement.textContent : 0;
+  const total = countByColor.total;
   
   html += `
     <div class="status-total">
       <strong>Total Kavling: <span id="totalAll">${total}</span></strong>
     </div>
     
+    <div style="margin-top: 15px; text-align: center;">
+      <button onclick="countKavlingFromMap()" style="
+        padding: 8px 16px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-bottom: 10px;
+      ">
+        🔄 Hitung Ulang dari Peta
+      </button>
+    </div>
+    
     <div class="status-debug-info">
       <h5>Info Data:</h5>
-      Total Records: ${data.totalRecords || 0}<br>
-      Data Length: ${data.data?.length || 0}<br>
+      Hitung dari warna peta (real-time)<br>
+      Total Kavling Berwarna: ${countByColor.total}<br>
+      Data API Records: ${data.totalRecords || 0}<br>
       Last Updated: ${new Date().toLocaleTimeString()}
     </div>
   `;
@@ -552,7 +539,58 @@ function showDownloadPopup(data, type) {
     popup.style.display = 'flex';
   }, 10);
 }
+// Fungsi untuk hitung ulang dari peta
+function countKavlingFromMap() {
+  console.log('🧮 Menghitung ulang dari peta...');
+  
+  const counts = {
+    kpr: document.querySelectorAll('.kavling-status-kpr').length,
+    stok: document.querySelectorAll('.kavling-status-stok').length,
+    rekom: document.querySelectorAll('.kavling-status-rekom').length,
+    disewakan: document.querySelectorAll('.kavling-status-disewakan').length
+  };
+  
+  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan;
+  
+  console.log('📈 Hasil hitung real-time:', counts);
+  
+  // Update UI jika panel sedang terbuka
+  if (isStatusMode && statusData) {
+    updateStatusPanel(statusData);
+  }
+  
+  return counts;
+}
 
+// Tambahkan tombol refresh di panel
+// Modifikasi bagian akhir updateStatusPanel():
+html += `
+  <div class="status-total">
+    <strong>Total Kavling: <span id="totalAll">${total}</span></strong>
+  </div>
+  
+  <div style="margin-top: 15px; text-align: center;">
+    <button onclick="countKavlingFromMap()" style="
+      padding: 8px 16px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    ">
+      🔄 Hitung Ulang dari Peta
+    </button>
+  </div>
+  
+  <div class="status-debug-info">
+    <h5>Info Data:</h5>
+    Hitung dari warna peta (real-time)<br>
+    Total Kavling Berwarna: ${countByColor.total}<br>
+    Data API Records: ${data.totalRecords || 0}<br>
+    Last Updated: ${new Date().toLocaleTimeString()}
+  </div>
+`;
 // ===============================
 // POPUP MANAGEMENT (ASLI)
 // ===============================
