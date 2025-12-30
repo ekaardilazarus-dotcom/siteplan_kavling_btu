@@ -278,6 +278,7 @@ function updateStatusPanel(data) {
     });
   });
 }
+
 //--------------------------------------------------
 // Beri warna pada kavling berdasarkan status
 function colorizeKavling(kavlingData) {
@@ -377,6 +378,29 @@ function clearStatusColors() {
         });
       }
     });
+}
+
+// Fungsi untuk hitung ulang dari peta
+function countKavlingFromMap() {
+  console.log('🧮 Menghitung ulang dari peta...');
+  
+  const counts = {
+    kpr: document.querySelectorAll('.kavling-status-kpr').length,
+    stok: document.querySelectorAll('.kavling-status-stok').length,
+    rekom: document.querySelectorAll('.kavling-status-rekom').length,
+    disewakan: document.querySelectorAll('.kavling-status-disewakan').length
+  };
+  
+  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan;
+  
+  console.log('📈 Hasil hitung real-time:', counts);
+  
+  // Update UI jika panel sedang terbuka
+  if (isStatusMode && statusData) {
+    updateStatusPanel(statusData);
+  }
+  
+  return counts;
 }
 
 // Tampilkan panel statistik (fungsi lama - mungkin masih digunakan)
@@ -539,58 +563,7 @@ function showDownloadPopup(data, type) {
     popup.style.display = 'flex';
   }, 10);
 }
-// Fungsi untuk hitung ulang dari peta
-function countKavlingFromMap() {
-  console.log('🧮 Menghitung ulang dari peta...');
-  
-  const counts = {
-    kpr: document.querySelectorAll('.kavling-status-kpr').length,
-    stok: document.querySelectorAll('.kavling-status-stok').length,
-    rekom: document.querySelectorAll('.kavling-status-rekom').length,
-    disewakan: document.querySelectorAll('.kavling-status-disewakan').length
-  };
-  
-  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan;
-  
-  console.log('📈 Hasil hitung real-time:', counts);
-  
-  // Update UI jika panel sedang terbuka
-  if (isStatusMode && statusData) {
-    updateStatusPanel(statusData);
-  }
-  
-  return counts;
-}
 
-// Tambahkan tombol refresh di panel
-// Modifikasi bagian akhir updateStatusPanel():
-html += `
-  <div class="status-total">
-    <strong>Total Kavling: <span id="totalAll">${total}</span></strong>
-  </div>
-  
-  <div style="margin-top: 15px; text-align: center;">
-    <button onclick="countKavlingFromMap()" style="
-      padding: 8px 16px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    ">
-      🔄 Hitung Ulang dari Peta
-    </button>
-  </div>
-  
-  <div class="status-debug-info">
-    <h5>Info Data:</h5>
-    Hitung dari warna peta (real-time)<br>
-    Total Kavling Berwarna: ${countByColor.total}<br>
-    Data API Records: ${data.totalRecords || 0}<br>
-    Last Updated: ${new Date().toLocaleTimeString()}
-  </div>
-`;
 // ===============================
 // POPUP MANAGEMENT (ASLI)
 // ===============================
@@ -1694,4 +1667,4 @@ document.addEventListener('DOMContentLoaded', () => {
       // Abaikan klik di luar - jangan tutup
     }
   });
-}); // Penutup untuk DOMContentLoaded
+});
