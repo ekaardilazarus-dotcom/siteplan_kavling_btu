@@ -1533,3 +1533,4 @@ document.addEventListener('click', function(e) {
     // Abaikan klik di luar - jangan tutup
   }
 });
+}); // Penutup untuk DOMContentLoaded
