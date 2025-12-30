@@ -145,18 +145,71 @@ async function fetchKavlingStatus() {
 }
 
 // Fungsi untuk update panel status (tanpa popup loading)
+// Fungsi untuk update panel status (tanpa popup loading)
 function updateStatusPanel(data) {
   const panelBody = document.querySelector('.status-panel-body');
   
-  if (!panelBody) return;
+  if (!panelBody) {
+    console.error('❌ Panel body tidak ditemukan');
+    return;
+  }
   
-  // Update angka di panel
-  if (data.summary) {
-    document.getElementById('countKPR').textContent = data.summary.kpr || 0;
-    document.getElementById('countSTOK').textContent = data.summary.stok || 0;
-    document.getElementById('countREKOM').textContent = data.summary.rekom || 0;
-    document.getElementById('countDISEWAKAN').textContent = data.summary.disewakan || 0;
-    document.getElementById('totalAll').textContent = data.summary.total || 0;
+  // FUNGSI AMAN UNTUK UPDATE
+  const safeUpdate = (elementId, value) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.textContent = value !== undefined ? value : 0;
+    } else {
+      console.warn(`⚠️ Element #${elementId} tidak ditemukan`);
+    }
+  };
+  
+  // JIKA TIDAK ADA SUMMARY, HITUNG MANUAL
+  if (!data.summary && data.data && Array.isArray(data.data)) {
+    console.log('📊 Menghitung summary dari data...');
+    
+    const counts = {
+      kpr: 0,
+      stok: 0,
+      rekom: 0,
+      disewakan: 0,
+      total: data.totalRecords || data.data.length
+    };
+    
+    // Hitung kategori
+    data.data.forEach(item => {
+      if (item.kategori === 'kpr') counts.kpr++;
+      else if (item.kategori === 'stok') counts.stok++;
+      else if (item.kategori === 'rekom') counts.rekom++;
+      else if (item.kategori === 'disewakan') counts.disewakan++;
+    });
+    
+    console.log('🧮 Hasil hitung:', counts);
+    
+    // Update dengan cara aman
+    safeUpdate('countKPR', counts.kpr);
+    safeUpdate('countSTOK', counts.stok);
+    safeUpdate('countREKOM', counts.rekom);
+    safeUpdate('countDISEWAKAN', counts.disewakan);
+    safeUpdate('totalAll', counts.total);
+    
+  } else if (data.summary) {
+    // Jika ada summary, gunakan
+    console.log('📊 Menggunakan summary dari API:', data.summary);
+    safeUpdate('countKPR', data.summary.kpr);
+    safeUpdate('countSTOK', data.summary.stok);
+    safeUpdate('countREKOM', data.summary.rekom);
+    safeUpdate('countDISEWAKAN', data.summary.disewakan);
+    safeUpdate('totalAll', data.summary.total);
+  } else {
+    console.error('❌ Data tidak valid:', data);
+    panelBody.innerHTML = `
+      <div style="padding:20px;text-align:center;color:#c62828;">
+        <div style="font-size:16px;margin-bottom:10px;">❌ Data tidak valid</div>
+        <div style="font-size:12px;color:#999;">Struktur data tidak sesuai</div>
+      </div>
+    `;
+    return;
   }
   
   // Buat HTML untuk panel
@@ -171,7 +224,10 @@ function updateStatusPanel(data) {
   ];
   
   categories.forEach(cat => {
-    const count = data.summary?.[cat.id] || 0;
+    // Ambil nilai yang sudah di-update
+    const countElement = document.getElementById(`count${cat.id.toUpperCase()}`);
+    const count = countElement ? countElement.textContent : 0;
+    
     html += `
       <div class="status-item">
         <div class="status-color-sample" style="background-color: ${cat.color};"></div>
@@ -185,9 +241,12 @@ function updateStatusPanel(data) {
   });
   
   // Total
+  const totalElement = document.getElementById('totalAll');
+  const total = totalElement ? totalElement.textContent : 0;
+  
   html += `
     <div class="status-total">
-      <strong>Total Kavling: <span id="totalAll">${data.summary?.total || 0}</span></strong>
+      <strong>Total Kavling: <span id="totalAll">${total}</span></strong>
     </div>
     
     <div class="status-debug-info">
@@ -208,7 +267,7 @@ function updateStatusPanel(data) {
     });
   });
 }
-
+//--------------------------------------------------
 // Beri warna pada kavling berdasarkan status
 function colorizeKavling(kavlingData) {
   const svgMap = document.querySelector('#map svg');
