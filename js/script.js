@@ -162,10 +162,10 @@ function updateStatusPanel(data) {
   // ========== CEK APAKAH PANEL MINIMIZED ==========
   const isMinimized = panelBody.classList.contains('minimized');
   
-  // ========== HITUNG LANGSUNG DARI WARNA DI PETA ==========
-  console.log('🎯 Menghitung kavling berdasarkan warna di peta...');
+  // ========== HITUNG LANGSUNG DARI WARNA DI PETA (HANYA YANG MEMILIKI ID) ==========
+  console.log('🎯 Menghitung kavling berdasarkan warna di peta (hanya dengan ID)...');
   
-  // Hitung elemen dengan kelas warna tertentu
+  // Hitung elemen dengan kelas warna tertentu HANYA yang memiliki ID
   const countByColor = {
     kpr: 0,
     stok: 0,
@@ -182,24 +182,30 @@ function updateStatusPanel(data) {
     'kavling-status-disewakan'
   ];
   
-  // Hitung untuk setiap kelas warna
+  // Hitung untuk setiap kelas warna - HANYA dari frame elements (GA, UJ, KR, M, Blok)
+  const frameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+  
   colorClasses.forEach(className => {
-    // Cari semua elemen dengan kelas ini
-    const elements = document.querySelectorAll(`.${className}`);
+    let count = 0;
+    
+    // Hitung HANYA elemen frame yang punya class warna ini
+    frameElements.forEach(el => {
+      if (el.id && el.classList.contains(className)) {
+        count++;
+      }
+    });
     
     // Ekstrak tipe dari nama kelas
     const type = className.replace('kavling-status-', '');
+    countByColor[type] = count;
     
-    // Simpan jumlah
-    countByColor[type] = elements.length;
-    
-    console.log(`🎨 ${type.toUpperCase()}: ${elements.length} kavling`);
+    console.log(`🎨 ${type.toUpperCase()}: ${count} kavling (dengan frame_id)`);
   });
   
-  // Hitung total semua kavling yang berwarna
-  countByColor.total = Object.values(countByColor).reduce((sum, count) => sum + count, 0);
+  // Hitung total semua kavling yang berwarna (hanya yang punya ID)
+  countByColor.total = countByColor.kpr + countByColor.stok + countByColor.rekom + countByColor.disewakan;
   
-  console.log('📊 Hasil hitung dari warna:', countByColor);
+  console.log('📊 Hasil hitung dari warna (hanya ID):', countByColor);
   
   // ========== UPDATE UI DENGAN HASIL HITUNGAN ==========
   // FUNGSI AMAN UNTUK UPDATE
@@ -497,6 +503,7 @@ function colorizeKavling(kavlingData) {
   
   let coloredCount = 0;
   let notFoundCount = 0;
+  let processedIds = new Set(); // Tracking ID yang sudah diproses
   
   // Loop setiap kavling dari data API
   kavlingData.forEach(item => {
@@ -522,6 +529,11 @@ function colorizeKavling(kavlingData) {
     }
     
     if (element) {
+      // Tandai ID ini sebagai sudah diproses
+      if (element.id) {
+        processedIds.add(element.id);
+      }
+      
       // Tambahkan kelas CSS berdasarkan kategori
       if (item.kategori && item.kategori !== 'lainnya') {
         const className = `kavling-status-${item.kategori}`;
@@ -553,7 +565,35 @@ function colorizeKavling(kavlingData) {
     }
   });
   
-  console.log(`🎨 Selesai: ${coloredCount} kavling berwarna, ${notFoundCount} tidak ditemukan`);
+  // Warnai blok-blok dengan ID yang TIDAK memiliki status menjadi abu-abu
+  const allBlocksWithId = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+  let grayCount = 0;
+  
+  allBlocksWithId.forEach(el => {
+    // Jika element memiliki ID tapi TIDAK ada di data API (tidak diproses), beri warna abu-abu
+    if (el.id && !processedIds.has(el.id) && !el.classList.contains('kavling-status-kpr') && 
+        !el.classList.contains('kavling-status-stok') && !el.classList.contains('kavling-status-rekom') &&
+        !el.classList.contains('kavling-status-disewakan')) {
+      
+      el.classList.add('kavling-status-gray');
+      
+      // Hapus style inline jika ada (untuk memastikan CSS class bisa diterapkan)
+      el.style.cssText = '';
+      
+      // Jika element adalah group, warnai child-nya juga
+      if (el.tagName.toLowerCase() === 'g') {
+        const children = el.querySelectorAll('rect, path, polygon, circle');
+        children.forEach(child => {
+          child.classList.add('kavling-status-gray');
+          child.style.cssText = '';
+        });
+      }
+      
+      grayCount++;
+    }
+  });
+  
+  console.log(`🎨 Selesai: ${coloredCount} kavling berwarna, ${grayCount} abu-abu, ${notFoundCount} tidak ditemukan`);
 }
 
 // Hapus semua warna status
@@ -565,7 +605,8 @@ function clearStatusColors() {
         'kavling-status-kpr',
         'kavling-status-stok', 
         'kavling-status-rekom',
-        'kavling-status-disewakan'
+        'kavling-status-disewakan',
+        'kavling-status-gray'
       );
       
       // Hapus juga dari child elements jika group
@@ -575,7 +616,8 @@ function clearStatusColors() {
             'kavling-status-kpr',
             'kavling-status-stok', 
             'kavling-status-rekom',
-            'kavling-status-disewakan'
+            'kavling-status-disewakan',
+            'kavling-status-gray'
           );
         });
       }
@@ -584,18 +626,37 @@ function clearStatusColors() {
 
 // Fungsi untuk hitung ulang dari peta
 function countKavlingFromMap() {
-  console.log('🧮 Menghitung ulang dari peta...');
+  console.log('🧮 Menghitung ulang dari peta (hanya frame ID)...');
   
+  // Hitung HANYA elemen yang memiliki ID frame (GA, UJ, KR, M, Blok)
   const counts = {
-    kpr: document.querySelectorAll('.kavling-status-kpr').length,
-    stok: document.querySelectorAll('.kavling-status-stok').length,
-    rekom: document.querySelectorAll('.kavling-status-rekom').length,
-    disewakan: document.querySelectorAll('.kavling-status-disewakan').length
+    kpr: 0,
+    stok: 0,
+    rekom: 0,
+    disewakan: 0
   };
+  
+  // Query HANYA elemen frame dengan selector yang ketat
+  const frameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+  
+  const statusClasses = ['kavling-status-kpr', 'kavling-status-stok', 'kavling-status-rekom', 'kavling-status-disewakan'];
+  
+  // Hitung status untuk setiap frame element yang punya status class
+  frameElements.forEach(el => {
+    // Hanya hitung jika element memiliki ID (frame_id)
+    if (el.id) {
+      statusClasses.forEach(className => {
+        if (el.classList.contains(className)) {
+          const type = className.replace('kavling-status-', '');
+          counts[type]++;
+        }
+      });
+    }
+  });
   
   counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan;
   
-  console.log('📈 Hasil hitung real-time:', counts);
+  console.log('📈 Hasil hitung real-time dari peta (hanya frame ID):', counts);
   
   // Update UI jika panel sedang terbuka
   if (isStatusMode && statusData) {
@@ -630,8 +691,8 @@ function showStatusPanel(data) {
 
 // Nonaktifkan mode status
 function resetStatusMode() {
-  // Reset warna kavling
-  clearStatusColors();
+  // JANGAN reset warna kavling - pertahankan warna untuk persistence
+  // clearStatusColors(); // DIKOMENTARI agar warna tetap ada
   
   // Sembunyikan panel
   const panel = document.getElementById('statusPanel');
@@ -643,7 +704,22 @@ function resetStatusMode() {
   
   isStatusMode = false;
   statusData = null;
-  console.log('🔄 Mode status dinonaktifkan');
+  console.log('🔄 Mode status dinonaktifkan (warna tetap disimpan)');
+}
+
+// Ambil list blok berdasarkan kategori warna dari peta
+function getKavlingListFromMap(type) {
+  const kavlingList = [];
+  const className = `kavling-status-${type}`;
+  const frameElements = document.querySelectorAll(`[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]`);
+  
+  frameElements.forEach(el => {
+    if (el.id && el.classList.contains(className)) {
+      kavlingList.push(el.id);
+    }
+  });
+  
+  return kavlingList.sort();
 }
 
 // Download data per kategori
@@ -651,32 +727,104 @@ async function downloadKavlingData(type) {
   try {
     console.log(`📥 Memulai download data ${type}...`);
     
-    // Tampilkan loading di panel
-    const resultsBox = document.getElementById('certificateResults');
-    if (resultsBox) {
-      resultsBox.innerHTML = `
-        <div class="cert-loading">
-          <div class="cert-loading-spinner"></div>
-          <div style="color:#666;font-size:14px;margin-top:10px;">
-            Memproses data ${type.toUpperCase()}...
-          </div>
-        </div>
-      `;
-    }
+    // Ambil list blok dari peta
+    const kavlingListFromMap = getKavlingListFromMap(type);
     
-    const url = `${API_URL}?action=download&type=${type}&_t=${Date.now()}`;
-    const response = await fetch(url);
-    
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    
-    const data = await response.json();
+    console.log(`📊 Ditemukan ${kavlingListFromMap.length} kavling ${type} di peta:`, kavlingListFromMap);
     
     // Tampilkan data di popup
-    showDownloadPopup(data, type);
+    showDownloadPopupFromMap(kavlingListFromMap, type);
     
   } catch (error) {
     console.error(`❌ Gagal download data ${type}:`, error);
     alert(`Gagal download data ${type}. Coba lagi nanti.`);
+  }
+}
+
+// Popup untuk menampilkan list blok dari peta
+function showDownloadPopupFromMap(kavlingList, type) {
+  // Hapus popup lama jika ada
+  const oldPopup = document.querySelector('.kavling-popup');
+  if (oldPopup) {
+    document.body.removeChild(oldPopup);
+  }
+  
+  // Buat popup baru
+  const popup = document.createElement('div');
+  popup.className = 'kavling-popup';
+  
+  let content = `
+    <div style="margin-bottom:15px; padding:15px; background:#e8f5e9; border-radius:6px; text-align:center;">
+      <div style="font-size:18px; font-weight:bold; color:#1b5e20;">${kavlingList.length} Kavling</div>
+      <div style="font-size:13px; color:#666; margin-top:5px;">Status: <strong>${type.toUpperCase()}</strong></div>
+    </div>
+    
+    <div style="margin-bottom:15px;">
+      <button onclick="copyToClipboard()" style="padding:10px 20px; background:#2196F3; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">
+        📋 Copy Semua
+      </button>
+    </div>
+    
+    <div style="font-family:monospace; font-size:13px; line-height:1.8; background:#f5f5f5; padding:15px; border-radius:6px; max-height:400px; overflow-y:auto; border:1px solid #e0e0e0;">
+  `;
+  
+  kavlingList.forEach((kode, index) => {
+    content += `<div>${index + 1}. ${kode}</div>`;
+  });
+  
+  content += `</div>`;
+  
+  popup.innerHTML = `
+    <div class="kavling-popup-content" style="max-width:600px;">
+      <div class="kavling-popup-header">
+        <h3>📥 List Kavling: ${type.toUpperCase()}</h3>
+        <button class="close-kavling-popup">&times;</button>
+      </div>
+      <div class="kavling-popup-body" id="downloadListBody">
+        ${content}
+      </div>
+      <div class="kavling-popup-footer">
+        <button class="kavling-close-btn">Tutup</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(popup);
+  
+  // Simpan list untuk copy
+  window.currentDownloadList = kavlingList;
+  
+  // Event listeners untuk popup
+  const closePopup = () => {
+    document.body.removeChild(popup);
+  };
+  
+  const closeBtn = popup.querySelector('.close-kavling-popup');
+  const closeBtn2 = popup.querySelector('.kavling-close-btn');
+  
+  if (closeBtn) closeBtn.addEventListener('click', closePopup);
+  if (closeBtn2) closeBtn2.addEventListener('click', closePopup);
+  
+  // Tutup jika klik di luar konten
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      closePopup();
+    }
+  });
+  
+  popup.style.display = 'flex';
+}
+
+// Copy list ke clipboard
+function copyToClipboard() {
+  if (window.currentDownloadList && window.currentDownloadList.length > 0) {
+    const text = window.currentDownloadList.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      alert(`✅ ${window.currentDownloadList.length} kavling disalin ke clipboard!`);
+    }).catch(err => {
+      console.error('Gagal copy:', err);
+      alert('Gagal menyalin. Coba secara manual.');
+    });
   }
 }
 
