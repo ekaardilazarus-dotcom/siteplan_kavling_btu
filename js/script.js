@@ -358,27 +358,34 @@ function colorizeKavling(kavlingData) {
   }
   
   console.log(`🎨 Mulai mewarnai ${kavlingData.length} kavling`);
-
-  // DEBUG: Cari M1_177 di data yang diterima
-  const m1Item = kavlingData.find(item => item.kode === 'M1_177');
-  if (m1Item) {
-    console.log('🔍 DEBUG M1_177 DI COLORIZE:', m1Item);
-    console.log(`   Kategori: "${m1Item.kategori}", Skema: "${m1Item.skema}"`);
-    console.log(`   Seharusnya class: kavling-status-${m1Item.kategori}`);
-  }
-//-----------------------------------------
-
   
+  // CLEAR DULU dengan cara yang lebih agresif
   clearStatusColors();
   
-  let coloredCount = 0;
-  let notFoundCount = 0;
-  let processedIds = new Set();
-  
-  kavlingData.forEach(item => {
-    if (!item.kode) return;
+  // Tunggu sebentar untuk memastikan clear selesai
+  setTimeout(() => {
+    console.log('⏳ Clear selesai, mulai coloring...');
     
-    const kode = item.kode.trim().toUpperCase();
+    let coloredCount = 0;
+    let notFoundCount = 0;
+    let processedIds = new Set();
+    
+    kavlingData.forEach(item => {
+      if (!item.kode) return;
+      
+      const kode = item.kode.trim().toUpperCase();
+      let element = document.getElementById(kode);
+      
+      if (!element) {
+        const elements = document.querySelectorAll(`[id*="${kode}"]`);
+        if (elements.length > 0) element = elements[0];
+      }
+      
+      if (element) {
+        if (element.id) processedIds.add(element.id);
+        
+        if (item.kategori && item.kategori !== 'lainnya') {
+          const className = `kavling-status-${item.kategori}`;
 
    // DEBUG KHUSUS UNTUK M1_177
     if (kode === 'M1_177') {
@@ -485,10 +492,17 @@ function colorizeKavling(kavlingData) {
 }
 
 // Hapus semua warna status -----------------------
+// Hapus semua warna status - DIPERBAIKI
 function clearStatusColors() {
+  console.log('🧹 Membersihkan semua warna status...');
+  
   // Hapus kelas warna dari semua elemen kavling
   document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]')
     .forEach(el => {
+      // Simpan ID untuk debug
+      const elId = el.id;
+      
+      // Hapus SEMUA kelas status
       el.classList.remove(
         'kavling-status-kpr',
         'kavling-status-stok', 
@@ -496,6 +510,27 @@ function clearStatusColors() {
         'kavling-status-disewakan',
         'kavling-status-unknown'
       );
+      
+      // DEBUG: Jika ini M1_177, log hasilnya
+      if (elId === 'M1_177') {
+        console.log(`🔍 clearStatusColors() untuk M1_177:`);
+        console.log(`   Sebelum:`, Array.from(el.classList));
+        
+        // Force remove dengan loop (lebih agresif)
+        const classesToRemove = [
+          'kavling-status-kpr',
+          'kavling-status-stok', 
+          'kavling-status-rekom',
+          'kavling-status-disewakan',
+          'kavling-status-unknown'
+        ];
+        
+        classesToRemove.forEach(className => {
+          el.classList.remove(className);
+        });
+        
+        console.log(`   Sesudah:`, Array.from(el.classList));
+      }
       
       // Hapus juga dari child elements jika group
       if (el.tagName.toLowerCase() === 'g') {
@@ -510,8 +545,9 @@ function clearStatusColors() {
         });
       }
     });
+  
+  console.log('✅ Semua warna status dibersihkan');
 }
-
 // Fungsi untuk hitung ulang dari peta
 function countKavlingFromMap() {
   console.log('🧮 Menghitung ulang dari peta (semua frame ID)...');
