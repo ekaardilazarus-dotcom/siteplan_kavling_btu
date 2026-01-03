@@ -183,6 +183,8 @@ function updateStatusPanel(data) {
     total: 0
   };
   
+const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+console.log(`📊 Total frame elements di peta: ${allFrameElements.length}`);
   // UPDATE: Tambahkan 'kavling-status-unknown' ke daftar
   const colorClasses = [
     'kavling-status-kpr',
@@ -191,8 +193,18 @@ function updateStatusPanel(data) {
     'kavling-status-disewakan',
     'kavling-status-unknown'  
   ];
-  
-  const frameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+  allFrameElements.forEach(el => {
+  if (el.id && el.id.trim() !== '') {
+    let hasStatus = false;
+    
+    // Cek setiap kelas status
+    colorClasses.forEach(className => {
+      if (el.classList.contains(className)) {
+        const type = className.replace('kavling-status-', '');
+        countByColor[type]++;
+        hasStatus = true;
+      }
+    });
   
   colorClasses.forEach(className => {
     let count = 0;
@@ -419,11 +431,14 @@ function countKavlingFromMap() {
     stok: 0,
     rekom: 0,
     disewakan: 0,
-    unknown: 0
+    unknown: 0,
+    total: 0
   };
   
   // Query HANYA elemen frame dengan selector yang ketat
   const frameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+  
+  console.log(`📊 Total frame elements ditemukan: ${frameElements.length}`);
   
   const statusClasses = [
     'kavling-status-kpr', 
@@ -436,16 +451,24 @@ function countKavlingFromMap() {
   // Hitung status untuk setiap frame element yang punya status class
   frameElements.forEach(el => {
     // Hanya hitung jika element memiliki ID (frame_id)
-    if (el.id) {
+ if (el.id && el.id.trim() !== '') {
+      let foundStatus = false;
+      
+      // Cek setiap kelas status
       statusClasses.forEach(className => {
         if (el.classList.contains(className)) {
           const type = className.replace('kavling-status-', '');
           counts[type]++;
+          foundStatus = true;
         }
       });
-    }
+    // Jika tidak ada kelas status, maka termasuk UNKNOWN (putih)
+      if (!foundStatus) {
+        counts.unknown++;
+        console.log(`❓ Element tanpa status class: ${el.id}`);
+      }
+      }
   });
-  
   counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan + counts.unknown;
   
   console.log('📈 Hasil hitung real-time dari peta (hanya frame ID):', counts);
