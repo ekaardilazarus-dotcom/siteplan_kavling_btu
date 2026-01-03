@@ -653,12 +653,24 @@ h1 {
   stroke-width: 1.5 !important;
 }
 
-/* Warna abu-abu untuk blok tanpa status */
-.kavling-status-gray {
-  fill: #c0c0c0 !important;
-  stroke: #111111 !important;
+/* WARNA PUTIH untuk kavling tidak diketahui */
+.kavling-status-unknown {
+  fill: #ffffff !important;           /* Putih */
+  stroke: #111111 !important;        /* Border hitam untuk kontras */
   stroke-width: 1.5 !important;
-  opacity: 0.7;
+}
+
+.kavling-status-unknown:hover * {
+  fill: #f8f8f8 !important;          /* Putih sedikit lebih gelap saat hover */
+  stroke: #333333 !important;
+  stroke-width: 2 !important;
+  opacity: 0.95;
+}
+
+#map g.kavling-status-unknown:hover * {
+  fill: #f5f5f5 !important;
+  stroke: #222222 !important;
+  stroke-width: 2 !important;
 }
 
 /* Hover effect untuk kavling berstatus */
@@ -686,19 +698,13 @@ h1 {
   stroke-width: 2 !important;
 }
 
-#map g.kavling-status-gray:hover * {
-  fill: #d3d3d3 !important;
-  stroke: #909090 !important;
-  stroke-width: 2 !important;
-  opacity: 0.85;
-}
 
 /* Pastikan warna status override style default */
 #map g.kavling-status-kpr,
 #map g.kavling-status-stok,
 #map g.kavling-status-rekom,
 #map g.kavling-status-disewakan,
-#map g.kavling-status-gray {
+#map g.kavling-status-unknown {
   cursor: pointer !important;
   pointer-events: bounding-box !important;
 }
@@ -707,7 +713,7 @@ h1 {
 #map g.kavling-status-stok *,
 #map g.kavling-status-rekom *,
 #map g.kavling-status-disewakan *,
-#map g.kavling-status-gray * {
+#map g.kavling-status-unknown * {
   cursor: pointer !important;
   pointer-events: auto !important;
 }
