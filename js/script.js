@@ -732,19 +732,34 @@ function showDownloadPopupFromMap(kavlingList, type) {
   popup.style.display = 'flex';
 }
 
-// Fungsi untuk download sebagai CSV
+// Fungsi untuk mapping nama status yang lebih deskriptif
+function getStatusDisplayName(type) {
+  const statusMap = {
+    'kpr': 'KPR,TUNAI (SOLD)',
+    'stok': 'STOK',
+    'rekom': 'REKOM',
+    'disewakan': 'DISEWAKAN',
+    'unknown': 'TIDAK DIKETAHUI (PUTIH)'
+  };
+  return statusMap[type] || type.toUpperCase();
+}
+
+// Fungsi untuk download sebagai CSV 
 function downloadAsCSV(type) {
   if (!window.currentDownloadList || window.currentDownloadList.length === 0) {
     alert('Tidak ada data untuk didownload');
     return;
   }
   
-  // Buat header CSV
-  let csvContent = "No,Kode Kavling,Status\n";
+  // Dapatkan nama status yang lebih deskriptif
+  const statusDisplayName = getStatusDisplayName(type);
+  
+  // Buat header CSV dengan kolom tambahan
+  let csvContent = "No,Kode Kavling,Status,Keterangan\n";
   
   // Tambahkan data
   window.currentDownloadList.forEach((kode, index) => {
-    csvContent += `${index + 1},"${kode}","${type}"\n`;
+    csvContent += `${index + 1},"${kode}","${statusDisplayName}",""\n`;
   });
   
   // Buat blob dan download
@@ -752,8 +767,11 @@ function downloadAsCSV(type) {
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
   
+  // Buat nama file yang lebih informatif
+  const fileName = `kavling_${type}_${new Date().toISOString().slice(0,10)}.csv`;
+  
   link.setAttribute("href", url);
-  link.setAttribute("download", `kavling_${type}_${new Date().toISOString().slice(0,10)}.csv`);
+  link.setAttribute("download", fileName);
   link.style.visibility = 'hidden';
   
   document.body.appendChild(link);
@@ -762,7 +780,6 @@ function downloadAsCSV(type) {
   
   console.log(`✅ CSV untuk ${type} berhasil didownload (${window.currentDownloadList.length} data)`);
 }
-
 // Copy list ke clipboard
 function copyToClipboard() {
   if (window.currentDownloadList && window.currentDownloadList.length > 0) {
