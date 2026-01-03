@@ -28,6 +28,35 @@ const certSearchCache = new Map();
 const CACHE_DURATION = 10 * 60 * 1000;
 
 // ===============================
+// DARK MODE FUNCTIONALITY
+// ===============================
+let isDarkMode = localStorage.getItem('darkMode') === 'true';
+
+// Fungsi untuk toggle dark mode
+function toggleDarkMode() {
+  isDarkMode = !isDarkMode;
+  localStorage.setItem('darkMode', isDarkMode);
+  
+  if (isDarkMode) {
+    document.body.classList.add('dark-mode');
+    document.getElementById('darkModeToggle').classList.add('active');
+    document.getElementById('darkModeToggle').innerHTML = '<span>☀️</span> Light Mode';
+  } else {
+    document.body.classList.remove('dark-mode');
+    document.getElementById('darkModeToggle').classList.remove('active');
+    document.getElementById('darkModeToggle').innerHTML = '<span>🌙</span> Dark Mode';
+  }
+}
+
+// Fungsi untuk apply dark mode saat halaman dimuat
+function applyDarkMode() {
+  if (isDarkMode) {
+    document.body.classList.add('dark-mode');
+    document.getElementById('darkModeToggle').classList.add('active');
+    document.getElementById('darkModeToggle').innerHTML = '<span>☀️</span> Light Mode';
+  }
+}
+// ===============================
 // HELPERS
 // ===============================
 function parseViewBox(vb) {
