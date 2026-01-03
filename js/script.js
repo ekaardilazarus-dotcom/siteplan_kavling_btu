@@ -1366,10 +1366,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // DARK MODE TOGGLE
 // ===============================
 document.getElementById('darkModeToggle')?.addEventListener('click', toggleDarkMode);
-
-// Apply dark mode saat halaman dimuat
-applyDarkMode();
-  
   // ===============================
   // TOMBOL STATUS KAVLING
   // ===============================
