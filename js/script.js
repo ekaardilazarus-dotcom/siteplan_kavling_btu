@@ -153,6 +153,15 @@ async function fetchKavlingStatus() {
     
     const data = await response.json();
     console.log('✅ Data status diterima:', data);
+
+// DEBUG KHUSUS: Cari M1_177 di response
+    const m1InResponse = data.data?.find(item => item.kode === 'M1_177');
+    if (m1InResponse) {
+      console.log('🔍 DEBUG API RESPONSE M1_177:', m1InResponse);
+      console.log(`   Kategori dari API: "${m1InResponse.kategori}"`);
+      console.log(`   Skema dari API: "${m1InResponse.skema}"`);
+      console.log(`   Harusnya class: kavling-status-${m1InResponse.kategori}`);
+    }
     
     // Simpan data ke variabel global
     statusData = data;
@@ -349,6 +358,16 @@ function colorizeKavling(kavlingData) {
   }
   
   console.log(`🎨 Mulai mewarnai ${kavlingData.length} kavling`);
+
+  // DEBUG: Cari M1_177 di data yang diterima
+  const m1Item = kavlingData.find(item => item.kode === 'M1_177');
+  if (m1Item) {
+    console.log('🔍 DEBUG M1_177 DI COLORIZE:', m1Item);
+    console.log(`   Kategori: "${m1Item.kategori}", Skema: "${m1Item.skema}"`);
+    console.log(`   Seharusnya class: kavling-status-${m1Item.kategori}`);
+  }
+//-----------------------------------------
+
   
   clearStatusColors();
   
@@ -360,6 +379,18 @@ function colorizeKavling(kavlingData) {
     if (!item.kode) return;
     
     const kode = item.kode.trim().toUpperCase();
+
+   // DEBUG KHUSUS UNTUK M1_177
+    if (kode === 'M1_177') {
+      console.log(`🎯 PROCESSING M1_177:`, {
+        kode: kode,
+        kategori: item.kategori,
+        skema: item.skema,
+        akanDiberiClass: `kavling-status-${item.kategori}`
+      });
+    }
+    //---------------------------------
+    
     let element = document.getElementById(kode);
     
     if (!element) {
@@ -372,6 +403,14 @@ function colorizeKavling(kavlingData) {
       
       if (item.kategori && item.kategori !== 'lainnya') {
         const className = `kavling-status-${item.kategori}`;
+
+        // DEBUG: Log class yang diberikan
+        if (kode === 'M1_177') {
+          console.log(`✅ Memberi class ke M1_177: ${className}`);
+          console.log(`   Element ditemukan:`, element);
+          console.log(`   Current classes:`, Array.from(element.classList));
+        }
+        //-------------------------------------------
         element.classList.add(className);
         
         if (element.tagName.toLowerCase() === 'g') {
@@ -381,6 +420,18 @@ function colorizeKavling(kavlingData) {
         }
         
         coloredCount++;
+        // VERIFIKASI: Cek apakah class benar-benar ditambahkan
+        if (kode === 'M1_177') {
+          setTimeout(() => {
+            console.log(`🔍 VERIFIKASI M1_177 setelah 100ms:`);
+            console.log(`   Classes sekarang:`, Array.from(element.classList));
+            console.log(`   Punya class ${className}?`, element.classList.contains(className));
+            
+            // Cek CSS computed style
+            const computedStyle = window.getComputedStyle(element);
+            console.log(`   Fill color:`, computedStyle.fill);
+          }, 100);
+        }
       }
     } else {
       notFoundCount++;
@@ -416,6 +467,21 @@ function colorizeKavling(kavlingData) {
   });
   
   console.log(`🎨 Selesai: ${coloredCount} kavling berwarna, ${unknownCount} putih, ${notFoundCount} tidak ditemukan`);
+   // DEBUG FINAL: Cek status M1_177 setelah coloring
+  const m1Element = document.getElementById('M1_177');
+  if (m1Element) {
+    setTimeout(() => {
+      console.log(`🔍 FINAL CHECK M1_177 (setelah 500ms):`);
+      console.log(`   Element:`, m1Element);
+      console.log(`   Classes:`, Array.from(m1Element.classList));
+      console.log(`   Is STOK?`, m1Element.classList.contains('kavling-status-stok'));
+      console.log(`   Is REKOM?`, m1Element.classList.contains('kavling-status-rekom'));
+      
+      // Force check CSS
+      const style = window.getComputedStyle(m1Element);
+      console.log(`   Computed fill:`, style.fill);
+    }, 500);
+  }
 }
 
 // Hapus semua warna status -----------------------
