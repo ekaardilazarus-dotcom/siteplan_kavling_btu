@@ -736,10 +736,10 @@ function showDownloadPopupFromMap(kavlingList, type) {
 function getStatusDisplayName(type) {
   const statusMap = {
     'kpr': 'KPR,TUNAI (SOLD)',
-    'stok': 'STOK',
+    'stok': 'Kavling Stok',
     'rekom': 'REKOM',
-    'disewakan': 'DISEWAKAN',
-    'unknown': 'TIDAK DIKETAHUI (PUTIH)'
+    'disewakan': 'Disewakan',
+    'unknown': 'Status Belum ada data'
   };
   return statusMap[type] || type.toUpperCase();
 }
