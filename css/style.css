@@ -1417,3 +1417,143 @@ h1 {
   font-size: 12px;
   color: #666;
 }
+
+/* =============================== */
+/* DARK MODE STYLES */
+/* =============================== */
+
+/* Tombol Dark Mode */
+.dark-mode-btn {
+  padding: 10px 16px;
+  font-size: 13px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  text-align: center;
+  background: #333;
+  color: white;
+  margin-top: 8px;
+}
+
+.dark-mode-btn:hover {
+  background: #555;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.dark-mode-btn.active {
+  background: #555;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Dark Mode Theme */
+body.dark-mode {
+  background: #121212 !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode h1 {
+  color: #ffffff !important;
+}
+
+body.dark-mode #map {
+  background: #1e1e1e !important;
+  border-color: #333 !important;
+}
+
+body.dark-mode #search-container,
+body.dark-mode #button-container,
+body.dark-mode #status-container,
+body.dark-mode .modal-content,
+body.dark-mode .kavling-popup-content {
+  background: #1e1e1e !important;
+  color: #e0e0e0 !important;
+  border-color: #333 !important;
+}
+
+body.dark-mode #search {
+  background: #2d2d2d !important;
+  color: #e0e0e0 !important;
+  border-color: #444 !important;
+}
+
+body.dark-mode #search-results {
+  background: #2d2d2d !important;
+  border-color: #444 !important;
+}
+
+body.dark-mode #search-results li {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode #search-results li:hover {
+  background: #3d3d3d !important;
+}
+
+body.dark-mode .status-panel {
+  background: #1e1e1e !important;
+  border-color: #333 !important;
+}
+
+body.dark-mode .status-item {
+  background: #2d2d2d !important;
+  border-color: #333 !important;
+}
+
+body.dark-mode .compact-results-box {
+  background: #2d2d2d !important;
+  border-color: #444 !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .input-group {
+  background: #2d2d2d !important;
+  border-color: #333 !important;
+}
+
+body.dark-mode .compact-input {
+  background: #3d3d3d !important;
+  color: #e0e0e0 !important;
+  border-color: #555 !important;
+}
+
+body.dark-mode .compact-input:focus {
+  border-color: #2196F3 !important;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.15) !important;
+}
+
+body.dark-mode .cert-result-item {
+  background: #2d2d2d !important;
+  border-color: #444 !important;
+}
+
+body.dark-mode .kavling-data-content {
+  background: #2d2d2d !important;
+  color: #e0e0e0 !important;
+  border-color: #444 !important;
+}
+
+body.dark-mode .modal-header {
+  background: #333 !important;
+}
+
+body.dark-mode .kavling-popup-header {
+  background: #333 !important;
+}
+
+body.dark-mode .status-debug-info {
+  background: #2d2d2d !important;
+  color: #aaa !important;
+}
+
+body.dark-mode .placeholder {
+  color: #aaa !important;
+}
