@@ -51,7 +51,7 @@ function clearHighlight() {
           !target.classList.contains('kavling-status-stok') && 
           !target.classList.contains('kavling-status-rekom') && 
           !target.classList.contains('kavling-status-disewakan') &&
-          !target.classList.contains('kavling-status-gray')) {
+          !target.classList.contains('kavling-status-unknown')) {
         el.style.cssText = '';
       }
     });
@@ -162,7 +162,7 @@ async function fetchKavlingStatus() {
     return null;
   }
 }
-
+//--------------------------------------------------
 function updateStatusPanel(data) {
   const panelBody = document.querySelector('.status-panel-body');
   
@@ -171,215 +171,121 @@ function updateStatusPanel(data) {
     return;
   }
   
-  // ========== HITUNG LANGSUNG DARI WARNA DI PETA (HANYA YANG MEMILIKI ID) ==========
-  console.log('🎯 Menghitung kavling berdasarkan warna di peta (hanya dengan ID)...');
+  // ========== HITUNG LANGSUNG DARI WARNA DI PETA ==========
+  console.log('🎯 Menghitung kavling berdasarkan warna di peta...');
   
-  // Hitung elemen dengan kelas warna tertentu HANYA yang memiliki ID
   const countByColor = {
     kpr: 0,
     stok: 0,
     rekom: 0,
     disewakan: 0,
-    gray: 0,
+    unknown: 0, 
     total: 0
   };
   
-  // Daftar kelas warna yang dicari
+  // UPDATE: Tambahkan 'kavling-status-unknown' ke daftar
   const colorClasses = [
     'kavling-status-kpr',
     'kavling-status-stok',
     'kavling-status-rekom',
     'kavling-status-disewakan',
-    'kavling-status-gray'
+    'kavling-status-unknown'  
   ];
   
-  // Hitung untuk setiap kelas warna - HANYA dari frame elements (GA, UJ, KR, M, Blok)
   const frameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
   
   colorClasses.forEach(className => {
     let count = 0;
     
-    // Hitung HANYA elemen frame yang punya class warna ini
     frameElements.forEach(el => {
       if (el.id && el.classList.contains(className)) {
         count++;
       }
     });
     
-    // Ekstrak tipe dari nama kelas
     const type = className.replace('kavling-status-', '');
     countByColor[type] = count;
-    
-    console.log(`🎨 ${type.toUpperCase()}: ${count} kavling (dengan frame_id)`);
+    console.log(`🎨 ${type.toUpperCase()}: ${count} kavling`);
   });
   
-  // Hitung total semua kavling yang berwarna (hanya yang punya ID)
-  countByColor.total = countByColor.kpr + countByColor.stok + countByColor.rekom + countByColor.disewakan + countByColor.gray;
+  // Hitung total
+  countByColor.total = countByColor.kpr + countByColor.stok + countByColor.rekom + 
+                       countByColor.disewakan + countByColor.unknown;
   
-  console.log('📊 Hasil hitung dari warna (hanya ID):', countByColor);
+  console.log('📊 Hasil hitung:', countByColor);
   
-  // ========== UPDATE UI DENGAN HASIL HITUNGAN ==========
-  // FUNGSI AMAN UNTUK UPDATE
+  // Update UI
   const safeUpdate = (elementId, value) => {
     const element = document.getElementById(elementId);
-    if (element) {
-      element.textContent = value !== undefined ? value : 0;
-    } else {
-      console.warn(`⚠️ Element #${elementId} tidak ditemukan`);
-    }
+    if (element) element.textContent = value !== undefined ? value : 0;
   };
   
-  // Update dengan hasil hitungan dari warna
   safeUpdate('countKPR', countByColor.kpr);
   safeUpdate('countSTOK', countByColor.stok);
   safeUpdate('countREKOM', countByColor.rekom);
   safeUpdate('countDISEWAKAN', countByColor.disewakan);
-  safeUpdate('countGRAY', countByColor.gray);
+  safeUpdate('countUNKNOWN', countByColor.unknown);  
   safeUpdate('totalAll', countByColor.total);
   
   // ========== BUAT HTML PANEL ==========
-  let html = '';
-  
-  // Tambahkan header dengan tombol kontrol
-  html += `
-    <div class="status-header" style="
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      padding: 10px 15px; 
-      background: #673ab7; 
-      border-bottom: 1px solid #ddd;
-      color: white;
-      cursor: move;
-    ">
+  let html = `
+    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #673ab7; border-bottom: 1px solid #ddd; color: white; cursor: move;">
       <h4 style="margin: 0; font-size: 16px;">📊 Statistik Status Kavling</h4>
       <div style="display: flex; gap: 5px;">
-        <button class="close-status-btn" style="
-          background: rgba(255, 255, 255, 0.2);
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 30px;
-          height: 30px;
-          font-size: 18px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">×</button>
+        <button class="close-status-btn" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
       </div>
     </div>
+    
+    <div class="status-content" style="padding: 15px;">
+      <div style="margin-bottom: 15px; text-align: center;">
+        <button onclick="countKavlingFromMap()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>🔄</span> Hitung Ulang pada Peta
+        </button>
+      </div>
   `;
   
-  // Konten panel
-  html += '<div class="status-content" style="padding: 15px;">';
-  
-  // Tombol Hitung Ulang (Paling Atas)
-  html += `
-    <div style="margin-bottom: 15px; text-align: center;">
-      <button onclick="countKavlingFromMap()" style="
-        padding: 10px 20px;
-        background: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      ">
-        <span>🔄</span> Hitung Ulang pada Peta
-      </button>
-    </div>
-  `;
-  
-  // Data untuk setiap kategori
+  // UPDATE kategori - ganti 'gray' dengan 'unknown'
   const categories = [
     { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444' },
     { id: 'stok', title: 'STOK', color: '#90EE90' },
     { id: 'rekom', title: 'REKOM', color: '#ff44ff' },
     { id: 'disewakan', title: 'DISEWAKAN', color: '#44ffff' },
-    { id: 'gray', title: 'TIDAK DIKETAHUI', color: '#c0c0c0' }
+    { id: 'unknown', title: 'TIDAK DIKETAHUI (PUTIH)', color: '#ffffff' }  // GANTI ke putih
   ];
   
   categories.forEach(cat => {
-    // Gunakan hasil hitungan dari warna
     const count = countByColor[cat.id] || 0;
+    const borderStyle = cat.id === 'unknown' ? 'border: 1px solid #ddd;' : '';
     
     html += `
-      <div class="status-item" style="
-        display: flex;
-        align-items: center;
-        padding: 10px;
-        margin-bottom: 8px;
-        background: #fff;
-        border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      ">
-        <div class="status-color-sample" style="
-          width: 20px;
-          height: 20px;
-          border-radius: 4px;
-          margin-right: 12px;
-          background-color: ${cat.color};
-        "></div>
+      <div class="status-item" style="display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); ${borderStyle}">
+        <div class="status-color-sample" style="width: 20px; height: 20px; border-radius: 4px; margin-right: 12px; background-color: ${cat.color}; ${cat.id === 'unknown' ? 'border: 1px solid #ccc;' : ''}"></div>
         <div class="status-info" style="flex: 1;">
           <div class="status-title" style="font-size: 14px; color: #555;">${cat.title}</div>
           <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 18px; font-weight: bold; color: #333;">${count}</div>
         </div>
-        <button class="download-btn" data-type="${cat.id}" style="
-          padding: 6px 12px;
-          background: #2196F3;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-        ">📥 Download</button>
+        <button class="download-btn" data-type="${cat.id}" style="padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📥 Download</button>
       </div>
     `;
   });
   
-  // Total
-  const total = countByColor.total;
-  
   html += `
-    <div class="status-total" style="
-      text-align: center;
-      padding: 15px;
-      margin-top: 15px;
-      background: #e8f5e9;
-      border-radius: 8px;
-      font-size: 18px;
-    ">
-      <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${total}</span></strong>
+    <div class="status-total" style="text-align: center; padding: 15px; margin-top: 15px; background: #e8f5e9; border-radius: 8px; font-size: 18px;">
+      <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${countByColor.total}</span></strong>
     </div>
     
-    <div class="status-debug-info" style="
-      margin-top: 15px;
-      padding: 12px;
-      background: #f9f9f9;
-      border-radius: 6px;
-      font-size: 12px;
-      color: #666;
-    ">
+    <div class="status-debug-info" style="margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; font-size: 12px; color: #666;">
       <h5 style="margin: 0 0 8px 0; color: #333;">Info Data:</h5>
       Hitung dari warna peta (real-time)<br>
       Total Kavling Berwarna: ${countByColor.total}<br>
       Data API Records: ${data.totalRecords || 0}<br>
       Last Updated: ${new Date().toLocaleTimeString()}
     </div>
-  `;
-  
-  html += '</div>'; // Penutup .status-content
+  </div>`;
   
   panelBody.innerHTML = html;
   
-  // Re-attach event listeners untuk tombol download
+  // Re-attach event listeners
   document.querySelectorAll('.download-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const type = this.getAttribute('data-type');
@@ -387,18 +293,17 @@ function updateStatusPanel(data) {
     });
   });
   
-  // Event listeners untuk tombol close
   const closeBtn = panelBody.querySelector('.close-status-btn');
-  
   if (closeBtn) {
     closeBtn.addEventListener('click', function(e) {
-      e.stopPropagation(); // Cegah event bubbling
+      e.stopPropagation();
       resetStatusMode();
     });
   }
 }
 //--------------------------------------------------
 // Beri warna pada kavling berdasarkan status
+
 function colorizeKavling(kavlingData) {
   const svgMap = document.querySelector('#map svg');
   if (!svgMap) {
@@ -408,105 +313,75 @@ function colorizeKavling(kavlingData) {
   
   console.log(`🎨 Mulai mewarnai ${kavlingData.length} kavling`);
   
-  // Reset semua warna status
   clearStatusColors();
   
   let coloredCount = 0;
   let notFoundCount = 0;
-  let processedIds = new Set(); // Tracking ID yang sudah diproses
+  let processedIds = new Set();
   
-  // Loop setiap kavling dari data API
   kavlingData.forEach(item => {
-    if (!item.kode) {
-      console.warn('⚠️ Item tanpa kode:', item);
-      return;
-    }
-    console.log(`🎨 Processing: ${item.kode} - Kategori: "${item.kategori}"`);
-    // Normalize kode (uppercase, trim)
-    const kode = item.kode.trim().toUpperCase();
+    if (!item.kode) return;
     
-    // Cari element di SVG
+    const kode = item.kode.trim().toUpperCase();
     let element = document.getElementById(kode);
     
-    // Jika tidak ditemukan dengan ID langsung, coba cari dengan selector lain
     if (!element) {
-      // Coba cari dengan pola lain (misal: "GA" menjadi "GA_")
       const elements = document.querySelectorAll(`[id*="${kode}"]`);
-      if (elements.length > 0) {
-        element = elements[0];
-        console.log(`🔍 Found alternative for ${kode}:`, element.id);
-      }
+      if (elements.length > 0) element = elements[0];
     }
     
     if (element) {
-      // Tandai ID ini sebagai sudah diproses
-      if (element.id) {
-        processedIds.add(element.id);
-      }
+      if (element.id) processedIds.add(element.id);
       
-      // Tambahkan kelas CSS berdasarkan kategori
       if (item.kategori && item.kategori !== 'lainnya') {
         const className = `kavling-status-${item.kategori}`;
-        
-        // Tambah kelas ke element
         element.classList.add(className);
         
-        // Jika element adalah group, warnai child-nya juga
         if (element.tagName.toLowerCase() === 'g') {
-          const children = element.querySelectorAll('rect, path, polygon, circle');
-          children.forEach(child => {
+          element.querySelectorAll('rect, path, polygon, circle').forEach(child => {
             child.classList.add(className);
           });
         }
         
         coloredCount++;
-        
-        // Debug log setiap 10 kavling
-        if (coloredCount % 10 === 0) {
-          console.log(`✅ ${coloredCount} kavling diberi warna`);
-        }
       }
     } else {
       notFoundCount++;
-      // Debug untuk kavling yang tidak ditemukan (max 5)
       if (notFoundCount <= 5) {
-        console.warn(`❓ Kavling tidak ditemukan di SVG: "${kode}"`);
+        console.warn(`❓ Kavling tidak ditemukan: "${kode}"`);
       }
     }
   });
   
-  // Warnai blok-blok dengan ID yang TIDAK memiliki status menjadi abu-abu
+  // WARNAI KAVLING TANPA STATUS DENGAN PUTIH
   const allBlocksWithId = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
-  let grayCount = 0;
+  let unknownCount = 0;
   
   allBlocksWithId.forEach(el => {
-    // Jika element memiliki ID tapi TIDAK ada di data API (tidak diproses), beri warna abu-abu
-    if (el.id && !processedIds.has(el.id) && !el.classList.contains('kavling-status-kpr') && 
-        !el.classList.contains('kavling-status-stok') && !el.classList.contains('kavling-status-rekom') &&
+    if (el.id && !processedIds.has(el.id) && 
+        !el.classList.contains('kavling-status-kpr') && 
+        !el.classList.contains('kavling-status-stok') && 
+        !el.classList.contains('kavling-status-rekom') &&
         !el.classList.contains('kavling-status-disewakan')) {
       
-      el.classList.add('kavling-status-gray');
-      
-      // Hapus style inline jika ada (untuk memastikan CSS class bisa diterapkan)
+      el.classList.add('kavling-status-unknown');
       el.style.cssText = '';
       
-      // Jika element adalah group, warnai child-nya juga
       if (el.tagName.toLowerCase() === 'g') {
-        const children = el.querySelectorAll('rect, path, polygon, circle');
-        children.forEach(child => {
-          child.classList.add('kavling-status-gray');
+        el.querySelectorAll('rect, path, polygon, circle').forEach(child => {
+          child.classList.add('kavling-status-unknown');
           child.style.cssText = '';
         });
       }
       
-      grayCount++;
+      unknownCount++;
     }
   });
   
-  console.log(`🎨 Selesai: ${coloredCount} kavling berwarna, ${grayCount} abu-abu, ${notFoundCount} tidak ditemukan`);
+  console.log(`🎨 Selesai: ${coloredCount} kavling berwarna, ${unknownCount} putih, ${notFoundCount} tidak ditemukan`);
 }
 
-// Hapus semua warna status
+// Hapus semua warna status -----------------------
 function clearStatusColors() {
   // Hapus kelas warna dari semua elemen kavling
   document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]')
@@ -516,7 +391,7 @@ function clearStatusColors() {
         'kavling-status-stok', 
         'kavling-status-rekom',
         'kavling-status-disewakan',
-        'kavling-status-gray'
+        'kavling-status-unknown'
       );
       
       // Hapus juga dari child elements jika group
@@ -527,7 +402,7 @@ function clearStatusColors() {
             'kavling-status-stok', 
             'kavling-status-rekom',
             'kavling-status-disewakan',
-            'kavling-status-gray'
+            'kavling-status-unknown'
           );
         });
       }
@@ -544,7 +419,7 @@ function countKavlingFromMap() {
     stok: 0,
     rekom: 0,
     disewakan: 0,
-    gray: 0
+    unknown: 0
   };
   
   // Query HANYA elemen frame dengan selector yang ketat
@@ -555,7 +430,7 @@ function countKavlingFromMap() {
     'kavling-status-stok', 
     'kavling-status-rekom', 
     'kavling-status-disewakan',
-    'kavling-status-gray'
+    'kavling-status-unknown'
   ];
   
   // Hitung status untuk setiap frame element yang punya status class
@@ -571,7 +446,7 @@ function countKavlingFromMap() {
     }
   });
   
-  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan + counts.gray;
+  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan + counts.unknown;
   
   console.log('📈 Hasil hitung real-time dari peta (hanya frame ID):', counts);
   
@@ -1596,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', () => {
             !target.classList.contains('kavling-status-stok') && 
             !target.classList.contains('kavling-status-rekom') && 
             !target.classList.contains('kavling-status-disewakan') &&
-            !target.classList.contains('kavling-status-gray')) {
+            !target.classList.contains('kavling-status-unknown')) {
           c.style.fill = '#ffd54f';
           c.style.stroke = '#ff6f00';
           c.style.strokeWidth = '2';
@@ -1607,7 +1482,7 @@ document.addEventListener('DOMContentLoaded', () => {
           !el.classList.contains('kavling-status-stok') && 
           !el.classList.contains('kavling-status-rekom') && 
           !el.classList.contains('kavling-status-disewakan') &&
-          !el.classList.contains('kavling-status-gray')) {
+          !el.classList.contains('kavling-status-unknown')) {
         el.style.fill = '#ffd54f';
         el.style.stroke = '#ff6f00';
         el.style.strokeWidth = '2';
@@ -1659,7 +1534,7 @@ document.addEventListener('DOMContentLoaded', () => {
               !target.classList.contains('kavling-status-stok') && 
               !target.classList.contains('kavling-status-rekom') && 
               !target.classList.contains('kavling-status-disewakan') &&
-              !target.classList.contains('kavling-status-gray')) {
+              !target.classList.contains('kavling-status-unknown')) {
             c.style.fill = '#ffd54f';
             c.style.stroke = '#ff6f00';
             c.style.strokeWidth = '2';
@@ -1670,7 +1545,7 @@ document.addEventListener('DOMContentLoaded', () => {
             !el.classList.contains('kavling-status-stok') && 
             !el.classList.contains('kavling-status-rekom') && 
             !el.classList.contains('kavling-status-disewakan') &&
-            !el.classList.contains('kavling-status-gray')) {
+            !el.classList.contains('kavling-status-unknown')) {
           el.style.fill = '#ffd54f';
           el.style.stroke = '#ff6f00';
           el.style.strokeWidth = '2';
