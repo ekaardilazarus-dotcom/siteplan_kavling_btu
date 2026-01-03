@@ -636,8 +636,8 @@ h1 {
 }
 
 .kavling-status-stok {
-  fill: #4444ff !important;
-  stroke: #0000cc !important;
+  #90EE90 !important;     /* Hijau muda */
+  stroke: #32CD32 !important;   /* Hijau lebih gelap untuk border */
   stroke-width: 1.5 !important;
 }
 
@@ -669,8 +669,8 @@ h1 {
 }
 
 #map g.kavling-status-stok:hover * {
-  fill: #6666ff !important;
-  stroke: #0000ff !important;
+  fill: #98FB98 !important;     /* Hijau muda lebih terang */
+  stroke: #00FF00 !important;   /* Hijau neon untuk hover */
   stroke-width: 2 !important;
 }
 
