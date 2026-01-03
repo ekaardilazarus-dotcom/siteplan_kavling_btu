@@ -631,32 +631,32 @@ h1 {
 /* =============================== */
 .kavling-status-kpr {
   fill: #ff4444 !important;
-  stroke: #cc0000 !important;
+  stroke: #111111 !important;
   stroke-width: 1.5 !important;
 }
 
 .kavling-status-stok {
   fill: #90EE90 !important;     /* Hijau muda */
-  stroke: #32CD32 !important;   /* Hijau lebih gelap untuk border */
+  stroke: #111111 !important;   /* Hijau lebih gelap untuk border */
   stroke-width: 1.5 !important;
 }
 
 .kavling-status-rekom {
   fill: #ff44ff !important;
-  stroke: #cc00cc !important;
+  stroke: #111111 !important;
   stroke-width: 1.5 !important;
 }
 
 .kavling-status-disewakan {
   fill: #44ffff !important;
-  stroke: #00cccc !important;
+  stroke: #111111 !important;
   stroke-width: 1.5 !important;
 }
 
 /* Warna abu-abu untuk blok tanpa status */
 .kavling-status-gray {
   fill: #c0c0c0 !important;
-  stroke: #808080 !important;
+  stroke: #111111 !important;
   stroke-width: 1.5 !important;
   opacity: 0.7;
 }
