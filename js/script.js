@@ -300,7 +300,7 @@ function updateStatusPanel(data) {
   // Data untuk setiap kategori
   const categories = [
     { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444' },
-    { id: 'stok', title: 'STOK', color: '#4444ff' },
+    { id: 'stok', title: 'STOK', color: '#90EE90' },
     { id: 'rekom', title: 'REKOM', color: '#ff44ff' },
     { id: 'disewakan', title: 'DISEWAKAN', color: '#44ffff' },
     { id: 'gray', title: 'TIDAK DIKETAHUI', color: '#c0c0c0' }
