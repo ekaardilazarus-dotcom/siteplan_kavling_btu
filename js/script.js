@@ -183,8 +183,9 @@ function updateStatusPanel(data) {
     total: 0
   };
   
-const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
-console.log(`📊 Total frame elements di peta: ${allFrameElements.length}`);
+  const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+  console.log(`📊 Total frame elements di peta: ${allFrameElements.length}`);
+  
   // UPDATE: Tambahkan 'kavling-status-unknown' ke daftar
   const colorClasses = [
     'kavling-status-kpr',
@@ -193,31 +194,26 @@ console.log(`📊 Total frame elements di peta: ${allFrameElements.length}`);
     'kavling-status-disewakan',
     'kavling-status-unknown'  
   ];
-  allFrameElements.forEach(el => {
-  if (el.id && el.id.trim() !== '') {
-    let hasStatus = false;
-    
-    // Cek setiap kelas status
-    colorClasses.forEach(className => {
-      if (el.classList.contains(className)) {
-        const type = className.replace('kavling-status-', '');
-        countByColor[type]++;
-        hasStatus = true;
-      }
-    });
   
-  colorClasses.forEach(className => {
-    let count = 0;
-    
-    frameElements.forEach(el => {
-      if (el.id && el.classList.contains(className)) {
-        count++;
+  // Hitung berdasarkan kelas warna
+  allFrameElements.forEach(el => {
+    if (el.id && el.id.trim() !== '') {
+      let hasStatus = false;
+      
+      // Cek setiap kelas status
+      colorClasses.forEach(className => {
+        if (el.classList.contains(className)) {
+          const type = className.replace('kavling-status-', '');
+          countByColor[type]++;
+          hasStatus = true;
+        }
+      });
+      
+      // Jika tidak ada kelas status, hitung sebagai unknown
+      if (!hasStatus) {
+        countByColor.unknown++;
       }
-    });
-    
-    const type = className.replace('kavling-status-', '');
-    countByColor[type] = count;
-    console.log(`🎨 ${type.toUpperCase()}: ${count} kavling`);
+    }
   });
   
   // Hitung total
@@ -262,7 +258,7 @@ console.log(`📊 Total frame elements di peta: ${allFrameElements.length}`);
     { id: 'stok', title: 'STOK', color: '#90EE90' },
     { id: 'rekom', title: 'REKOM', color: '#ff44ff' },
     { id: 'disewakan', title: 'DISEWAKAN', color: '#44ffff' },
-    { id: 'unknown', title: 'TIDAK DIKETAHUI (PUTIH)', color: '#ffffff' }  // GANTI ke putih
+    { id: 'unknown', title: 'TIDAK DIKETAHUI (PUTIH)', color: '#ffffff' }
   ];
   
   categories.forEach(cat => {
