@@ -528,21 +528,46 @@ function resetStatusMode() {
 }
 
 // Ambil list blok berdasarkan kategori warna dari peta
+
+// Ambil list blok berdasarkan kategori warna dari peta - DIPERBAIKI
 function getKavlingListFromMap(type) {
   const kavlingList = [];
   const className = `kavling-status-${type}`;
-  const frameElements = document.querySelectorAll(`[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]`);
+  const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
   
-  frameElements.forEach(el => {
-    if (el.id && el.classList.contains(className)) {
-      kavlingList.push(el.id);
+  console.log(`🔍 Mencari kavling tipe ${type}, total frame: ${allFrameElements.length}`);
+  
+  allFrameElements.forEach(el => {
+    if (el.id && el.id.trim() !== '') {
+      // Untuk kategori "unknown", kita perlu menangani khusus
+      if (type === 'unknown') {
+        // Cek apakah elemen TIDAK memiliki kelas status apapun
+        const hasStatus = el.classList.contains('kavling-status-kpr') ||
+                         el.classList.contains('kavling-status-stok') ||
+                         el.classList.contains('kavling-status-rekom') ||
+                         el.classList.contains('kavling-status-disewakan') ||
+                         el.classList.contains('kavling-status-unknown');
+        
+        if (!hasStatus) {
+          kavlingList.push(el.id);
+        }
+      } 
+      // Untuk kategori lain, cek kelas yang sesuai
+      else if (el.classList.contains(className)) {
+        kavlingList.push(el.id);
+      }
     }
   });
+  
+  console.log(`📊 Ditemukan ${kavlingList.length} kavling untuk tipe ${type}`);
+  if (kavlingList.length > 0) {
+    console.log(`📝 Contoh kavling ${type}:`, kavlingList.slice(0, 5));
+  }
   
   return kavlingList.sort();
 }
 
-// Download data per kategori
+// Download data per kategori - DIPERBAIKI
 async function downloadKavlingData(type) {
   try {
     console.log(`📥 Memulai download data ${type}...`);
@@ -552,16 +577,21 @@ async function downloadKavlingData(type) {
     
     console.log(`📊 Ditemukan ${kavlingListFromMap.length} kavling ${type} di peta:`, kavlingListFromMap);
     
+    if (kavlingListFromMap.length === 0) {
+      alert(`⚠️ Tidak ada kavling dengan status "${type}" ditemukan di peta.`);
+      return;
+    }
+    
     // Tampilkan data di popup
     showDownloadPopupFromMap(kavlingListFromMap, type);
     
   } catch (error) {
     console.error(`❌ Gagal download data ${type}:`, error);
-    alert(`Gagal download data ${type}. Coba lagi nanti.`);
+    alert(`Gagal download data ${type}: ${error.message}`);
   }
 }
 
-// Popup untuk menampilkan list blok dari peta
+// Popup untuk menampilkan list blok dari peta - DIPERBAIKI
 function showDownloadPopupFromMap(kavlingList, type) {
   // Hapus popup lama jika ada
   const oldPopup = document.querySelector('.kavling-popup');
@@ -573,31 +603,69 @@ function showDownloadPopupFromMap(kavlingList, type) {
   const popup = document.createElement('div');
   popup.className = 'kavling-popup';
   
+  let title = '';
+  let description = '';
+  
+  // Sesuaikan judul berdasarkan tipe
+  switch(type) {
+    case 'kpr':
+      title = 'KPR, TUNAI (SOLD)';
+      description = 'Kavling yang sudah terjual (KPR/TUNAI)';
+      break;
+    case 'stok':
+      title = 'STOK';
+      description = 'Kavling yang masih tersedia (STOK)';
+      break;
+    case 'rekom':
+      title = 'REKOM';
+      description = 'Kavling rekomendasi';
+      break;
+    case 'disewakan':
+      title = 'DISEWAKAN';
+      description = 'Kavling yang disewakan';
+      break;
+    case 'unknown':
+      title = 'TIDAK DIKETAHUI (PUTIH)';
+      description = 'Kavling tanpa status informasi';
+      break;
+    default:
+      title = type.toUpperCase();
+      description = `Kavling dengan status: ${type}`;
+  }
+  
   let content = `
     <div style="margin-bottom:15px; padding:15px; background:#e8f5e9; border-radius:6px; text-align:center;">
       <div style="font-size:18px; font-weight:bold; color:#1b5e20;">${kavlingList.length} Kavling</div>
-      <div style="font-size:13px; color:#666; margin-top:5px;">Status: <strong>${type.toUpperCase()}</strong></div>
+      <div style="font-size:14px; color:#666; margin-top:5px;">${description}</div>
+      <div style="font-size:12px; color:#999; margin-top:5px;">Status: <strong>${title}</strong></div>
     </div>
     
-    <div style="margin-bottom:15px;">
+    <div style="margin-bottom:15px; display: flex; gap: 10px; justify-content: center;">
       <button onclick="copyToClipboard()" style="padding:10px 20px; background:#2196F3; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">
         📋 Copy Semua
+      </button>
+      <button onclick="downloadAsCSV('${type}')" style="padding:10px 20px; background:#4CAF50; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600;">
+        📥 Download CSV
       </button>
     </div>
     
     <div style="font-family:monospace; font-size:13px; line-height:1.8; background:#f5f5f5; padding:15px; border-radius:6px; max-height:400px; overflow-y:auto; border:1px solid #e0e0e0;">
   `;
   
-  kavlingList.forEach((kode, index) => {
-    content += `<div>${index + 1}. ${kode}</div>`;
-  });
+  if (kavlingList.length > 0) {
+    kavlingList.forEach((kode, index) => {
+      content += `<div style="padding: 3px 0;">${index + 1}. ${kode}</div>`;
+    });
+  } else {
+    content += `<div style="text-align:center; padding:20px; color:#666;">Tidak ada data ditemukan</div>`;
+  }
   
   content += `</div>`;
   
   popup.innerHTML = `
     <div class="kavling-popup-content" style="max-width:600px;">
       <div class="kavling-popup-header">
-        <h3>📥 List Kavling: ${type.toUpperCase()}</h3>
+        <h3>📥 List Kavling: ${title}</h3>
         <button class="close-kavling-popup">&times;</button>
       </div>
       <div class="kavling-popup-body" id="downloadListBody">
@@ -633,6 +701,37 @@ function showDownloadPopupFromMap(kavlingList, type) {
   });
   
   popup.style.display = 'flex';
+}
+
+// Fungsi untuk download sebagai CSV
+function downloadAsCSV(type) {
+  if (!window.currentDownloadList || window.currentDownloadList.length === 0) {
+    alert('Tidak ada data untuk didownload');
+    return;
+  }
+  
+  // Buat header CSV
+  let csvContent = "No,Kode Kavling,Status\n";
+  
+  // Tambahkan data
+  window.currentDownloadList.forEach((kode, index) => {
+    csvContent += `${index + 1},"${kode}","${type}"\n`;
+  });
+  
+  // Buat blob dan download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute("href", url);
+  link.setAttribute("download", `kavling_${type}_${new Date().toISOString().slice(0,10)}.csv`);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  console.log(`✅ CSV untuk ${type} berhasil didownload (${window.currentDownloadList.length} data)`);
 }
 
 // Copy list ke clipboard
