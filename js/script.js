@@ -483,9 +483,6 @@ function countKavlingFromMap() {
   safeUpdate('countUNKNOWN', counts.unknown);
   safeUpdate('totalAll', counts.total);
   
-  // Tampilkan alert untuk konfirmasi
-  alert(`✅ Hitung ulang selesai!\n\nHasil:\nKPR: ${counts.kpr}\nSTOK: ${counts.stok}\nREKOM: ${counts.rekom}\nDISEWAKAN: ${counts.disewakan}\nTIDAK DIKETAHUI: ${counts.unknown}\nTOTAL: ${counts.total}`);
-  
   return counts;
 }
 
