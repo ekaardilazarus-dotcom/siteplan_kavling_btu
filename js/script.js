@@ -1362,7 +1362,14 @@ document.addEventListener('DOMContentLoaded', () => {
         map.innerHTML = '<div style="padding:40px;text-align:center;color:#666">Gagal memuat peta. Silakan refresh halaman.</div>';
       });
   }
+// ===============================
+// DARK MODE TOGGLE
+// ===============================
+document.getElementById('darkModeToggle')?.addEventListener('click', toggleDarkMode);
 
+// Apply dark mode saat halaman dimuat
+applyDarkMode();
+  
   // ===============================
   // TOMBOL STATUS KAVLING
   // ===============================
