@@ -419,9 +419,8 @@ function clearStatusColors() {
 
 // Fungsi untuk hitung ulang dari peta
 function countKavlingFromMap() {
-  console.log('🧮 Menghitung ulang dari peta (hanya frame ID)...');
+  console.log('🧮 Menghitung ulang dari peta (semua frame ID)...');
   
-  // Hitung HANYA elemen yang memiliki ID frame (GA, UJ, KR, M, Blok)
   const counts = {
     kpr: 0,
     stok: 0,
@@ -431,11 +430,12 @@ function countKavlingFromMap() {
     total: 0
   };
   
-  // Query HANYA elemen frame dengan selector yang ketat
-  const frameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+  // Query SEMUA elemen frame
+  const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
   
-  console.log(`📊 Total frame elements ditemukan: ${frameElements.length}`);
+  console.log(`📊 Total frame elements ditemukan: ${allFrameElements.length}`);
   
+  // Definisikan semua kelas status
   const statusClasses = [
     'kavling-status-kpr', 
     'kavling-status-stok', 
@@ -444,10 +444,9 @@ function countKavlingFromMap() {
     'kavling-status-unknown'
   ];
   
-  // Hitung status untuk setiap frame element yang punya status class
-  frameElements.forEach(el => {
-    // Hanya hitung jika element memiliki ID (frame_id)
- if (el.id && el.id.trim() !== '') {
+  // Hitung status untuk setiap frame element
+  allFrameElements.forEach(el => {
+    if (el.id && el.id.trim() !== '') {
       let foundStatus = false;
       
       // Cek setiap kelas status
@@ -458,21 +457,34 @@ function countKavlingFromMap() {
           foundStatus = true;
         }
       });
-    // Jika tidak ada kelas status, maka termasuk UNKNOWN (putih)
+      
+      // Jika tidak ada kelas status, maka termasuk UNKNOWN (putih)
       if (!foundStatus) {
         counts.unknown++;
-        console.log(`❓ Element tanpa status class: ${el.id}`);
       }
-      }
+    }
   });
+  
+  // Hitung total
   counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan + counts.unknown;
   
-  console.log('📈 Hasil hitung real-time dari peta (hanya frame ID):', counts);
+  console.log('📈 Hasil hitung real-time dari peta:', counts);
   
-  // Update UI jika panel sedang terbuka
-  if (isStatusMode && statusData) {
-    updateStatusPanel(statusData);
-  }
+  // Update UI langsung
+  const safeUpdate = (elementId, value) => {
+    const element = document.getElementById(elementId);
+    if (element) element.textContent = value !== undefined ? value : 0;
+  };
+  
+  safeUpdate('countKPR', counts.kpr);
+  safeUpdate('countSTOK', counts.stok);
+  safeUpdate('countREKOM', counts.rekom);
+  safeUpdate('countDISEWAKAN', counts.disewakan);
+  safeUpdate('countUNKNOWN', counts.unknown);
+  safeUpdate('totalAll', counts.total);
+  
+  // Tampilkan alert untuk konfirmasi
+  alert(`✅ Hitung ulang selesai!\n\nHasil:\nKPR: ${counts.kpr}\nSTOK: ${counts.stok}\nREKOM: ${counts.rekom}\nDISEWAKAN: ${counts.disewakan}\nTIDAK DIKETAHUI: ${counts.unknown}\nTOTAL: ${counts.total}`);
   
   return counts;
 }
