@@ -42,7 +42,19 @@ function applyViewBox(svg) {
 
 function clearHighlight() {
   document.querySelectorAll('#map rect, #map path, #map polygon')
-    .forEach(el => el.style.cssText = '');
+    .forEach(el => {
+      // Don't clear style if it's a status color class element
+      const parent = el.closest('g');
+      const target = (parent && parent.id && parent.id !== 'map') ? parent : el;
+      
+      if (!target.classList.contains('kavling-status-kpr') && 
+          !target.classList.contains('kavling-status-stok') && 
+          !target.classList.contains('kavling-status-rekom') && 
+          !target.classList.contains('kavling-status-disewakan') &&
+          !target.classList.contains('kavling-status-gray')) {
+        el.style.cssText = '';
+      }
+    });
 }
 
 // ===============================
@@ -159,9 +171,6 @@ function updateStatusPanel(data) {
     return;
   }
   
-  // ========== CEK APAKAH PANEL MINIMIZED ==========
-  const isMinimized = panelBody.classList.contains('minimized');
-  
   // ========== HITUNG LANGSUNG DARI WARNA DI PETA (HANYA YANG MEMILIKI ID) ==========
   console.log('🎯 Menghitung kavling berdasarkan warna di peta (hanya dengan ID)...');
   
@@ -171,6 +180,7 @@ function updateStatusPanel(data) {
     stok: 0,
     rekom: 0,
     disewakan: 0,
+    gray: 0,
     total: 0
   };
   
@@ -179,7 +189,8 @@ function updateStatusPanel(data) {
     'kavling-status-kpr',
     'kavling-status-stok',
     'kavling-status-rekom',
-    'kavling-status-disewakan'
+    'kavling-status-disewakan',
+    'kavling-status-gray'
   ];
   
   // Hitung untuk setiap kelas warna - HANYA dari frame elements (GA, UJ, KR, M, Blok)
@@ -203,7 +214,7 @@ function updateStatusPanel(data) {
   });
   
   // Hitung total semua kavling yang berwarna (hanya yang punya ID)
-  countByColor.total = countByColor.kpr + countByColor.stok + countByColor.rekom + countByColor.disewakan;
+  countByColor.total = countByColor.kpr + countByColor.stok + countByColor.rekom + countByColor.disewakan + countByColor.gray;
   
   console.log('📊 Hasil hitung dari warna (hanya ID):', countByColor);
   
@@ -223,6 +234,7 @@ function updateStatusPanel(data) {
   safeUpdate('countSTOK', countByColor.stok);
   safeUpdate('countREKOM', countByColor.rekom);
   safeUpdate('countDISEWAKAN', countByColor.disewakan);
+  safeUpdate('countGRAY', countByColor.gray);
   safeUpdate('totalAll', countByColor.total);
   
   // ========== BUAT HTML PANEL ==========
@@ -235,33 +247,21 @@ function updateStatusPanel(data) {
       justify-content: space-between; 
       align-items: center; 
       padding: 10px 15px; 
-      background: #f5f5f5; 
+      background: #673ab7; 
       border-bottom: 1px solid #ddd;
+      color: white;
       cursor: move;
     ">
-      <h4 style="margin: 0; font-size: 16px; color: #333;">📊 Statistik Status Kavling</h4>
+      <h4 style="margin: 0; font-size: 16px;">📊 Statistik Status Kavling</h4>
       <div style="display: flex; gap: 5px;">
-        <button class="minimize-btn" style="
-          background: ${isMinimized ? '#4CAF50' : '#ff9800'};
-          color: white;
-          border: none;
-          border-radius: 4px;
-          width: 30px;
-          height: 30px;
-          font-size: 16px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">${isMinimized ? '□' : '─'}</button>
         <button class="close-status-btn" style="
-          background: #f44336;
+          background: rgba(255, 255, 255, 0.2);
           color: white;
           border: none;
-          border-radius: 4px;
+          border-radius: 50%;
           width: 30px;
           height: 30px;
-          font-size: 16px;
+          font-size: 18px;
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -274,120 +274,106 @@ function updateStatusPanel(data) {
   // Konten panel
   html += '<div class="status-content" style="padding: 15px;">';
   
-  if (!isMinimized) {
-    // Data untuk setiap kategori
-    const categories = [
-      { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444' },
-      { id: 'stok', title: 'STOK', color: '#4444ff' },
-      { id: 'rekom', title: 'REKOM', color: '#ff44ff' },
-      { id: 'disewakan', title: 'DISEWAKAN', color: '#44ffff' }
-    ];
-    
-    categories.forEach(cat => {
-      // Gunakan hasil hitungan dari warna
-      const count = countByColor[cat.id] || 0;
-      
-      html += `
-        <div class="status-item" style="
-          display: flex;
-          align-items: center;
-          padding: 10px;
-          margin-bottom: 8px;
-          background: #fff;
-          border-radius: 6px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        ">
-          <div class="status-color-sample" style="
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            margin-right: 12px;
-            background-color: ${cat.color};
-          "></div>
-          <div class="status-info" style="flex: 1;">
-            <div class="status-title" style="font-size: 14px; color: #555;">${cat.title}</div>
-            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 18px; font-weight: bold; color: #333;">${count}</div>
-          </div>
-          <button class="download-btn" data-type="${cat.id}" style="
-            padding: 6px 12px;
-            background: #2196F3;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-          ">📥 Download</button>
-        </div>
-      `;
-    });
-    
-    // Total
-    const total = countByColor.total;
+  // Tombol Hitung Ulang (Paling Atas)
+  html += `
+    <div style="margin-bottom: 15px; text-align: center;">
+      <button onclick="countKavlingFromMap()" style="
+        padding: 10px 20px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      ">
+        <span>🔄</span> Hitung Ulang pada Peta
+      </button>
+    </div>
+  `;
+  
+  // Data untuk setiap kategori
+  const categories = [
+    { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444' },
+    { id: 'stok', title: 'STOK', color: '#4444ff' },
+    { id: 'rekom', title: 'REKOM', color: '#ff44ff' },
+    { id: 'disewakan', title: 'DISEWAKAN', color: '#44ffff' },
+    { id: 'gray', title: 'TIDAK DIKETAHUI', color: '#c0c0c0' }
+  ];
+  
+  categories.forEach(cat => {
+    // Gunakan hasil hitungan dari warna
+    const count = countByColor[cat.id] || 0;
     
     html += `
-      <div class="status-total" style="
-        text-align: center;
-        padding: 15px;
-        margin-top: 15px;
-        background: #e8f5e9;
-        border-radius: 8px;
-        font-size: 18px;
+      <div class="status-item" style="
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        margin-bottom: 8px;
+        background: #fff;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       ">
-        <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${total}</span></strong>
-      </div>
-      
-      <div style="margin-top: 15px; text-align: center;">
-        <button onclick="countKavlingFromMap()" style="
-          padding: 10px 20px;
-          background: #4CAF50;
+        <div class="status-color-sample" style="
+          width: 20px;
+          height: 20px;
+          border-radius: 4px;
+          margin-right: 12px;
+          background-color: ${cat.color};
+        "></div>
+        <div class="status-info" style="flex: 1;">
+          <div class="status-title" style="font-size: 14px; color: #555;">${cat.title}</div>
+          <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 18px; font-weight: bold; color: #333;">${count}</div>
+        </div>
+        <button class="download-btn" data-type="${cat.id}" style="
+          padding: 6px 12px;
+          background: #2196F3;
           color: white;
           border: none;
-          border-radius: 6px;
+          border-radius: 4px;
           cursor: pointer;
-          font-size: 14px;
-          font-weight: bold;
-          margin-bottom: 10px;
-          width: 100%;
-        ">
-          🔄 Hitung Ulang dari Peta
-        </button>
-      </div>
-      
-      <div class="status-debug-info" style="
-        margin-top: 15px;
-        padding: 12px;
-        background: #f9f9f9;
-        border-radius: 6px;
-        font-size: 12px;
-        color: #666;
-      ">
-        <h5 style="margin: 0 0 8px 0; color: #333;">Info Data:</h5>
-        Hitung dari warna peta (real-time)<br>
-        Total Kavling Berwarna: ${countByColor.total}<br>
-        Data API Records: ${data.totalRecords || 0}<br>
-        Last Updated: ${new Date().toLocaleTimeString()}
+          font-size: 12px;
+        ">📥 Download</button>
       </div>
     `;
-  } else {
-    // Tampilan minimized
-    html += `
-      <div style="text-align: center; padding: 20px;">
-        <div style="font-size: 36px; margin-bottom: 10px; color: #2196F3;">📊</div>
-        <div style="font-weight: bold; font-size: 24px; color: #333; margin-bottom: 5px;">Total: ${countByColor.total}</div>
-        <div style="font-size: 14px; color: #666; margin-bottom: 15px;">Klik tombol hijau untuk expand</div>
-        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
-          <div style="display: inline-flex; align-items: center;">
-            <div style="width: 12px; height: 12px; background: #ff4444; border-radius: 2px; margin-right: 6px;"></div>
-            <span style="font-size: 11px;">KPR: ${countByColor.kpr}</span>
-          </div>
-          <div style="display: inline-flex; align-items: center;">
-            <div style="width: 12px; height: 12px; background: #4444ff; border-radius: 2px; margin-right: 6px;"></div>
-            <span style="font-size: 11px;">STOK: ${countByColor.stok}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+  });
+  
+  // Total
+  const total = countByColor.total;
+  
+  html += `
+    <div class="status-total" style="
+      text-align: center;
+      padding: 15px;
+      margin-top: 15px;
+      background: #e8f5e9;
+      border-radius: 8px;
+      font-size: 18px;
+    ">
+      <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${total}</span></strong>
+    </div>
+    
+    <div class="status-debug-info" style="
+      margin-top: 15px;
+      padding: 12px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #666;
+    ">
+      <h5 style="margin: 0 0 8px 0; color: #333;">Info Data:</h5>
+      Hitung dari warna peta (real-time)<br>
+      Total Kavling Berwarna: ${countByColor.total}<br>
+      Data API Records: ${data.totalRecords || 0}<br>
+      Last Updated: ${new Date().toLocaleTimeString()}
+    </div>
+  `;
   
   html += '</div>'; // Penutup .status-content
   
@@ -401,90 +387,14 @@ function updateStatusPanel(data) {
     });
   });
   
-  // Event listeners untuk tombol minimize/close
-  const minimizeBtn = panelBody.querySelector('.minimize-btn');
+  // Event listeners untuk tombol close
   const closeBtn = panelBody.querySelector('.close-status-btn');
-  
-  if (minimizeBtn) {
-    minimizeBtn.addEventListener('click', function(e) {
-      e.stopPropagation(); // Cegah event bubbling
-      
-      // Toggle minimized state
-      if (panelBody.classList.contains('minimized')) {
-        // Maximize
-        panelBody.classList.remove('minimized');
-        this.textContent = '─';
-        this.style.background = '#ff9800';
-      } else {
-        // Minimize
-        panelBody.classList.add('minimized');
-        this.textContent = '□';
-        this.style.background = '#4CAF50';
-      }
-      
-      // Simpan state di localStorage
-      localStorage.setItem('statusPanelMinimized', panelBody.classList.contains('minimized'));
-      
-      // Update panel tanpa reload data dari API
-      updateStatusPanel(data);
-    });
-  }
   
   if (closeBtn) {
     closeBtn.addEventListener('click', function(e) {
       e.stopPropagation(); // Cegah event bubbling
       resetStatusMode();
     });
-  }
-  
-  // Jika minimized, buat agar klik content maximize
-  if (isMinimized) {
-    const statusContent = panelBody.querySelector('.status-content');
-    if (statusContent) {
-      statusContent.addEventListener('click', function() {
-        panelBody.classList.remove('minimized');
-        localStorage.setItem('statusPanelMinimized', 'false');
-        updateStatusPanel(data);
-      });
-    }
-  }
-  
-  // Tambahkan CSS untuk responsive mobile
-  if (!document.querySelector('#statusPanelMobileCSS')) {
-    const mobileCSS = document.createElement('style');
-    mobileCSS.id = 'statusPanelMobileCSS';
-    mobileCSS.textContent = `
-      @media (max-width: 768px) {
-        #statusPanel {
-          position: fixed !important;
-          bottom: 10px !important;
-          left: 10px !important;
-          right: 10px !important;
-          max-height: 80vh !important;
-          overflow-y: auto !important;
-          z-index: 1000 !important;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
-          border-radius: 10px !important;
-        }
-        
-        .status-panel-body.minimized {
-          max-height: 150px !important;
-        }
-        
-        .status-header {
-          position: sticky !important;
-          top: 0 !important;
-          background: #f5f5f5 !important;
-          z-index: 10 !important;
-        }
-        
-        .status-content {
-          max-height: calc(80vh - 50px) !important;
-          overflow-y: auto !important;
-        }
-      }
-    `;
-    document.head.appendChild(mobileCSS);
   }
 }
 //--------------------------------------------------
@@ -633,13 +543,20 @@ function countKavlingFromMap() {
     kpr: 0,
     stok: 0,
     rekom: 0,
-    disewakan: 0
+    disewakan: 0,
+    gray: 0
   };
   
   // Query HANYA elemen frame dengan selector yang ketat
   const frameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
   
-  const statusClasses = ['kavling-status-kpr', 'kavling-status-stok', 'kavling-status-rekom', 'kavling-status-disewakan'];
+  const statusClasses = [
+    'kavling-status-kpr', 
+    'kavling-status-stok', 
+    'kavling-status-rekom', 
+    'kavling-status-disewakan',
+    'kavling-status-gray'
+  ];
   
   // Hitung status untuk setiap frame element yang punya status class
   frameElements.forEach(el => {
@@ -654,7 +571,7 @@ function countKavlingFromMap() {
     }
   });
   
-  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan;
+  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan + counts.gray;
   
   console.log('📈 Hasil hitung real-time dari peta (hanya frame ID):', counts);
   
@@ -1664,19 +1581,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hapus highlight warna sebelumnya
     clearHighlight();
     
-    // Hapus juga warna status jika ada
-    clearStatusColors();
+    // HANYA hapus warna status jika mode status TIDAK aktif
+    if (!isStatusMode) {
+      clearStatusColors();
+    }
 
     if (el.tagName.toLowerCase() === 'g') {
       el.querySelectorAll('rect, path, polygon').forEach(c => {
-        c.style.fill = '#ffd54f';
-        c.style.stroke = '#ff6f00';
-        c.style.strokeWidth = '2';
+        // Only apply highlight style if it doesn't already have a status color
+        const parent = c.closest('g');
+        const target = (parent && parent.id && parent.id !== 'map') ? parent : c;
+        
+        if (!target.classList.contains('kavling-status-kpr') && 
+            !target.classList.contains('kavling-status-stok') && 
+            !target.classList.contains('kavling-status-rekom') && 
+            !target.classList.contains('kavling-status-disewakan') &&
+            !target.classList.contains('kavling-status-gray')) {
+          c.style.fill = '#ffd54f';
+          c.style.stroke = '#ff6f00';
+          c.style.strokeWidth = '2';
+        }
       });
     } else {
-      el.style.fill = '#ffd54f';
-      el.style.stroke = '#ff6f00';
-      el.style.strokeWidth = '2';
+      if (!el.classList.contains('kavling-status-kpr') && 
+          !el.classList.contains('kavling-status-stok') && 
+          !el.classList.contains('kavling-status-rekom') && 
+          !el.classList.contains('kavling-status-disewakan') &&
+          !el.classList.contains('kavling-status-gray')) {
+        el.style.fill = '#ffd54f';
+        el.style.stroke = '#ff6f00';
+        el.style.strokeWidth = '2';
+      }
     }
 
     const box = el.getBBox();
@@ -1704,8 +1639,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const svg = map.querySelector('svg');
     clearHighlight();
     
-    // Hapus juga warna status jika ada
-    clearStatusColors();
+    // HANYA hapus warna status jika mode status TIDAK aktif
+    if (!isStatusMode) {
+      clearStatusColors();
+    }
 
     const els = [...map.querySelectorAll(`[id^="${prefix}_"]`)];
     if (!els.length) return;
@@ -1715,14 +1652,29 @@ document.addEventListener('DOMContentLoaded', () => {
     els.forEach(el => {
       if (el.tagName.toLowerCase() === 'g') {
         el.querySelectorAll('rect, path, polygon').forEach(c => {
-          c.style.fill = '#ffd54f';
-          c.style.stroke = '#ff6f00';
-          c.style.strokeWidth = '2';
+          const parent = c.closest('g');
+          const target = (parent && parent.id && parent.id !== 'map') ? parent : c;
+          
+          if (!target.classList.contains('kavling-status-kpr') && 
+              !target.classList.contains('kavling-status-stok') && 
+              !target.classList.contains('kavling-status-rekom') && 
+              !target.classList.contains('kavling-status-disewakan') &&
+              !target.classList.contains('kavling-status-gray')) {
+            c.style.fill = '#ffd54f';
+            c.style.stroke = '#ff6f00';
+            c.style.strokeWidth = '2';
+          }
         });
       } else {
-        el.style.fill = '#ffd54f';
-        el.style.stroke = '#ff6f00';
-        el.style.strokeWidth = '2';
+        if (!el.classList.contains('kavling-status-kpr') && 
+            !el.classList.contains('kavling-status-stok') && 
+            !el.classList.contains('kavling-status-rekom') && 
+            !el.classList.contains('kavling-status-disewakan') &&
+            !el.classList.contains('kavling-status-gray')) {
+          el.style.fill = '#ffd54f';
+          el.style.stroke = '#ff6f00';
+          el.style.strokeWidth = '2';
+        }
       }
 
       const b = el.getBBox();
