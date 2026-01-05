@@ -674,9 +674,9 @@ function getKavlingListFromMap(type) {
 // Download data per kategori - DIPERBAIKI
 function showKavlingListByCategory(type) {
   const statusType = type.toLowerCase();
-  const resultsBox = document.getElementById('certificateResults');
-  const modal = document.getElementById('certificateModal');
-  const excelBtn = document.getElementById('downloadExcel');
+  const resultsBox = document.getElementById('kavlingResults');
+  const modal = document.getElementById('kavlingModal');
+  const excelBtn = document.getElementById('downloadExcelKavling');
   
   if (!modal || !resultsBox) return;
   
@@ -719,9 +719,12 @@ function showKavlingListByCategory(type) {
     
     if (excelBtn) excelBtn.style.display = 'inline-flex';
 
+    let displayStatus = statusType.toUpperCase();
+    if (displayStatus === 'KPR') displayStatus = 'KPR/TUNAI (SOLD)';
+
     let html = `<div class="cert-total-found">
       ✅ Ditemukan: <strong>${data.length}</strong> kavling dengan status: 
-      <strong>${statusType.toUpperCase()}</strong>
+      <strong>${displayStatus}</strong>
     </div>`;
 
     data.forEach((item, index) => {
@@ -1984,11 +1987,14 @@ function displayKavlingResults(data, statusType) {
   excelBtn.style.display = 'none';
   
   // Tampilkan loading dulu
+  let displayStatus = statusType.toUpperCase();
+  if (displayStatus === 'KPR') displayStatus = 'KPR/TUNAI (SOLD)';
+
   resultsBox.innerHTML = `
     <div style="padding: 40px 20px; text-align: center; background: #f9f9f9; border-radius: 8px;">
       <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #9c27b0; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
       <div style="color: #666; font-size: 16px; margin-bottom: 10px;">
-        <strong>Memproses data status:</strong> ${statusType.toUpperCase()}
+        <strong>Memproses data status:</strong> ${displayStatus}
       </div>
       <div style="color: #999; font-size: 13px;">
         Mohon tunggu, sedang menghitung kavling...
@@ -2037,9 +2043,12 @@ function displayKavlingResults(data, statusType) {
     // Tampilkan tombol Excel
     excelBtn.style.display = 'inline-flex';
 
- let html = `<div class="cert-total-found">
+    let displayStatus = statusType.toUpperCase();
+    if (displayStatus === 'KPR') displayStatus = 'KPR/TUNAI (SOLD)';
+
+    let html = `<div class="cert-total-found">
       ✅ Ditemukan: <strong>${data.length}</strong> kavling dengan status: 
-      <strong>${statusType.toUpperCase()}</strong>
+      <strong>${displayStatus}</strong>
     </div>`;
 
     data.forEach((item, index) => {
@@ -2095,10 +2104,7 @@ async function generateExcelFromKavlingResults() {
         finalData.push({
           'No': index + 1,
           'Kode Kavling': item.kode || '',
-          'Skema': item.skema || '',
-          'Tanggal HO': item.tgl_ho || '',
-          'Status': item.kategori || '',
-          'Keterangan': ''
+          'Skema': item.skema || ''
         });
       });
     } else {
