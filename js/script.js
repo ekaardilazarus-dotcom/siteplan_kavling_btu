@@ -1824,14 +1824,45 @@ async function searchKavling(searchTerm, searchType, displayName) {
     excelBtn.style.display = 'none';
     //     ---
     
+// 🆕 LOADING ANIMASI YANG LEBIH BAGUS
     resultsBox.innerHTML = `
-      <div class="cert-loading">
-        <div class="cert-loading-spinner"></div>
-        <div style="color:#666;font-size:14px;margin-top:10px;">
-          Mencari ${displayName}: <strong>${searchTerm}</strong>
-          <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
+      <div style="padding: 40px 20px; text-align: center; background: #f9f9f9; border-radius: 8px; min-height: 200px; display: flex; flex-direction: column; justify-content: center;">
+        <div style="display: inline-block; width: 50px; height: 50px; border: 4px solid #e0e0e0; border-top: 4px solid #2196F3; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px auto;"></div>
+        <div style="color: #333; font-size: 16px; margin-bottom: 8px; font-weight: 600;">
+          🔍 Mencari ${displayName}
+        </div>
+        <div style="color: #666; font-size: 14px; margin-bottom: 5px;">
+          Kata kunci: <strong>"${searchTerm}"</strong>
+        </div>
+        <div style="color: #999; font-size: 13px; margin-top: 10px;">
+          <span class="loading-dots">Memuat data</span>
+        </div>
+        <div style="margin-top: 25px;">
+          <div style="display: inline-block; width: 150px; height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden;">
+            <div style="width: 45%; height: 100%; background: linear-gradient(90deg, #2196F3, #4CAF50); border-radius: 3px; animation: progress 2s ease-in-out infinite;"></div>
+          </div>
         </div>
       </div>
+      
+      <style>
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes progress {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        .loading-dots:after {
+          content: '...';
+          animation: dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes dots {
+          0%, 20% { content: '.'; }
+          40% { content: '..'; }
+          60%, 100% { content: '...'; }
+        }
+      </style>
     `;
 // ✅ GUNAKAN API_URL (database kavling)
     const url = `${KAVLING_API_URL}?certificate=${encodeURIComponent(searchTerm)}&type=${searchType}&_t=${Date.now()}`;
@@ -1926,13 +1957,31 @@ function displayKavlingResults(data, statusType) {
   
   // Tampilkan loading dulu
   resultsBox.innerHTML = `
-    <div class="cert-loading">
-      <div class="cert-loading-spinner"></div>
-      <div style="color:#666;font-size:14px;margin-top:10px;">
-        Memproses data status: <strong>${statusType.toUpperCase()}</strong>
-        <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
+    <div style="padding: 40px 20px; text-align: center; background: #f9f9f9; border-radius: 8px;">
+      <div style="display: inline-block; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #9c27b0; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
+      <div style="color: #666; font-size: 16px; margin-bottom: 10px;">
+        <strong>Memproses data status:</strong> ${statusType.toUpperCase()}
+      </div>
+      <div style="color: #999; font-size: 13px;">
+        Mohon tunggu, sedang menghitung kavling...
+      </div>
+      <div style="margin-top: 20px;">
+        <div style="display: inline-block; width: 100px; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden;">
+          <div style="width: 60%; height: 100%; background: linear-gradient(90deg, #9c27b0, #2196F3); border-radius: 2px; animation: progress 2s ease-in-out infinite;"></div>
+        </div>
       </div>
     </div>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes progress {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(200%); }
+      }
+    </style>
   `;
   
   // Simulasikan delay processing
@@ -1986,7 +2035,7 @@ function displayKavlingResults(data, statusType) {
     });
 
     resultsBox.innerHTML = html;
-  }, 500); // Delay 0.5 detik untuk efek loading
+  }, 800); // Delay 0.5 detik untuk efek loading
 }
 
   // ===============================
