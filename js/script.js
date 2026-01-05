@@ -212,10 +212,10 @@ function updateStatusPanel(data) {
     return;
   }
 
-  // ========== HITUNG LANGSUNG DARI WARNA DI PETA ==========
-  console.log('🎯 Menghitung kavling berdasarkan warna di peta...');
+  // ========== HITUNG DARI DATA API (KONSISTEN) ==========
+  console.log('🎯 Menghitung kavling berdasarkan data API...');
 
-  const countByColor = {
+  const countByAPI = {
     kpr: 0,
     stok: 0,
     rekom: 0,
@@ -224,44 +224,35 @@ function updateStatusPanel(data) {
     total: 0
   };
 
+  if (data && data.data) {
+    data.data.forEach(item => {
+      const kategori = item.kategori || 'unknown';
+      if (countByAPI.hasOwnProperty(kategori)) {
+        countByAPI[kategori]++;
+      } else {
+        countByAPI.unknown++;
+      }
+    });
+  }
+
+  // Hitung elemen di peta yang tidak ada di API sebagai unknown
   const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
-  console.log(`📊 Total frame elements di peta: ${allFrameElements.length}`);
-
-  // UPDATE: Tambahkan 'kavling-status-unknown' ke daftar
-  const colorClasses = [
-    'kavling-status-kpr',
-    'kavling-status-stok',
-    'kavling-status-rekom',
-    'kavling-status-disewakan',
-    'kavling-status-unknown'  
-  ];
-
-  // Hitung berdasarkan kelas warna
+  const apiKodes = new Set((data.data || []).map(item => item.kode ? item.kode.trim().toUpperCase() : ''));
+  
+  let mapOnlyCount = 0;
   allFrameElements.forEach(el => {
     if (el.id && el.id.trim() !== '') {
-      let hasStatus = false;
-
-      // Cek setiap kelas status
-      colorClasses.forEach(className => {
-        if (el.classList.contains(className)) {
-          const type = className.replace('kavling-status-', '');
-          countByColor[type]++;
-          hasStatus = true;
-        }
-      });
-
-      // Jika tidak ada kelas status, hitung sebagai unknown
-      if (!hasStatus) {
-        countByColor.unknown++;
+      const id = el.id.trim().toUpperCase();
+      if (!apiKodes.has(id)) {
+        mapOnlyCount++;
       }
     }
   });
+  
+  countByAPI.unknown += mapOnlyCount;
+  countByAPI.total = countByAPI.kpr + countByAPI.stok + countByAPI.rekom + countByAPI.disewakan + countByAPI.unknown;
 
-  // Hitung total
-  countByColor.total = countByColor.kpr + countByColor.stok + countByColor.rekom + 
-                       countByColor.disewakan + countByColor.unknown;
-
-  console.log('📊 Hasil hitung:', countByColor);
+  console.log('📊 Hasil hitung API:', countByAPI);
 
   // Update UI
   const safeUpdate = (elementId, value) => {
@@ -269,12 +260,12 @@ function updateStatusPanel(data) {
     if (element) element.textContent = value !== undefined ? value : 0;
   };
 
-  safeUpdate('countKPR', countByColor.kpr);
-  safeUpdate('countSTOK', countByColor.stok);
-  safeUpdate('countREKOM', countByColor.rekom);
-  safeUpdate('countDISEWAKAN', countByColor.disewakan);
-  safeUpdate('countUNKNOWN', countByColor.unknown);  
-  safeUpdate('totalAll', countByColor.total);
+  safeUpdate('countKPR', countByAPI.kpr);
+  safeUpdate('countSTOK', countByAPI.stok);
+  safeUpdate('countREKOM', countByAPI.rekom);
+  safeUpdate('countDISEWAKAN', countByAPI.disewakan);
+  safeUpdate('countUNKNOWN', countByAPI.unknown);  
+  safeUpdate('totalAll', countByAPI.total);
 
   // ========== BUAT HTML PANEL ==========
   let html = `
@@ -287,13 +278,12 @@ function updateStatusPanel(data) {
 
     <div class="status-content" style="padding: 15px;">
       <div style="margin-bottom: 15px; text-align: center;">
-        <button onclick="countKavlingFromMap()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <span>🔄</span> Hitung Ulang pada Peta
+        <button onclick="fetchKavlingStatus()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>🔄</span> Refresh Data
         </button>
       </div>
   `;
 
-  // UPDATE kategori - ganti 'gray' dengan 'unknown'
   const categories = [
     { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444' },
     { id: 'stok', title: 'STOK', color: '#90EE90' },
@@ -303,7 +293,7 @@ function updateStatusPanel(data) {
   ];
 
   categories.forEach(cat => {
-    const count = countByColor[cat.id] || 0;
+    const count = countByAPI[cat.id] || 0;
     const borderStyle = cat.id === 'unknown' ? 'border: 1px solid #ddd;' : '';
 
     html += `
@@ -320,14 +310,13 @@ function updateStatusPanel(data) {
 
   html += `
     <div class="status-total" style="text-align: center; padding: 15px; margin-top: 15px; background: #e8f5e9; border-radius: 8px; font-size: 18px;">
-      <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${countByColor.total}</span></strong>
+      <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${countByAPI.total}</span></strong>
     </div>
 
     <div class="status-debug-info" style="margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; font-size: 12px; color: #666;">
       <h5 style="margin: 0 0 8px 0; color: #333;">Info Data:</h5>
-      Hitung dari warna peta (real-time)<br>
-      Total Kavling Berwarna: ${countByColor.total}<br>
-      Data API Records: ${data.totalRecords || 0}<br>
+      Data dari API (Konsisten)<br>
+      Total Records: ${data.totalRecords || 0}<br>
       Last Updated: ${new Date().toLocaleTimeString()}
     </div>
   </div>`;
@@ -681,20 +670,50 @@ function getKavlingListFromMap(type) {
 // Download data per kategori - DIPERBAIKI
 async function downloadKavlingData(type) {
   try {
-    console.log(`📥 Memulai download data ${type}...`);
+    console.log(`📥 Memulai download data ${type} dari API...`);
 
-    // Ambil list blok dari peta
-    const kavlingListFromMap = getKavlingListFromMap(type);
+    let kavlingList = [];
+    
+    if (statusData && statusData.data) {
+      if (type === 'unknown') {
+        // Gabungkan data unknown dari API dan data yang hanya ada di peta
+        const apiUnknown = statusData.data
+          .filter(item => !item.kategori || item.kategori === 'unknown')
+          .map(item => item.kode ? item.kode.trim().toUpperCase() : '');
+        
+        const apiKodes = new Set(statusData.data.map(item => item.kode ? item.kode.trim().toUpperCase() : ''));
+        const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
+        const mapOnly = [];
+        allFrameElements.forEach(el => {
+          if (el.id) {
+            const id = el.id.trim().toUpperCase();
+            if (!apiKodes.has(id)) mapOnly.push(id);
+          }
+        });
+        
+        kavlingList = [...new Set([...apiUnknown, ...mapOnly])].filter(k => k !== '');
+      } else {
+        // Ambil data sesuai kategori dari API
+        kavlingList = statusData.data
+          .filter(item => item.kategori === type)
+          .map(item => item.kode ? item.kode.trim().toUpperCase() : '')
+          .filter(k => k !== '');
+      }
+    } else {
+      // Fallback ke peta jika data API tidak tersedia
+      console.warn('⚠️ Data API tidak tersedia, fallback ke peta');
+      kavlingList = getKavlingListFromMap(type);
+    }
 
-    console.log(`📊 Ditemukan ${kavlingListFromMap.length} kavling ${type} di peta:`, kavlingListFromMap);
+    console.log(`📊 Ditemukan ${kavlingList.length} kavling ${type}:`, kavlingList);
 
-    if (kavlingListFromMap.length === 0) {
-      alert(`⚠️ Tidak ada kavling dengan status "${type}" ditemukan di peta.`);
+    if (kavlingList.length === 0) {
+      alert(`⚠️ Tidak ada kavling dengan status "${type}" ditemukan.`);
       return;
     }
 
     // Tampilkan data di popup
-    showDownloadPopupFromMap(kavlingListFromMap, type);
+    showDownloadPopupFromMap(kavlingList, type);
 
   } catch (error) {
     console.error(`❌ Gagal download data ${type}:`, error);
