@@ -1646,3 +1646,99 @@ body.dark-mode .download-status-label {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+/* =============================== */
+/* LOADING ANIMASI UNTUK KAVLING MODAL */
+/* =============================== */
+
+/* Spinner animasi */
+.kavling-loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #2196F3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px auto;
+}
+
+/* Progress bar animasi */
+.kavling-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 20px 0;
+}
+
+.kavling-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2196F3, #4CAF50);
+  border-radius: 3px;
+  animation: progressSlide 2s ease-in-out infinite;
+}
+
+@keyframes progressSlide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* Loading dots animasi */
+.loading-dots::after {
+  content: '...';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+/* Kotak loading khusus untuk modal kavling */
+.kavling-loading-container {
+  padding: 40px 20px;
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 8px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.kavling-loading-text {
+  color: #333;
+  font-size: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.kavling-loading-subtext {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+/* Success state styling */
+.kavling-success-header {
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border-left: 5px solid #4CAF50;
+}
+
+/* Error state styling */
+.kavling-error-container {
+  padding: 50px 20px;
+  text-align: center;
+  background: #ffebee;
+  border-radius: 8px;
+  border: 1px solid #ef9a9a;
+}
+
+/* Not found state styling */
+.kavling-notfound-container {
+  padding: 50px 20px;
+  text-align: center;
+  background: #fff3e0;
+  border-radius: 8px;
+  border: 1px solid #ffb74d;
+}
