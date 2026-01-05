@@ -764,10 +764,10 @@ function showDownloadPopupFromMap(kavlingList, type) {
   }
 
   let content = `
-    <div style="margin-bottom:15px; padding:15px; background:#e8f5e9; border-radius:6px; text-align:center;">
+    <div class="download-info-header" style="margin-bottom:15px; padding:15px; background:#e8f5e9; border-radius:6px; text-align:center;">
       <div style="font-size:18px; font-weight:bold; color:#1b5e20;">${kavlingList.length} Kavling</div>
-      <div style="font-size:14px; color:#666; margin-top:5px;">${description}</div>
-      <div style="font-size:12px; color:#999; margin-top:5px;">Status: <strong>${title}</strong></div>
+      <div style="font-size:14px; color:#666; margin-top:5px;" class="download-desc">${description}</div>
+      <div style="font-size:12px; color:#999; margin-top:5px;" class="download-status-label">Status: <strong>${title}</strong></div>
     </div>
 
     <div style="margin-bottom:15px; display: flex; gap: 10px; justify-content: center;">
@@ -779,12 +779,12 @@ function showDownloadPopupFromMap(kavlingList, type) {
       </button>
     </div>
 
-    <div style="font-family:monospace; font-size:13px; line-height:1.8; background:#f5f5f5; padding:15px; border-radius:6px; max-height:400px; overflow-y:auto; border:1px solid #e0e0e0;">
+    <div class="download-list-container" style="font-family:monospace; font-size:13px; line-height:1.8; background:#f5f5f5; padding:15px; border-radius:6px; max-height:400px; overflow-y:auto; border:1px solid #e0e0e0; color: #333;">
   `;
 
   if (kavlingList.length > 0) {
     kavlingList.forEach((kode, index) => {
-      content += `<div style="padding: 3px 0;">${index + 1}. ${kode}</div>`;
+      content += `<div class="download-item" style="padding: 3px 0;">${index + 1}. ${kode}</div>`;
     });
   } else {
     content += `<div style="text-align:center; padding:20px; color:#666;">Tidak ada data ditemukan</div>`;
