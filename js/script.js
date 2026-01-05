@@ -3,7 +3,7 @@
 // Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwT5KvNPeKS9BICvlJwYOAVYume-K_nMotzw0ElJ12J6xYJylmYTyZZPTPEnlbF1r0v/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzx4wkSSkg5HthYkRzqMQ7eITxqYf0DUJhjTdBEsO3PnrxFJ2eCtIuIbDAGIo3saYz9/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbyEPaUBAg2n3732mTnukOnoxA6eN6eTEjso929InZZEbIqjycGzb8zuSJdLmyfaFEJf3w/exec';
 
 let kavlingIndex = [];
