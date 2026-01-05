@@ -830,6 +830,7 @@ h1 {
   min-width: 350px;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 /* Grup input yang lebih kompak */
@@ -969,6 +970,29 @@ h1 {
   max-height: 55vh;
   overflow-y: auto;
   font-size: 13px;
+  margin-bottom: 50px; /* Tambahkan margin agar tidak tertutup tombol */
+}
+
+.results-column {
+  flex: 1;
+  min-width: 350px;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* Diperlukan untuk footer absolut */
+}
+
+.results-footer {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 10;
+  border-radius: 0 0 8px 8px;
 }
 
 .compact-results-box .placeholder {
