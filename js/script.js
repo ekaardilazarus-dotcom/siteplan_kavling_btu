@@ -1125,6 +1125,104 @@ function closeKavlingPopup() {
   }
 }
 
+// Tombol-tombol pencarian modal
+const btnDownloadExcel = document.getElementById('downloadExcel');
+
+// Fungsi untuk toggle visibilitas tombol download Excel
+function toggleDownloadExcelButton() {
+  const resultsBox = document.getElementById('certificateResults');
+  const hasResults = resultsBox.querySelectorAll('.cert-result-item').length > 0;
+  if (btnDownloadExcel) {
+    btnDownloadExcel.style.display = hasResults ? 'flex' : 'none';
+  }
+}
+
+// Event listener untuk download Excel
+if (btnDownloadExcel) {
+  btnDownloadExcel.addEventListener('click', generateExcelFromResults);
+}
+
+function parseDataContent(content) {
+  const rows = {};
+  if (!content) return rows;
+  
+  // Pisahkan berdasarkan baris baru
+  const lines = content.split('\n');
+  lines.forEach(line => {
+    if (line.includes('=')) {
+      const parts = line.split('=');
+      const key = parts[0].trim();
+      const val = parts.slice(1).join('=').trim(); // Ambil sisanya jika ada tanda = lain
+      if (key) rows[key] = val;
+    }
+  });
+  return rows;
+}
+
+async function generateExcelFromResults() {
+  try {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum dimuat. Silakan tunggu sebentar atau muat ulang halaman.');
+      return;
+    }
+
+    const resultsBox = document.getElementById('certificateResults');
+    const items = resultsBox.querySelectorAll('.cert-result-item');
+    
+    if (items.length === 0) {
+      alert('Tidak ada data untuk di-download.');
+      return;
+    }
+
+    btnDownloadExcel.disabled = true;
+    const originalHTML = btnDownloadExcel.innerHTML;
+    btnDownloadExcel.innerHTML = '<span>⏳</span>...';
+
+    const finalData = [];
+    items.forEach(item => {
+      const row = {};
+      
+      // Kavling
+      const header = item.querySelector('div[style*="font-weight:bold"]');
+      if (header) {
+        row['KAVLING'] = header.innerText.replace('KAVLING:', '').trim();
+      }
+
+      // Grid data
+      const details = item.querySelectorAll('div[style*="display:grid"] > div');
+      for (let i = 0; i < details.length; i += 2) {
+        const key = details[i].innerText.replace(':', '').trim();
+        const val = details[i+1].innerText.trim();
+        row[key] = val;
+      }
+      
+      // Parse isi konten "= "
+      const contentEl = item.querySelector('div[style*="font-family: \'Consolas\'"]');
+      if (contentEl) {
+        const parsed = parseDataContent(contentEl.innerText);
+        Object.assign(row, parsed);
+      }
+
+      finalData.push(row);
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(finalData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+    XLSX.writeFile(workbook, `btu_export_${new Date().getTime()}.xlsx`);
+    
+    btnDownloadExcel.disabled = false;
+    btnDownloadExcel.innerHTML = originalHTML;
+  } catch (error) {
+    console.error('Excel error:', error);
+    btnDownloadExcel.disabled = false;
+    btnDownloadExcel.innerHTML = '<span>📊</span> Download Excel';
+  }
+}
+
+// Hapus fungsi Word yang tidak digunakan lagi
+// function generateWordFromResults() { ... }
+
 // ===============================
 // FUNGSI PENCARIAN SERTIFIKAT
 // ===============================
@@ -1139,14 +1237,15 @@ async function searchCertificateNew(certNumber, certType, displayName) {
   // Tampilkan loading di modal
   const resultsBox = document.getElementById('certificateResults');
   resultsBox.innerHTML = `
-  <div class="cert-loading">
-    <div class="cert-loading-spinner"></div>
-    <div style="color:#666;font-size:14px;margin-top:10px;">
-      Mencari ${displayName}: <strong>${certNumber}</strong>
-      <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
+    <div class="cert-loading">
+      <div class="cert-loading-spinner"></div>
+      <div style="color:#666;font-size:14px;margin-top:10px;">
+        Mencari ${displayName}: <strong>${certNumber}</strong>
+        <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
+      </div>
     </div>
-  </div>
-`;
+  `;
+  toggleDownloadExcelButton();
 
   try {
     // Cek cache dulu
@@ -1180,6 +1279,7 @@ async function searchCertificateNew(certNumber, certType, displayName) {
 
     // Tampilkan hasil
     displayCertificateResults(data, certNumber, certType, displayName);
+    toggleDownloadExcelButton();
 
   } catch (error) {
     console.error(`❌ Error mencari ${displayName}:`, error);
@@ -1566,6 +1666,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.compact-input').forEach(input => input.value = '');
     document.getElementById('certificateResults').innerHTML = 
       '<p class="placeholder" style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px 20px; color: #757575; font-style: italic;">Hasil pencarian akan ditampilkan di sini...</p>';
+    toggleDownloadExcelButton();
   });
 
   // ===============================
