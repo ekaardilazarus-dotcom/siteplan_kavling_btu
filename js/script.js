@@ -307,7 +307,7 @@ function updateStatusPanel(data) {
           <div class="status-title" style="font-size: 14px; color: #555;">${cat.title}</div>
           <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 18px; font-weight: bold; color: #333;">${count}</div>
         </div>
-        <button class="download-btn" data-type="${cat.id}" style="padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📥 Download</button>
+        <button class="detail-btn" data-type="${cat.id}" style="padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🔍 Detail</button>
       </div>
     `;
   });
@@ -328,10 +328,10 @@ function updateStatusPanel(data) {
   panelBody.innerHTML = html;
 
   // Re-attach event listeners
-  document.querySelectorAll('.download-btn').forEach(btn => {
+  document.querySelectorAll('.detail-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const type = this.getAttribute('data-type');
-      downloadKavlingData(type);
+      showKavlingListByCategory(type);
     });
   });
 
@@ -672,57 +672,85 @@ function getKavlingListFromMap(type) {
 }
 
 // Download data per kategori - DIPERBAIKI
-async function downloadKavlingData(type) {
-  try {
-    console.log(`📥 Memulai download data ${type} dari API...`);
+function showKavlingListByCategory(type) {
+  const statusType = type.toLowerCase();
+  const resultsBox = document.getElementById('certificateResults');
+  const modal = document.getElementById('certificateModal');
+  const excelBtn = document.getElementById('downloadExcel');
+  
+  if (!modal || !resultsBox) return;
+  
+  const modalHeader = modal.querySelector('.modal-header h3');
+  if (modalHeader) modalHeader.innerText = `🔍 Detail Kavling Status: ${statusType.toUpperCase()}`;
+  
+  modal.style.display = 'flex';
+  
+  resultsBox.innerHTML = `
+    <div class="cert-loading">
+      <div class="cert-loading-spinner"></div>
+      <div style="color:#666;font-size:14px;margin-top:10px;">
+        Mengambil data kavling ${statusType.toUpperCase()}...
+      </div>
+    </div>
+  `;
+  
+  const data = (statusData && statusData.data) ? 
+    statusData.data.filter(item => (item.kategori || '').toLowerCase() === statusType) : [];
 
-    let kavlingList = [];
-    
-    if (statusData && statusData.data) {
-      if (type === 'unknown') {
-        // Gabungkan data unknown dari API dan data yang hanya ada di peta
-        const apiUnknown = statusData.data
-          .filter(item => !item.kategori || item.kategori === 'unknown')
-          .map(item => item.kode ? item.kode.trim().toUpperCase() : '');
-        
-        const apiKodes = new Set(statusData.data.map(item => item.kode ? item.kode.trim().toUpperCase() : ''));
-        const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
-        const mapOnly = [];
-        allFrameElements.forEach(el => {
-          if (el.id) {
-            const id = el.id.trim().toUpperCase();
-            if (!apiKodes.has(id)) mapOnly.push(id);
-          }
-        });
-        
-        kavlingList = [...new Set([...apiUnknown, ...mapOnly])].filter(k => k !== '');
-      } else {
-        // Ambil data sesuai kategori dari API
-        kavlingList = statusData.data
-          .filter(item => item.kategori === type)
-          .map(item => item.kode ? item.kode.trim().toUpperCase() : '')
-          .filter(k => k !== '');
-      }
-    } else {
-      // Fallback ke peta jika data API tidak tersedia
-      console.warn('⚠️ Data API tidak tersedia, fallback ke peta');
-      kavlingList = getKavlingListFromMap(type);
-    }
-
-    console.log(`📊 Ditemukan ${kavlingList.length} kavling ${type}:`, kavlingList);
-
-    if (kavlingList.length === 0) {
-      alert(`⚠️ Tidak ada kavling dengan status "${type}" ditemukan.`);
+  setTimeout(() => {
+    if (!data || data.length === 0) {
+      resultsBox.innerHTML = `
+        <div style="padding:30px; text-align:center; color:#666;">
+          Tidak ditemukan data dengan status "${statusType}"
+        </div>
+      `;
+      if (excelBtn) excelBtn.style.display = 'none';
       return;
     }
+    
+    currentKavlingResults = data.map(item => ({
+      kode: item.kode,
+      skema: item.skema || '',
+      tgl_ho: item.tgl_ho || '',
+      kategori: item.kategori || '',
+      searchTerm: statusType,
+      searchType: `Status ${statusType.toUpperCase()}`
+    }));
+    
+    if (excelBtn) excelBtn.style.display = 'inline-flex';
 
-    // Tampilkan data di popup
-    showDownloadPopupFromMap(kavlingList, type);
+    let html = `<div class="cert-total-found">
+      ✅ Ditemukan: <strong>${data.length}</strong> kavling dengan status: 
+      <strong>${statusType.toUpperCase()}</strong>
+    </div>`;
 
-  } catch (error) {
-    console.error(`❌ Gagal download data ${type}:`, error);
-    alert(`Gagal download data ${type}: ${error.message}`);
-  }
+    data.forEach((item, index) => {
+      html += `
+        <div class="cert-result-item">
+          <div style="font-weight:600; margin-bottom:8px; color:#2196f3; font-size:14px;">
+            <span style="background:#e3f2fd; padding:2px 8px; border-radius:4px; margin-right:8px;">${index + 1}</span>
+            Kavling: <strong>${item.kode}</strong>
+          </div>
+          
+          <div style="font-size:13px; color:#666; margin-bottom:5px;">
+            📋 Skema: ${item.skema || '-'}
+          </div>
+          
+          ${item.tgl_ho ? `
+          <div style="font-size:13px; color:#666; margin-bottom:10px;">
+            📅 Tanggal HO: ${item.tgl_ho}
+          </div>` : ''}
+        </div>
+      `;
+    });
+
+    resultsBox.innerHTML = html;
+  }, 500);
+}
+
+// Ganti fungsi lama dengan yang baru
+async function downloadKavlingData(type) {
+  showKavlingListByCategory(type);
 }
 
 // Popup untuk menampilkan list blok dari peta - DIPERBAIKI
@@ -2000,7 +2028,7 @@ function displayKavlingResults(data, statusType) {
     currentKavlingResults = data.map(item => ({
       kode: item.kode,
       skema: item.skema || '',
-      tanggal: item.tanggal || '',
+      tgl_ho: item.tgl_ho || '',
       kategori: item.kategori || '',
       searchTerm: statusType,
       searchType: `Status ${statusType.toUpperCase()}`
@@ -2026,9 +2054,9 @@ function displayKavlingResults(data, statusType) {
             📋 Skema: ${item.skema || '-'}
           </div>
           
-          ${item.tanggal ? `
+          ${item.tgl_ho ? `
           <div style="font-size:13px; color:#666; margin-bottom:10px;">
-            📅 Tanggal: ${item.tanggal}
+            📅 Tanggal HO: ${item.tgl_ho}
           </div>` : ''}
         </div>
       `;
@@ -2068,7 +2096,7 @@ async function generateExcelFromKavlingResults() {
           'No': index + 1,
           'Kode Kavling': item.kode || '',
           'Skema': item.skema || '',
-          'Tanggal': item.tanggal || '',
+          'Tanggal HO': item.tgl_ho || '',
           'Status': item.kategori || '',
           'Keterangan': ''
         });
