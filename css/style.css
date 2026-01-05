@@ -1473,50 +1473,29 @@ body.dark-mode #search-container,
 body.dark-mode #button-container,
 body.dark-mode #status-container,
 body.dark-mode .modal-content,
-body.dark-mode .kavling-popup-content {
-  background: #1e1e1e !important;
-  color: #e0e0e0 !important;
-  border-color: #333 !important;
-}
-
-body.dark-mode #search {
-  background: #2d2d2d !important;
-  color: #e0e0e0 !important;
-  border-color: #444 !important;
-}
-
-body.dark-mode #search-results {
-  background: #2d2d2d !important;
-  border-color: #444 !important;
-}
-
-body.dark-mode #search-results li {
-  color: #e0e0e0 !important;
-}
-
-body.dark-mode #search-results li:hover {
-  background: #3d3d3d !important;
-}
-
+body.dark-mode .kavling-popup-content,
 body.dark-mode .status-panel {
   background: #1e1e1e !important;
-  border-color: #333 !important;
-}
-
-body.dark-mode .status-item {
-  background: #2d2d2d !important;
-  border-color: #333 !important;
-}
-
-body.dark-mode .compact-results-box {
-  background: #2d2d2d !important;
-  border-color: #444 !important;
   color: #e0e0e0 !important;
+  border-color: #333 !important;
 }
 
-body.dark-mode .input-group {
+body.dark-mode #search,
+body.dark-mode #search-results,
+body.dark-mode .status-item,
+body.dark-mode .compact-results-box,
+body.dark-mode .input-group,
+body.dark-mode .cert-result-item,
+body.dark-mode .kavling-data-content,
+body.dark-mode .status-debug-info,
+body.dark-mode .status-content div[style*="background: #f9f9f9"],
+body.dark-mode .status-content div[style*="background: #fff"],
+body.dark-mode .modal-body div[style*="background:#f9f9f9"],
+body.dark-mode .results-header,
+body.dark-mode .modal-compact-layout .input-column {
   background: #2d2d2d !important;
-  border-color: #333 !important;
+  color: #e0e0e0 !important;
+  border-color: #444 !important;
 }
 
 body.dark-mode .compact-input {
@@ -1530,30 +1509,90 @@ body.dark-mode .compact-input:focus {
   box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.15) !important;
 }
 
-body.dark-mode .cert-result-item {
-  background: #2d2d2d !important;
-  border-color: #444 !important;
+body.dark-mode .modal-header,
+body.dark-mode .kavling-popup-header,
+body.dark-mode .status-header {
+  background: #333 !important;
+  color: #fff !important;
 }
 
-body.dark-mode .kavling-data-content {
-  background: #2d2d2d !important;
+body.dark-mode .placeholder,
+body.dark-mode .loading-text,
+body.dark-mode .status-loading,
+body.dark-mode div[style*="color: #666"],
+body.dark-mode div[style*="color: #999"],
+body.dark-mode div[style*="color: #757575"] {
+  color: #aaa !important;
+}
+
+body.dark-mode .kavling-popup-footer,
+body.dark-mode .modal-footer,
+body.dark-mode .status-panel-footer {
+  background: #1a1a1a !important;
+  border-top-color: #333 !important;
+}
+
+body.dark-mode h3, 
+body.dark-mode h4,
+body.dark-mode .status-title,
+body.dark-mode .results-header h4 {
+  color: #ffffff !important;
+}
+
+/* Ensure map text stays readable */
+body.dark-mode #map text {
+  stroke: #1e1e1e !important;
+  fill: #e0e0e0 !important;
+}
+
+/* Ensure status labels are visible */
+body.dark-mode .status-count {
+  background: #1a237e !important;
+  color: #90caf9 !important;
+}
+
+body.dark-mode .cert-total-found {
+  background: #1b5e20 !important;
+  color: #a5d6a7 !important;
+  border-left-color: #4caf50 !important;
+}
+
+body.dark-mode .kavling-status-success {
+  background: #1b5e20 !important;
+  color: #a5d6a7 !important;
+}
+
+body.dark-mode .kavling-status-empty,
+body.dark-mode .kavling-status-notfound {
+  background: #4a2700 !important;
+  color: #ffcc80 !important;
+}
+
+body.dark-mode .kavling-status-error {
+  background: #4a0000 !important;
+  color: #ef9a9a !important;
+}
+
+body.dark-mode .status-total {
+  background: #1b5e20 !important;
+  color: #a5d6a7 !important;
+  border-color: #2e7d32 !important;
+}
+
+body.dark-mode .status-total span {
+  color: #81c784 !important;
+}
+
+/* Fix for inline styles that might override classes */
+body.dark-mode [style*="background: #fff"],
+body.dark-mode [style*="background: white"],
+body.dark-mode [style*="background-color: #fff"],
+body.dark-mode [style*="background-color: white"] {
+  background-color: #2d2d2d !important;
+}
+
+body.dark-mode [style*="color: #333"],
+body.dark-mode [style*="color: #555"],
+body.dark-mode [style*="color: black"] {
   color: #e0e0e0 !important;
-  border-color: #444 !important;
-}
-
-body.dark-mode .modal-header {
-  background: #333 !important;
-}
-
-body.dark-mode .kavling-popup-header {
-  background: #333 !important;
-}
-
-body.dark-mode .status-debug-info {
-  background: #2d2d2d !important;
-  color: #aaa !important;
-}
-
-body.dark-mode .placeholder {
-  color: #aaa !important;
 }
