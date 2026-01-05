@@ -1,6 +1,6 @@
 // ===============================
 // FINAL CLEAN SCRIPT – SVG MAP
-// Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
+// Search blok & kavling, zoom, pan, click sync + STATUS KAVLING (AUTO COLOR)
 // ===============================
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbwT5KvNPeKS9BICvlJwYOAVYume-K_nMotzw0ElJ12J6xYJylmYTyZZPTPEnlbF1r0v/exec';
@@ -32,7 +32,6 @@ const CACHE_DURATION = 10 * 60 * 1000;
 // ===============================
 let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
-// Fungsi untuk toggle dark mode
 function toggleDarkMode() {
   isDarkMode = !isDarkMode;
   localStorage.setItem('darkMode', isDarkMode);
@@ -48,7 +47,6 @@ function toggleDarkMode() {
   }
 }
 
-// Fungsi untuk apply dark mode saat halaman dimuat
 function applyDarkMode() {
   if (isDarkMode) {
     document.body.classList.add('dark-mode');
@@ -56,6 +54,7 @@ function applyDarkMode() {
     document.getElementById('darkModeToggle').innerHTML = '<span>☀️</span> Light Mode';
   }
 }
+
 // ===============================
 // HELPERS
 // ===============================
@@ -72,7 +71,6 @@ function applyViewBox(svg) {
 function clearHighlight() {
   document.querySelectorAll('#map rect, #map path, #map polygon')
     .forEach(el => {
-      // Don't clear style if it's a status color class element
       const parent = el.closest('g');
       const target = (parent && parent.id && parent.id !== 'map') ? parent : el;
 
@@ -87,261 +85,188 @@ function clearHighlight() {
 }
 
 // ===============================
-// FUNGSI STATUS KAVLING (DIPERBAIKI)
+// FUNGSI STATUS KAVLING - AUTO COLOR
 // ===============================
-
 async function fetchKavlingStatus() {
   try {
-    console.log('🔍 Mengambil data status kavling...');
-
-    // Tampilkan loading di panel status langsung
+    console.log('🔍 Mengambil dan MEWARNAI data status kavling...');
+    
+    // Tampilkan loading di tombol
+    const statusBtn = document.getElementById('statusKavling');
+    const originalText = statusBtn.innerHTML;
+    statusBtn.innerHTML = '<span>⏳</span> Memuat...';
+    statusBtn.disabled = true;
+    
+    // Tampilkan panel
     const panel = document.getElementById('statusPanel');
     const panelBody = document.querySelector('.status-panel-body');
-
-    // Tampilkan panel dulu
     panel.style.display = 'block';
     isStatusMode = true;
-
-    // Cek apakah sebelumnya minimized
-    const wasMinimized = localStorage.getItem('statusPanelMinimized') === 'true';
-    if (wasMinimized && panelBody) {
-      panelBody.classList.add('minimized');
-    } else if (panelBody) {
-      panelBody.classList.remove('minimized');
-    }
-    // Aktifkan tombol status
-    const statusBtn = document.getElementById('statusKavling');
-    if (statusBtn) statusBtn.classList.add('active');
-
-    // Tampilkan loading di panel
+    
+    // Loading di panel
     panelBody.innerHTML = `
       <div class="status-loading">
         <div class="status-loading-spinner"></div>
         <div style="color:#666;font-size:14px;margin-top:10px;">
-          Memuat data status kavling...
-          <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
-        </div>
-        <div class="status-progress">
-          <div class="status-progress-bar"></div>
+          🔄 Memuat & Mewarnai kavling...
+          <br><span style="font-size:12px;color:#999;">Mengambil data terbaru dari server</span>
         </div>
       </div>
     `;
-
+    
+    // Fetch data FRESH (no cache)
     const url = `${API_URL}?action=status&_t=${Date.now()}`;
-    console.log('🌐 API URL:', url);
-
-    // Fetch dengan timeout 30 detik
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
-
+    console.log('🌐 Fetch data FRESH:', url);
+    
     const response = await fetch(url, {
       method: 'GET',
       mode: 'cors',
-      signal: controller.signal,
       headers: {
-        'Accept': 'application/json'
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
       }
     });
-
-    clearTimeout(timeoutId);
-
-    console.log('📊 Response Status:', response.status, response.statusText);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
     const data = await response.json();
     console.log('✅ Data status diterima:', data);
-
-    // DEBUG KHUSUS: Cari M1_177 di response
-    const m1InResponse = data.data?.find(item => item.kode === 'M1_177');
-    if (m1InResponse) {
-      console.log('🔍 DEBUG API RESPONSE M1_177:', m1InResponse);
-      console.log(`   Kategori dari API: "${m1InResponse.kategori}"`);
-      console.log(`   Skema dari API: "${m1InResponse.skema}"`);
-      console.log(`   Harusnya class: kavling-status-${m1InResponse.kategori}`);
+    
+    // DEBUG: Cek UJ21_21
+    const uj21Data = data.data?.find(item => item.kode === 'UJ21_21');
+    if (uj21Data) {
+      console.log(`🔍 DEBUG UJ21_21: kategori="${uj21Data.kategori}", skema="${uj21Data.skema}", tanggal="${uj21Data.tanggal}"`);
     }
-
-    // Simpan data ke variabel global
-    statusData = data;
-
-    // Tampilkan data di panel
-    updateStatusPanel(data);
-
-    // Beri warna pada kavling di peta
+    
+    // 1. WARNAI KAVLING LANGSUNG
+    console.log('🎨 Mulai mewarnai kavling dari data API...');
     colorizeKavling(data.data || []);
-
+    
+    // 2. HITUNG DARI PETA SETELAH DIWARNAI
+    console.log('🧮 Menghitung dari peta setelah pewarnaan...');
+    const countsFromMap = countKavlingFromMap();
+    
+    // 3. UPDATE PANEL DENGAN DATA REAL-TIME
+    updateStatusPanelWithRealData(data, countsFromMap);
+    
+    // Restore button
+    statusBtn.innerHTML = originalText;
+    statusBtn.disabled = false;
+    statusBtn.classList.add('active');
+    
+    // Tampilkan notifikasi
+    showNotification(`✅ ${data.totalRecords || 0} kavling telah diwarnai!`, 'success');
+    
     return data;
-
+    
   } catch (error) {
     console.error('❌ Gagal mengambil data status:', error);
-
-    // Update panel dengan error message
+    
+    // Restore button
+    const statusBtn = document.getElementById('statusKavling');
+    statusBtn.innerHTML = '<span>🎨</span> Status Kavling';
+    statusBtn.disabled = false;
+    
+    // Error di panel
     const panelBody = document.querySelector('.status-panel-body');
-    if (panelBody) {
-      panelBody.innerHTML = `
-        <div style="padding:20px;text-align:center;color:#c62828;">
-          <div style="font-size:16px;margin-bottom:10px;">❌ Gagal mengambil data</div>
-          <div style="font-size:14px;margin-bottom:15px;">${error.message}</div>
-          <button onclick="fetchKavlingStatus()" style="padding:8px 16px;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;">
-            🔄 Coba Lagi
-          </button>
-          <div class="status-debug-info">
-            <h5>Debug Info:</h5>
-            URL: ${API_URL}?action=status<br>
-            Time: ${new Date().toLocaleTimeString()}<br>
-            Error: ${error.toString()}
-          </div>
-        </div>
-      `;
-    }
-
+    panelBody.innerHTML = `
+      <div style="padding:20px;text-align:center;color:#c62828;">
+        <div style="font-size:16px;margin-bottom:10px;">❌ Gagal mengambil data</div>
+        <div style="font-size:14px;margin-bottom:15px;">${error.message}</div>
+        <button onclick="fetchKavlingStatus()" style="padding:8px 16px;background:#2196F3;color:white;border:none;border-radius:4px;cursor:pointer;">
+          🔄 Coba Lagi
+        </button>
+      </div>
+    `;
+    
     return null;
   }
 }
 
-// ===============================
-// UPDATE STATUS PANEL
-// ===============================
-function updateStatusPanel(data) {
+function updateStatusPanelWithRealData(apiData, mapCounts) {
   const panelBody = document.querySelector('.status-panel-body');
-
-  if (!panelBody) {
-    console.error('❌ Panel body tidak ditemukan');
-    return;
-  }
-
-  // ========== HITUNG LANGSUNG DARI WARNA DI PETA ==========
-  console.log('🎯 Menghitung kavling berdasarkan warna di peta...');
-
-  const countByColor = {
-    kpr: 0,
-    stok: 0,
-    rekom: 0,
-    disewakan: 0,
-    unknown: 0, 
-    total: 0
-  };
-
-  const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
-  console.log(`📊 Total frame elements di peta: ${allFrameElements.length}`);
-
-  // UPDATE: Tambahkan 'kavling-status-unknown' ke daftar
-  const colorClasses = [
-    'kavling-status-kpr',
-    'kavling-status-stok',
-    'kavling-status-rekom',
-    'kavling-status-disewakan',
-    'kavling-status-unknown'  
-  ];
-
-  // Hitung berdasarkan kelas warna
-  allFrameElements.forEach(el => {
-    if (el.id && el.id.trim() !== '') {
-      let hasStatus = false;
-
-      // Cek setiap kelas status
-      colorClasses.forEach(className => {
-        if (el.classList.contains(className)) {
-          const type = className.replace('kavling-status-', '');
-          countByColor[type]++;
-          hasStatus = true;
-        }
-      });
-
-      // Jika tidak ada kelas status, hitung sebagai unknown
-      if (!hasStatus) {
-        countByColor.unknown++;
-      }
-    }
-  });
-
-  // Hitung total
-  countByColor.total = countByColor.kpr + countByColor.stok + countByColor.rekom + 
-                       countByColor.disewakan + countByColor.unknown;
-
-  console.log('📊 Hasil hitung:', countByColor);
-
-  // Update UI
-  const safeUpdate = (elementId, value) => {
-    const element = document.getElementById(elementId);
-    if (element) element.textContent = value !== undefined ? value : 0;
-  };
-
-  safeUpdate('countKPR', countByColor.kpr);
-  safeUpdate('countSTOK', countByColor.stok);
-  safeUpdate('countREKOM', countByColor.rekom);
-  safeUpdate('countDISEWAKAN', countByColor.disewakan);
-  safeUpdate('countUNKNOWN', countByColor.unknown);  
-  safeUpdate('totalAll', countByColor.total);
-
-  // ========== BUAT HTML PANEL ==========
+  
+  if (!panelBody) return;
+  
+  // Hitung real dari peta
+  const realCounts = countKavlingFromMap();
+  
   let html = `
-    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #673ab7; border-bottom: 1px solid #ddd; color: white; cursor: move;">
-      <h4 style="margin: 0; font-size: 16px;">📊 Statistik Status Kavling</h4>
+    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #673ab7; border-bottom: 1px solid #ddd; color: white;">
+      <h4 style="margin: 0; font-size: 16px;">🎨 Status Kavling (REAL-TIME)</h4>
       <div style="display: flex; gap: 5px;">
         <button class="close-status-btn" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
       </div>
     </div>
-
+    
     <div class="status-content" style="padding: 15px;">
       <div style="margin-bottom: 15px; text-align: center;">
-        <button onclick="countKavlingFromMap()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <span>🔄</span> Hitung Ulang pada Peta
+        <button onclick="refreshKavlingData()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span>🔄</span> Refresh Data & Warnai Ulang
         </button>
+        <div style="font-size: 12px; color: #666; margin-top: 5px;">
+          Ambil data terbaru dari server dan warnai semua kavling
+        </div>
+      </div>
+      
+      <!-- INFO SINKRONISASI -->
+      <div style="background: #e8f5e9; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #c8e6c9;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: bold; color: #1b5e20;">📊 Data Sinkron</div>
+            <div style="font-size: 12px; color: #666;">API: ${apiData.totalRecords || 0} | Peta: ${realCounts.total}</div>
+          </div>
+          ${realCounts.total === (apiData.totalRecords || 0) ? 
+            '<span style="background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">✓ Sinkron</span>' : 
+            '<span style="background: #ff9800; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">⚠️ Periksa</span>'}
+        </div>
       </div>
   `;
-
-  // UPDATE kategori - ganti 'gray' dengan 'unknown'
+  
+  // Kategori dengan warna
   const categories = [
-    { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444' },
-    { id: 'stok', title: 'STOK', color: '#90EE90' },
-    { id: 'rekom', title: 'REKOM', color: '#ff44ff' },
-    { id: 'disewakan', title: 'DISEWAKAN', color: '#44ffff' },
-    { id: 'unknown', title: 'TIDAK DIKETAHUI (PUTIH)', color: '#ffffff' }
+    { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444', border: '#111111' },
+    { id: 'stok', title: 'STOK', color: '#90EE90', border: '#111111' },
+    { id: 'rekom', title: 'REKOM', color: '#ff44ff', border: '#111111' },
+    { id: 'disewakan', title: 'DISEWAKAN', color: '#44ffff', border: '#111111' },
+    { id: 'unknown', title: 'TIDAK DIKETAHUI', color: '#ffffff', border: '#111111' }
   ];
-
+  
+  // Tampilkan per kategori
   categories.forEach(cat => {
-    const count = countByColor[cat.id] || 0;
-    const borderStyle = cat.id === 'unknown' ? 'border: 1px solid #ddd;' : '';
-
+    const count = realCounts[cat.id] || 0;
+    
     html += `
-      <div class="status-item" style="display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); ${borderStyle}">
-        <div class="status-color-sample" style="width: 20px; height: 20px; border-radius: 4px; margin-right: 12px; background-color: ${cat.color}; ${cat.id === 'unknown' ? 'border: 1px solid #ccc;' : ''}"></div>
+      <div class="status-item" style="display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); ${cat.id === 'unknown' ? 'border: 1px solid #ddd;' : ''}">
+        <div class="status-color-sample" style="width: 20px; height: 20px; border-radius: 4px; margin-right: 12px; background-color: ${cat.color}; border: 2px solid ${cat.border};"></div>
         <div class="status-info" style="flex: 1;">
           <div class="status-title" style="font-size: 14px; color: #555;">${cat.title}</div>
           <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 18px; font-weight: bold; color: #333;">${count}</div>
         </div>
-        <button class="download-btn" data-type="${cat.id}" style="padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📥 Download</button>
+        <button class="download-btn" data-type="${cat.id}" onclick="downloadKavlingData('${cat.id}')" style="padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📥 List</button>
       </div>
     `;
   });
-
+  
+  // Footer dengan total
   html += `
     <div class="status-total" style="text-align: center; padding: 15px; margin-top: 15px; background: #e8f5e9; border-radius: 8px; font-size: 18px;">
-      <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${countByColor.total}</span></strong>
+      <strong>Total Kavling Berwarna: <span id="totalAll" style="color: #2E7D32;">${realCounts.total}</span></strong>
     </div>
-
+    
     <div class="status-debug-info" style="margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; font-size: 12px; color: #666;">
-      <h5 style="margin: 0 0 8px 0; color: #333;">Info Data:</h5>
-      Hitung dari warna peta (real-time)<br>
-      Total Kavling Berwarna: ${countByColor.total}<br>
-      Data API Records: ${data.totalRecords || 0}<br>
-      Last Updated: ${new Date().toLocaleTimeString()}
+      <h5 style="margin: 0 0 8px 0; color: #333;">Info Sistem:</h5>
+      • Pewarnaan otomatis dari data API<br>
+      • Hitung real-time dari warna di peta<br>
+      • Last Refresh: ${new Date().toLocaleTimeString()}<br>
+      • API Records: ${apiData.totalRecords || 0}<br>
+      • Peta Berwarna: ${realCounts.total}
     </div>
   </div>`;
-
+  
   panelBody.innerHTML = html;
-
-  // Re-attach event listeners
-  document.querySelectorAll('.download-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const type = this.getAttribute('data-type');
-      downloadKavlingData(type);
-    });
-  });
-
+  
+  // Event listener untuk close button
   const closeBtn = panelBody.querySelector('.close-status-btn');
   if (closeBtn) {
     closeBtn.addEventListener('click', function(e) {
@@ -350,6 +275,115 @@ function updateStatusPanel(data) {
     });
   }
 }
+
+async function refreshKavlingData() {
+  console.log('🔄 Memulai refresh data kavling...');
+  
+  // Tampilkan loading di tombol
+  const refreshBtn = document.querySelector('[onclick="refreshKavlingData()"]');
+  const originalHtml = refreshBtn.innerHTML;
+  refreshBtn.innerHTML = '<span>⏳</span> Memuat...';
+  refreshBtn.disabled = true;
+  
+  try {
+    // 1. Clear cache
+    searchCache.clear();
+    certSearchCache.clear();
+    console.log('🧹 Cache dibersihkan');
+    
+    // 2. Fetch data baru
+    const url = `${API_URL}?action=status&_t=${Date.now()}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    const data = await response.json();
+    console.log('✅ Data baru diterima:', data);
+    
+    // 3. Warnai ulang SEMUA kavling
+    console.log('🎨 Mewarnai ulang semua kavling...');
+    colorizeKavling(data.data || []);
+    
+    // 4. Hitung ulang
+    const counts = countKavlingFromMap();
+    
+    // 5. Update panel
+    updateStatusPanelWithRealData(data, counts);
+    
+    // 6. Notifikasi sukses
+    showNotification(`✅ ${counts.total} kavling telah di-refresh dan diwarnai!`, 'success');
+    
+    console.log('🔄 Refresh selesai:', counts);
+    
+  } catch (error) {
+    console.error('❌ Refresh gagal:', error);
+    showNotification(`❌ Gagal refresh: ${error.message}`, 'error');
+  } finally {
+    // Restore button
+    refreshBtn.innerHTML = originalHtml;
+    refreshBtn.disabled = false;
+  }
+}
+
+function showNotification(message, type = 'info') {
+  // Hapus notif lama
+  const oldNotif = document.getElementById('global-notification');
+  if (oldNotif) oldNotif.remove();
+  
+  // Buat notif baru
+  const notif = document.createElement('div');
+  notif.id = 'global-notification';
+  notif.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+    color: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-weight: 500;
+    animation: slideDown 0.3s ease-out;
+  `;
+  
+  notif.innerHTML = message;
+  document.body.appendChild(notif);
+  
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    if (notif.parentNode) {
+      notif.style.opacity = '0';
+      notif.style.transition = 'opacity 0.3s';
+      setTimeout(() => {
+        if (notif.parentNode) notif.remove();
+      }, 300);
+    }
+  }, 3000);
+}
+
+// Tambahkan CSS animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -20px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+`;
+document.head.appendChild(style);
 
 // ===============================
 // BERI WARNA PADA KAVLING BERDASARKAN STATUS
@@ -422,9 +456,9 @@ function colorizeKavling(kavlingData) {
 
       coloredCount++;
 
-      // LOG untuk beberapa kavling (sample)
-      if (coloredCount <= 5) {
-        console.log(`  ${kode} → ${className} (skema: "${item.skema}")`);
+      // LOG untuk kavling spesifik
+      if (kode === 'UJ21_21') {
+        console.log(`🔍 DEBUG Pewarnaan UJ21_21: ${className} (skema: "${item.skema}", tanggal: "${item.tanggal}")`);
       }
 
     } else {
@@ -489,10 +523,8 @@ function colorizeKavling(kavlingData) {
 // HAPUS SEMUA WARNA STATUS
 // ===============================
 function clearStatusColors() {
-  // Hapus kelas warna dari semua elemen kavling
   document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]')
     .forEach(el => {
-      // Hapus inline style fill/stroke agar tidak menimpa class CSS
       el.style.fill = '';
       el.style.stroke = '';
 
@@ -504,7 +536,6 @@ function clearStatusColors() {
         'kavling-status-unknown'
       );
 
-      // Hapus juga dari child elements jika group
       if (el.tagName.toLowerCase() === 'g') {
         el.querySelectorAll('rect, path, polygon').forEach(child => {
           child.style.fill = '';
@@ -534,12 +565,10 @@ function countKavlingFromMap() {
     total: 0
   };
 
-  // Query SEMUA elemen frame
   const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
 
   console.log(`📊 Total frame elements ditemukan: ${allFrameElements.length}`);
 
-  // Definisikan semua kelas status
   const statusClasses = [
     'kavling-status-kpr', 
     'kavling-status-stok', 
@@ -548,12 +577,10 @@ function countKavlingFromMap() {
     'kavling-status-unknown'
   ];
 
-  // Hitung status untuk setiap frame element
   allFrameElements.forEach(el => {
     if (el.id && el.id.trim() !== '') {
       let foundStatus = false;
 
-      // Cek setiap kelas status
       statusClasses.forEach(className => {
         if (el.classList.contains(className)) {
           const type = className.replace('kavling-status-', '');
@@ -562,14 +589,12 @@ function countKavlingFromMap() {
         }
       });
 
-      // Jika tidak ada kelas status, maka termasuk UNKNOWN (putih)
       if (!foundStatus) {
         counts.unknown++;
       }
     }
   });
 
-  // Hitung total
   counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan + counts.unknown;
 
   console.log('📈 Hasil hitung real-time dari peta:', counts);
@@ -590,39 +615,11 @@ function countKavlingFromMap() {
   return counts;
 }
 
-// Tampilkan panel statistik (fungsi lama - mungkin masih digunakan)
-function showStatusPanel(data) {
-  const panel = document.getElementById('statusPanel');
-  if (!panel) return;
-
-  // Update angka di panel
-  if (data.summary) {
-    document.getElementById('countKPR').textContent = data.summary.kpr || 0;
-    document.getElementById('countSTOK').textContent = data.summary.stok || 0;
-    document.getElementById('countREKOM').textContent = data.summary.rekom || 0;
-    document.getElementById('countDISEWAKAN').textContent = data.summary.disewakan || 0;
-    document.getElementById('totalAll').textContent = data.summary.total || 0;
-  }
-
-  // Tampilkan panel
-  panel.style.display = 'block';
-  isStatusMode = true;
-
-  // Aktifkan tombol status
-  const statusBtn = document.getElementById('statusKavling');
-  if (statusBtn) statusBtn.classList.add('active');
-}
-
 // Nonaktifkan mode status
 function resetStatusMode() {
-  // JANGAN reset warna kavling - pertahankan warna untuk persistence
-  // clearStatusColors(); // DIKOMENTARI agar warna tetap ada
-
-  // Sembunyikan panel
   const panel = document.getElementById('statusPanel');
   if (panel) panel.style.display = 'none';
 
-  // Nonaktifkan tombol
   const statusBtn = document.getElementById('statusKavling');
   if (statusBtn) statusBtn.classList.remove('active');
 
@@ -631,7 +628,7 @@ function resetStatusMode() {
   console.log('🔄 Mode status dinonaktifkan (warna tetap disimpan)');
 }
 
-// Ambil list blok berdasarkan kategori warna dari peta - DIPERBAIKI
+// Ambil list blok berdasarkan kategori warna dari peta
 function getKavlingListFromMap(type) {
   const kavlingList = [];
   const className = `kavling-status-${type}`;
@@ -641,9 +638,7 @@ function getKavlingListFromMap(type) {
 
   allFrameElements.forEach(el => {
     if (el.id && el.id.trim() !== '') {
-      // Untuk kategori "unknown", kita perlu menangani khusus
       if (type === 'unknown') {
-        // Cek apakah elemen TIDAK memiliki kelas status apapun
         const hasStatus = el.classList.contains('kavling-status-kpr') ||
                          el.classList.contains('kavling-status-stok') ||
                          el.classList.contains('kavling-status-rekom') ||
@@ -653,9 +648,7 @@ function getKavlingListFromMap(type) {
         if (!hasStatus) {
           kavlingList.push(el.id);
         }
-      } 
-      // Untuk kategori lain, cek kelas yang sesuai
-      else if (el.classList.contains(className)) {
+      } else if (el.classList.contains(className)) {
         kavlingList.push(el.id);
       }
     }
@@ -669,12 +662,11 @@ function getKavlingListFromMap(type) {
   return kavlingList.sort();
 }
 
-// Download data per kategori - DIPERBAIKI
+// Download data per kategori
 async function downloadKavlingData(type) {
   try {
     console.log(`📥 Memulai download data ${type}...`);
 
-    // Ambil list blok dari peta
     const kavlingListFromMap = getKavlingListFromMap(type);
 
     console.log(`📊 Ditemukan ${kavlingListFromMap.length} kavling ${type} di peta:`, kavlingListFromMap);
@@ -684,7 +676,6 @@ async function downloadKavlingData(type) {
       return;
     }
 
-    // Tampilkan data di popup
     showDownloadPopupFromMap(kavlingListFromMap, type);
 
   } catch (error) {
@@ -693,22 +684,19 @@ async function downloadKavlingData(type) {
   }
 }
 
-// Popup untuk menampilkan list blok dari peta - DIPERBAIKI
+// Popup untuk menampilkan list blok dari peta
 function showDownloadPopupFromMap(kavlingList, type) {
-  // Hapus popup lama jika ada
   const oldPopup = document.querySelector('.kavling-popup');
   if (oldPopup) {
     document.body.removeChild(oldPopup);
   }
 
-  // Buat popup baru
   const popup = document.createElement('div');
   popup.className = 'kavling-popup';
 
   let title = '';
   let description = '';
 
-  // Sesuaikan judul berdasarkan tipe
   switch(type) {
     case 'kpr':
       title = 'KPR, TUNAI (SOLD)';
@@ -781,10 +769,8 @@ function showDownloadPopupFromMap(kavlingList, type) {
 
   document.body.appendChild(popup);
 
-  // Simpan list untuk copy
   window.currentDownloadList = kavlingList;
 
-  // Event listeners untuk popup
   const closePopup = () => {
     document.body.removeChild(popup);
   };
@@ -795,7 +781,6 @@ function showDownloadPopupFromMap(kavlingList, type) {
   if (closeBtn) closeBtn.addEventListener('click', closePopup);
   if (closeBtn2) closeBtn2.addEventListener('click', closePopup);
 
-  // Tutup jika klik di luar konten
   popup.addEventListener('click', (e) => {
     if (e.target === popup) {
       closePopup();
@@ -805,7 +790,6 @@ function showDownloadPopupFromMap(kavlingList, type) {
   popup.style.display = 'flex';
 }
 
-// Fungsi untuk mapping nama status yang lebih deskriptif
 function getStatusDisplayName(type) {
   const statusMap = {
     'kpr': 'KPR,TUNAI (SOLD)',
@@ -817,30 +801,24 @@ function getStatusDisplayName(type) {
   return statusMap[type] || type.toUpperCase();
 }
 
-// Fungsi untuk download sebagai CSV 
 function downloadAsCSV(type) {
   if (!window.currentDownloadList || window.currentDownloadList.length === 0) {
     alert('Tidak ada data untuk didownload');
     return;
   }
 
-  // Dapatkan nama status yang lebih deskriptif
   const statusDisplayName = getStatusDisplayName(type);
 
-  // Buat header CSV dengan kolom tambahan
   let csvContent = "No,Kode Kavling,Status,Keterangan\n";
 
-  // Tambahkan data
   window.currentDownloadList.forEach((kode, index) => {
     csvContent += `${index + 1},"${kode}","${statusDisplayName}",""\n`;
   });
 
-  // Buat blob dan download
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
 
-  // Buat nama file yang lebih informatif
   const fileName = `kavling_${type}_${new Date().toISOString().slice(0,10)}.csv`;
 
   link.setAttribute("href", url);
@@ -854,7 +832,6 @@ function downloadAsCSV(type) {
   console.log(`✅ CSV untuk ${type} berhasil didownload (${window.currentDownloadList.length} data)`);
 }
 
-// Copy list ke clipboard
 function copyToClipboard() {
   if (window.currentDownloadList && window.currentDownloadList.length > 0) {
     const text = window.currentDownloadList.join('\n');
@@ -867,103 +844,15 @@ function copyToClipboard() {
   }
 }
 
-// Popup untuk menampilkan data download
-function showDownloadPopup(data, type) {
-  // Hapus popup lama jika ada
-  const oldPopup = document.querySelector('.kavling-popup');
-  if (oldPopup) {
-    document.body.removeChild(oldPopup);
-  }
-
-  // Buat popup baru
-  const popup = document.createElement('div');
-  popup.className = 'kavling-popup';
-
-  let content = `<h3 style="margin-top:0;">Data ${type.toUpperCase()} (${data.count || 0} item)</h3>`;
-
-  if (data.data && data.data.length > 0) {
-    // Format tabel sederhana
-    content += '<div style="overflow-x:auto;">';
-    content += '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
-    content += '<tr style="background:#f5f5f5;">';
-    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">No</th>';
-    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">Kode Kavling</th>';
-    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">Skema</th>';
-    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">Tanggal</th>';
-    content += '<th style="padding:8px; border:1px solid #ddd; text-align:left;">Data</th>';
-    content += '</tr>';
-
-    data.data.forEach((item, index) => {
-      const rowColor = index % 2 === 0 ? '#fff' : '#f9f9f9';
-      content += `<tr style="background:${rowColor};">`;
-      content += `<td style="padding:8px; border:1px solid #ddd;">${index + 1}</td>`;
-      content += `<td style="padding:8px; border:1px solid #ddd;"><strong>${item.kode || ''}</strong></td>`;
-      content += `<td style="padding:8px; border:1px solid #ddd;">${item.skema || ''}</td>`;
-      content += `<td style="padding:8px; border:1px solid #ddd;">${item.tanggal || ''}</td>`;
-      content += `<td style="padding:8px; border:1px solid #ddd; font-family:monospace; font-size:12px;">${item.data || ''}</td>`;
-      content += '</tr>';
-    });
-
-    content += '</table></div>';
-  } else {
-    content += '<p style="text-align:center; color:#666; padding:20px;">Tidak ada data</p>';
-  }
-
-  popup.innerHTML = `
-    <div class="kavling-popup-content" style="max-width:800px;">
-      <div class="kavling-popup-header">
-        <h3>Download Data: ${type.toUpperCase()}</h3>
-        <button class="close-kavling-popup">&times;</button>
-      </div>
-      <div class="kavling-popup-body">
-        <div style="margin-bottom:15px; padding:10px; background:#e8f5e9; border-radius:6px;">
-          Total data: <strong>${data.count || 0}</strong> kavling
-        </div>
-        ${content}
-      </div>
-      <div class="kavling-popup-footer">
-        <button class="kavling-close-btn">Tutup</button>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(popup);
-
-  // Event listeners untuk popup
-  const closePopup = () => {
-    document.body.removeChild(popup);
-  };
-
-  const closeBtn = popup.querySelector('.close-kavling-popup');
-  const closeBtn2 = popup.querySelector('.kavling-close-btn');
-
-  if (closeBtn) closeBtn.addEventListener('click', closePopup);
-  if (closeBtn2) closeBtn2.addEventListener('click', closePopup);
-
-  // Tutup jika klik di luar konten
-  popup.addEventListener('click', (e) => {
-    if (e.target === popup) {
-      closePopup();
-    }
-  });
-
-  // Tampilkan popup
-  setTimeout(() => {
-    popup.style.display = 'flex';
-  }, 10);
-}
-
 // ===============================
-// POPUP MANAGEMENT (ASLI)
+// POPUP MANAGEMENT
 // ===============================
 function showKavlingPopup(address, result) {
-  // Hapus popup lama jika ada
   const oldPopup = document.querySelector('.kavling-popup');
   if (oldPopup) {
     document.body.removeChild(oldPopup);
   }
 
-  // Buat popup baru
   const popup = document.createElement('div');
   popup.className = 'kavling-popup';
 
@@ -971,7 +860,6 @@ function showKavlingPopup(address, result) {
   let statusText = '';
   let dataContent = '';
 
-  // Set berdasarkan status
   switch (result.status) {
     case 'loading':
       statusClass = 'kavling-status-loading';
@@ -1061,10 +949,8 @@ function showKavlingPopup(address, result) {
     </div>
   `;
 
-  // Tambahkan ke body
   document.body.appendChild(popup);
 
-  // Event listeners untuk popup (kecuali jika loading)
   if (result.status !== 'loading') {
     const closeBtn = popup.querySelector('.close-kavling-popup');
     const closeBtn2 = popup.querySelector('.kavling-close-btn');
@@ -1076,7 +962,6 @@ function showKavlingPopup(address, result) {
     if (closeBtn) closeBtn.addEventListener('click', closePopup);
     if (closeBtn2) closeBtn2.addEventListener('click', closePopup);
 
-    // Tutup jika klik di luar konten
     popup.addEventListener('click', (e) => {
       if (e.target === popup) {
         closePopup();
@@ -1084,7 +969,6 @@ function showKavlingPopup(address, result) {
     });
   }
 
-  // Tampilkan popup
   setTimeout(() => {
     popup.style.display = 'flex';
   }, 10);
@@ -1108,7 +992,6 @@ async function searchCertificateNew(certNumber, certType, displayName) {
 
   console.log(`🔍 Mencari ${displayName}:`, certNumber);
 
-  // Tampilkan loading di modal
   const resultsBox = document.getElementById('certificateResults');
   resultsBox.innerHTML = `
   <div class="cert-loading">
@@ -1121,7 +1004,6 @@ async function searchCertificateNew(certNumber, certType, displayName) {
 `;
 
   try {
-    // Cek cache dulu
     const cacheKey = `${certType}:${certNumber.toUpperCase()}`;
     const cached = certSearchCache.get(cacheKey);
 
@@ -1131,7 +1013,6 @@ async function searchCertificateNew(certNumber, certType, displayName) {
       return;
     }
 
-    // Panggil API database sertifikat
     const encodedCert = encodeURIComponent(certNumber);
     const url = `${CERT_API_URL}?certificate=${encodedCert}&type=${certType}&_t=${Date.now()}`;
 
@@ -1142,7 +1023,6 @@ async function searchCertificateNew(certNumber, certType, displayName) {
 
     console.log('📦 Response API Sertifikat:', data);
 
-    // Simpan ke cache jika sukses
     if (data.status === 'success') {
       certSearchCache.set(cacheKey, {
         data: data,
@@ -1150,7 +1030,6 @@ async function searchCertificateNew(certNumber, certType, displayName) {
       });
     }
 
-    // Tampilkan hasil
     displayCertificateResults(data, certNumber, certType, displayName);
 
   } catch (error) {
@@ -1181,14 +1060,12 @@ function displayCertificateResults(data, certNumber, certType, displayName) {
   if (data.status === 'success' && data.results && data.results.length > 0) {
     let html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <!-- JUMLAH DATA DITEMUKAN (BOLD & BESAR) -->
         <div class="cert-total-found">
           ✅ Ditemukan: <strong>${data.totalFound}</strong> hasil untuk 
           <strong>${displayName}: "${certNumber}"</strong>
         </div>
     `;
 
-    // Tampilkan semua hasil
     data.results.forEach((result, index) => {
       const nomorDisplay = certType === 'nama_shm' ? result.nama : result.nomor;
       html += `
@@ -1261,7 +1138,7 @@ function displayCertificateResults(data, certNumber, certType, displayName) {
 }
 
 // ===============================
-// FUNGSI UTAMA: AMBIL DATA KAVLING DARI API (DENGAN CACHE)
+// FUNGSI UTAMA: AMBIL DATA KAVLING DARI API
 // ===============================
 async function fetchDataForAddress(address) {
   if (!address || !address.trim()) {
@@ -1272,13 +1149,11 @@ async function fetchDataForAddress(address) {
   const cleanAddress = address.trim().toUpperCase();
   console.log('🔍 Mencari data kavling untuk:', cleanAddress);
 
-  // Tampilkan loading di popup (status: 'loading')
   showKavlingPopup(cleanAddress, { 
     status: 'loading',
     message: 'Sedang mencari data...'
   });
 
-  // CEK CACHE PERTAMA
   const cached = searchCache.get(cleanAddress);
   if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
     console.log('⚡ HIT CACHE KAVLING:', cleanAddress);
@@ -1291,16 +1166,13 @@ async function fetchDataForAddress(address) {
   }
 
   try {
-    // Encode address untuk URL
     const encodedAddress = encodeURIComponent(cleanAddress);
     const url = `${API_URL}?address=${encodedAddress}`;
 
     console.log('🌐 Mengambil data kavling dari:', url);
 
-    // Tambahkan timestamp untuk menghindari cache
     const fetchUrl = url + '&_t=' + Date.now();
 
-    // Fetch data dengan timeout 40 DETIK
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 40000);
 
@@ -1321,11 +1193,9 @@ async function fetchDataForAddress(address) {
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
 
-    // Parse JSON
     const data = await res.json();
     console.log('📦 Data kavling diterima:', data);
 
-    // SIMPAN KE CACHE jika success
     if (data.status === 'success' && data.data) {
       console.log('💾 Menyimpan kavling ke cache:', cleanAddress);
       searchCache.set(cleanAddress, {
@@ -1334,7 +1204,6 @@ async function fetchDataForAddress(address) {
       });
     }
 
-    // HANDLE BERDASARKAN STATUS DARI API
     switch (data.status) {
       case 'success':
         showKavlingPopup(cleanAddress, { 
@@ -1376,7 +1245,6 @@ async function fetchDataForAddress(address) {
   } catch (err) {
     console.error('❌ Error fetch data kavling:', err);
 
-    // Deteksi jenis error
     let errorMessage = 'Gagal mengambil data';
 
     if (err.name === 'AbortError') {
@@ -1407,9 +1275,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   searchInput.disabled = true;
 
-  // ===============================
-  // LOAD SVG DENGAN CACHE
-  // ===============================
   function setupSVG(container) {
     const svg = container.querySelector('svg');
     if (!svg) return;
@@ -1418,7 +1283,6 @@ document.addEventListener('DOMContentLoaded', () => {
     svg.removeAttribute('height');
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-    // Setup viewbox
     try {
       originalViewBox = svg.getAttribute('viewBox');
       if (!originalViewBox) {
@@ -1434,7 +1298,6 @@ document.addEventListener('DOMContentLoaded', () => {
       viewBoxState = parseViewBox(originalViewBox);
     }
 
-    // Indexing kavling
     const ids = container.querySelectorAll('[id]');
     kavlingIndex = [];
     const seen = new Set();
@@ -1451,13 +1314,11 @@ document.addEventListener('DOMContentLoaded', () => {
     isSvgLoaded = true;
   }
 
-  // Gunakan cache jika sudah pernah load
   if (svgCache) {
     map.innerHTML = svgCache;
     setupSVG(map);
     searchInput.disabled = false;
   } else {
-    // Load SVG dengan timeout
     const loadTimeout = setTimeout(() => {
       searchInput.placeholder = "Memuat peta...";
       document.body.classList.add('loading');
@@ -1491,33 +1352,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===============================
   // TOMBOL STATUS KAVLING
   // ===============================
-
-  // Event listener untuk tombol Status Kavling
   document.getElementById('statusKavling')?.addEventListener('click', async () => {
     if (!isStatusMode) {
-      // Mode status aktif
       await fetchKavlingStatus();
     } else {
-      // Mode status nonaktif
       resetStatusMode();
     }
-  });
-
-  // Event listener untuk tutup panel status
-  document.querySelector('.close-status-panel')?.addEventListener('click', () => {
-    resetStatusMode();
   });
 
   // ===============================
   // MODAL SERTIFIKAT
   // ===============================
-
-  // Buka modal
   document.getElementById('searchByCertificate')?.addEventListener('click', () => {
     document.getElementById('certificateModal').style.display = 'flex';
   });
 
-  // Tutup modal
   document.querySelector('.close-modal')?.addEventListener('click', () => {
     document.getElementById('certificateModal').style.display = 'none';
   });
@@ -1526,14 +1375,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('certificateModal').style.display = 'none';
   });
 
-  // Tutup modal kalau klik di luar konten
   document.getElementById('certificateModal')?.addEventListener('click', (e) => {
     if (e.target.classList.contains('close-modal') || e.target.id === 'closeModal') {
       document.getElementById('certificateModal').style.display = 'none';
     }
   });
 
-  // Tombol bersihkan
   document.getElementById('clearAll')?.addEventListener('click', () => {
     document.querySelectorAll('.compact-input').forEach(input => input.value = '');
     document.getElementById('certificateResults').innerHTML = 
@@ -1541,41 +1388,35 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // PENCARIAN SERTIFIKAT (SEMUA TIPE)
+  // PENCARIAN SERTIFIKAT
   // ===============================
-
-  // Sertifikat Induk
   document.getElementById('searchInduk')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certInduk').value.trim();
     await searchCertificateNew(certNumber, 'induk', 'Sertifikat Induk');
   });
 
-  // SHGB
   document.getElementById('searchSHGB')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certSHGB').value.trim();
     await searchCertificateNew(certNumber, 'shgb', 'SHGB');
   });
 
-  // SHM
   document.getElementById('searchSHM')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certSHM').value.trim();
     await searchCertificateNew(certNumber, 'shm', 'SHM');
   });
 
-  // Nama SHM
   document.getElementById('searchNamaSHM')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certNamaSHM').value.trim();
     await searchCertificateNew(certNumber, 'nama_shm', 'Nama SHM');
   });
 
-  // Nama Pemilik Lama / EX
   document.getElementById('searchExOwner')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certExOwner').value.trim();
     await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
   });
 
   // ===============================
-  // ENTER KEY SUPPORT UNTUK SEMUA INPUT SERTIFIKAT
+  // ENTER KEY SUPPORT
   // ===============================
   document.getElementById('certInduk')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -1605,7 +1446,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ENTER KEY SUPPORT untuk Nama Pemilik Lama
   document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -1614,7 +1454,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ===============================
-  // SEARCH (BLOK + KAVLING) TANPA AUTO-SELECT
+  // SEARCH KAVLING
   // ===============================
   searchInput.addEventListener('input', () => {
     const q = searchInput.value.trim().toLowerCase();
@@ -1623,7 +1463,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const upper = q.toUpperCase();
 
-    // BLOK OTOMATIS
     const blokItems = kavlingIndex.filter(id => id.startsWith(upper + '_'));
     if (blokItems.length && !q.includes('_')) {
       const liBlok = document.createElement('li');
@@ -1633,7 +1472,6 @@ document.addEventListener('DOMContentLoaded', () => {
       resultsBox.appendChild(liBlok);
     }
 
-    // KAVLING DETAIL
     kavlingIndex
       .filter(id => id.toLowerCase().includes(q))
       .slice(0, 20)
@@ -1649,9 +1487,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ===============================
-  // ENTER KEY SUPPORT UNTUK SEARCH INPUT KAVLING
-  // ===============================
   searchInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -1659,28 +1494,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!query) return;
 
-      // Tutup dropdown jika terbuka
       resultsBox.innerHTML = '';
 
-      // Cari berdasarkan tipe query
       if (query.includes('_')) {
-        // Jika mengandung underscore, cari kavling spesifik
         if (kavlingIndex.includes(query)) {
           focusKavling(query);
         } else {
-          // Jika tidak ditemukan, tampilkan popup not found
           showKavlingPopup(query, { 
             status: 'notfound',
             message: `Kode "${query}" tidak ditemukan`
           });
         }
       } else {
-        // Jika tanpa underscore, cari blok
         const blokItems = kavlingIndex.filter(id => id.startsWith(query + '_'));
         if (blokItems.length > 0) {
           focusBlok(query);
         } else {
-          // Coba cari sebagai kavling tanpa underscore
           if (kavlingIndex.includes(query)) {
             focusKavling(query);
           } else {
@@ -1694,25 +1523,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ===============================
-  // FOCUS KAVLING
-  // ===============================
   function focusKavling(id) {
     const svg = map.querySelector('svg');
     const el = document.getElementById(id);
     if (!el) return;
 
-    // Hapus highlight warna sebelumnya
     clearHighlight();
 
-    // HANYA hapus warna status jika mode status TIDAK aktif
     if (!isStatusMode) {
       clearStatusColors();
     }
 
     if (el.tagName.toLowerCase() === 'g') {
       el.querySelectorAll('rect, path, polygon').forEach(c => {
-        // Only apply highlight style if it doesn't already have a status color
         const parent = c.closest('g');
         const target = (parent && parent.id && parent.id !== 'map') ? parent : c;
 
@@ -1752,18 +1575,13 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.value = id;
     applyViewBox(svg);
 
-    // Panggil API dengan cache
     fetchDataForAddress(id);
   }
 
-  // ===============================
-  // FOCUS BLOK
-  // ===============================
   function focusBlok(prefix) {
     const svg = map.querySelector('svg');
     clearHighlight();
 
-    // HANYA hapus warna status jika mode status TIDAK aktif
     if (!isStatusMode) {
       clearStatusColors();
     }
@@ -1822,28 +1640,21 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.value = prefix;
     applyViewBox(svg);
 
-    // Panggil API dengan cache
     fetchDataForAddress(prefix);
   }
 
-  // ===============================
-  // CLICK MAP
-  // ===============================
   map.addEventListener('click', e => {
     if (isDragging) return;
 
     let t = e.target;
 
-    // Cari elemen dengan ID yang valid
     while (t && t !== map) {
       if (t.id && /^(GA|UJ|KR|M|BLOK)/i.test(t.id)) {
         const id = t.id.toUpperCase();
         resultsBox.innerHTML = '';
 
-        // Isi kotak pencarian
         searchInput.value = id;
 
-        // Fokus berdasarkan tipe
         if (id.includes('_')) {
           focusKavling(id);
         } else {
@@ -1856,9 +1667,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ===============================
-  // PAN (DRAG)
-  // ===============================
   map.addEventListener('mousedown', e => {
     isPanning = true;
     isDragging = false;
@@ -1886,9 +1694,6 @@ document.addEventListener('DOMContentLoaded', () => {
   map.addEventListener('mouseup', () => isPanning = false);
   map.addEventListener('mouseleave', () => isPanning = false);
 
-  // ===============================
-  // ZOOM SCROLL (TO CURSOR)
-  // ===============================
   map.addEventListener('wheel', e => {
     e.preventDefault();
 
@@ -1908,13 +1713,10 @@ document.addEventListener('DOMContentLoaded', () => {
     applyViewBox(map.querySelector('svg'));
   }, { passive: false });
 
-  // ===============================
-  // RESET
-  // ===============================
   resetBtn.onclick = () => {
     const svg = map.querySelector('svg');
     clearHighlight();
-    clearStatusColors(); // Juga reset warna status
+    clearStatusColors();
 
     if (svg && originalViewBox) {
       svg.setAttribute('viewBox', originalViewBox);
@@ -1926,171 +1728,11 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsBox.innerHTML = '';
     closeKavlingPopup();
 
-    // Juga reset mode status jika aktif
     if (isStatusMode) {
       resetStatusMode();
     }
   };
 
-  // ===============================
-  // FUNGSI TESTING
-  // ===============================
-  window.testCertificateAPI = async function(type, value) {
-    const testType = type || 'shm';
-    const testValue = value || 'B.00350';
-
-    console.log(`🧪 Testing API Sertifikat: ${testType} = ${testValue}`);
-
-    const url = `${CERT_API_URL}?certificate=${encodeURIComponent(testValue)}&type=${testType}&_t=${Date.now()}`;
-
-    console.log('URL:', url);
-
-    try {
-      const res = await fetch(url);
-      console.log('Status:', res.status, res.statusText);
-
-      const text = await res.text();
-      console.log('Raw response:', text);
-
-      try {
-        const json = JSON.parse(text);
-        console.log('Parsed JSON:', json);
-        return json;
-      } catch (e) {
-        console.error('Gagal parse JSON:', e);
-        return text;
-      }
-    } catch (err) {
-      console.error('Fetch error:', err);
-      return null;
-    }
-  };
-
-  // ===============================
-  // FUNGSI DEBUG API
-  // ===============================
-
-  // Fungsi untuk test koneksi API
-  window.testStatusAPI = async function() {
-    console.log('🧪 Testing Status API Connection...');
-
-    const testUrls = [
-      `${API_URL}?action=status`,
-      `${API_URL}?action=status&callback=test`,
-      'https://script.google.com/macros/s/AKfycbwbBmXFoTtWa0XxK-ogxueDUkjzAKzhE7sPQaDMQvTIy7_FhA-DGMBJyYzzTyUVXw/exec?action=status'
-    ];
-
-    for (let i = 0; i < testUrls.length; i++) {
-      const url = testUrls[i];
-      console.log(`\n🔗 Testing URL ${i+1}: ${url}`);
-
-      try {
-        const startTime = Date.now();
-        const response = await fetch(url + '&_t=' + Date.now());
-        const endTime = Date.now();
-
-        console.log(`⏱️ Response time: ${endTime - startTime}ms`);
-        console.log(`📊 Status: ${response.status} ${response.statusText}`);
-
-        const text = await response.text();
-        console.log(`📄 Response length: ${text.length} characters`);
-
-        // Coba parse JSON
-        try {
-          const json = JSON.parse(text);
-          console.log('✅ Valid JSON:', json);
-
-          // Tampilkan summary jika ada
-          if (json.summary) {
-            console.log('📈 Summary:', json.summary);
-          }
-          if (json.data && Array.isArray(json.data)) {
-            console.log(`📊 Data count: ${json.data.length}`);
-            if (json.data.length > 0) {
-              console.log('📝 Sample data:', json.data[0]);
-            }
-          }
-
-        } catch (e) {
-          console.log('⚠️ Not valid JSON, first 200 chars:', text.substring(0, 200));
-        }
-
-      } catch (error) {
-        console.log(`❌ Error: ${error.message}`);
-      }
-    }
-
-    console.log('\n📋 TEST COMPLETE');
-  };
-
-  // Fungsi untuk cek data langsung di Console
-  window.checkStatusData = function() {
-    console.log('🔍 Checking statusData:', statusData);
-    console.log('🔍 Is Status Mode:', isStatusMode);
-
-    if (statusData) {
-      console.log('📊 Data structure:', {
-        status: statusData.status,
-        totalRecords: statusData.totalRecords,
-        summary: statusData.summary,
-        dataLength: statusData.data ? statusData.data.length : 0
-      });
-
-      // Hitung kategori manual
-      if (statusData.data && Array.isArray(statusData.data)) {
-        const counts = {
-          kpr: 0,
-          stok: 0,
-          rekom: 0,
-          disewakan: 0,
-          lainnya: 0
-        };
-
-        statusData.data.forEach(item => {
-          counts[item.kategori] = (counts[item.kategori] || 0) + 1;
-        });
-
-        console.log('🧮 Manual counts:', counts);
-      }
-    }
-  };
-
-  // ===============================
-  // EVENT LISTENER UNTUK POPUP
-  // ===============================
-
-  // Event listener untuk klik di luar popup - MODIFIKASI
-  document.addEventListener('click', function(e) {
-    const popup = document.querySelector('.kavling-popup');
-    const modal = document.getElementById('certificateModal');
-    const statusPanel = document.getElementById('statusPanel');
-
-    // JANGAN tutup panel status saat klik di luar
-    if (statusPanel && statusPanel.style.display === 'block') {
-      // Biarkan panel status tetap terbuka
-      return;
-    }
-
-    // Untuk kavling popup
-    if (popup && popup.style.display === 'flex') {
-      const isCloseBtn = e.target.classList.contains('close-kavling-popup') || 
-                         e.target.classList.contains('kavling-close-btn');
-
-      // HANYA tutup jika klik tombol close
-      if (isCloseBtn) {
-        document.body.removeChild(popup);
-      }
-    }
-
-    // Untuk modal sertifikat - HANYA tutup via tombol
-    if (modal && modal.style.display === 'flex') {
-      const isCloseBtn = e.target.classList.contains('close-modal') ||
-                         e.target.id === 'closeModal';
-
-      if (isCloseBtn) {
-        modal.style.display = 'none';
-      }
-      // Abaikan klik di luar - jangan tutup
-    }
-  });
-}); // PENUTUP UNTUK DOMContentLoaded
+  // Terapkan dark mode saat load
+  applyDarkMode();
+});
