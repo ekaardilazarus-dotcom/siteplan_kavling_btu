@@ -1899,6 +1899,7 @@ async function searchKavling(searchTerm, searchType, displayName) {
           </div>
         </div>
       `;
+      document.getElementById('downloadExcelKavling').style.display = 'none';
     }
   } catch (error) {
     console.error('❌ Error search kavling:', error);
@@ -1908,6 +1909,7 @@ async function searchKavling(searchTerm, searchType, displayName) {
         <div style="font-size:14px;">Error: ${error.message}</div>
       </div>
     `;
+    document.getElementById('downloadExcelKavling').style.display = 'none';
   }
 }
 
@@ -1941,6 +1943,7 @@ function displayKavlingResults(data, statusType) {
           Tidak ditemukan data dengan status "${statusType}"
         </div>
       `;
+      excelBtn.style.display = 'none';
       return;
     }
     
