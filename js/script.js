@@ -1211,8 +1211,7 @@ async function generateExcelFromResults() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
     
     // Simpan file dengan nama dinamis berdasarkan hasil pencarian
-    const resultsBox = document.getElementById('certificateResults');
-    const totalFoundEl = resultsBox.querySelector('.cert-total-found');
+    const totalFoundEl = document.getElementById('certificateResults').querySelector('.cert-total-found');
     let fileName = `btu_export_${new Date().getTime()}.xlsx`;
     
     if (totalFoundEl) {
