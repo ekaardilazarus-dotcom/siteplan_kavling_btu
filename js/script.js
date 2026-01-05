@@ -1714,7 +1714,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const certNumber = document.getElementById('certNamaSHM').value.trim();
     await searchCertificateNew(certNumber, 'nama_shm', 'Nama SHM');
   });
-
+// Pencarian Kolom H Update Nama User
+document.getElementById('searchKolomH')?.addEventListener('click', async () => {
+  const certNumber = document.getElementById('certKolomH').value.trim();
+  await searchCertificateNew(certNumber, 'kolom_h', 'Pencarian Kolom H');
+});
   // Nama Pemilik Lama / EX
   document.getElementById('searchExOwner')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certExOwner').value.trim();
@@ -1751,7 +1755,13 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('searchNamaSHM').click();
     }
   });
-
+// ENTER KEY SUPPORT untuk Kolom H
+document.getElementById('certKolomH')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('searchKolomH').click();
+  }
+});
   // ENTER KEY SUPPORT untuk Nama Pemilik Lama
   document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
