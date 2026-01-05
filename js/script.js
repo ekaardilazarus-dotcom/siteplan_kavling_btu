@@ -154,7 +154,7 @@ async function fetchKavlingStatus() {
     const data = await response.json();
     console.log('✅ Data status diterima:', data);
 
-// DEBUG KHUSUS: Cari M1_177 di response
+    // DEBUG KHUSUS: Cari M1_177 di response
     const m1InResponse = data.data?.find(item => item.kode === 'M1_177');
     if (m1InResponse) {
       console.log('🔍 DEBUG API RESPONSE M1_177:', m1InResponse);
@@ -200,7 +200,10 @@ async function fetchKavlingStatus() {
     return null;
   }
 }
-//--------------------------------------------------
+
+// ===============================
+// UPDATE STATUS PANEL
+// ===============================
 function updateStatusPanel(data) {
   const panelBody = document.querySelector('.status-panel-body');
   
@@ -347,9 +350,10 @@ function updateStatusPanel(data) {
     });
   }
 }
-//--------------------------------------------------
-// Beri warna pada kavling berdasarkan status
 
+// ===============================
+// BERI WARNA PADA KAVLING BERDASARKAN STATUS
+// ===============================
 function colorizeKavling(kavlingData) {
   const svgMap = document.querySelector('#map svg');
   if (!svgMap) {
@@ -358,16 +362,13 @@ function colorizeKavling(kavlingData) {
   }
   
   console.log(`🎨 Mulai mewarnai ${kavlingData.length} kavling`);
-
-  // DEBUG: Cari M1_177 di data yang diterima
-  const m1Item = kavlingData.find(item => item.kode === 'M1_177');
-  if (m1Item) {
-    console.log('🔍 DEBUG M1_177 DI COLORIZE:', m1Item);
-    console.log(`   Kategori: "${m1Item.kategori}", Skema: "${m1Item.skema}"`);
-    console.log(`   Seharusnya class: kavling-status-${m1Item.kategori}`);
-  }
-//-----------------------------------------
-
+  
+  // LOG DISTRIBUSI KATEGORI
+  const categoryCount = {};
+  kavlingData.forEach(item => {
+    categoryCount[item.kategori] = (categoryCount[item.kategori] || 0) + 1;
+  });
+  console.log('📊 Distribusi kategori dari API:', categoryCount);
   
   clearStatusColors();
   
@@ -379,17 +380,7 @@ function colorizeKavling(kavlingData) {
     if (!item.kode) return;
     
     const kode = item.kode.trim().toUpperCase();
-
-   // DEBUG KHUSUS UNTUK M1_177
-    if (kode === 'M1_177') {
-      console.log(`🎯 PROCESSING M1_177:`, {
-        kode: kode,
-        kategori: item.kategori,
-        skema: item.skema,
-        akanDiberiClass: `kavling-status-${item.kategori}`
-      });
-    }
-    //---------------------------------
+    const kategori = item.kategori || 'unknown';
     
     let element = document.getElementById(kode);
     
@@ -401,54 +392,41 @@ function colorizeKavling(kavlingData) {
     if (element) {
       if (element.id) processedIds.add(element.id);
       
-      if (item.kategori && item.kategori !== 'lainnya') {
-        const className = `kavling-status-${item.kategori}`;
-
-        // DEBUG: Log class yang diberikan
-        if (kode === 'M1_177') {
-          console.log(`✅ Memberi class ke M1_177: ${className}`);
-          console.log(`   Element ditemukan:`, element);
-          console.log(`   Current classes:`, Array.from(element.classList));
-        }
-        //-------------------------------------------
-        
-        // PASTIKAN MEMBERSIHKAN CLASS SEBELUMNYA AGAR TIDAK DOUBLE
-        element.classList.remove(
-          'kavling-status-kpr',
-          'kavling-status-stok', 
-          'kavling-status-rekom',
-          'kavling-status-disewakan',
-          'kavling-status-unknown'
-        );
-        element.classList.add(className);
-        
-        if (element.tagName.toLowerCase() === 'g') {
-          element.querySelectorAll('rect, path, polygon, circle').forEach(child => {
-            child.classList.remove(
-              'kavling-status-kpr',
-              'kavling-status-stok', 
-              'kavling-status-rekom',
-              'kavling-status-disewakan',
-              'kavling-status-unknown'
-            );
-            child.classList.add(className);
-          });
-        }
-        
-        coloredCount++;
-        // VERIFIKASI: Cek apakah class benar-benar ditambahkan
-        if (kode === 'M1_177') {
-          setTimeout(() => {
-            console.log(`🔍 VERIFIKASI M1_177 setelah 100ms:`);
-            console.log(`   Classes sekarang:`, Array.from(element.classList));
-            console.log(`   Punya class ${className}?`, element.classList.contains(className));
-            
-            // Cek CSS computed style
-            const computedStyle = window.getComputedStyle(element);
-            console.log(`   Fill color:`, computedStyle.fill);
-          }, 100);
-        }
+      const className = `kavling-status-${kategori}`;
+      
+      // Hapus semua kelas status sebelumnya
+      element.classList.remove(
+        'kavling-status-kpr',
+        'kavling-status-stok', 
+        'kavling-status-rekom',
+        'kavling-status-disewakan',
+        'kavling-status-unknown'
+      );
+      
+      // Tambahkan kelas baru
+      element.classList.add(className);
+      
+      // Jika element adalah group, tambahkan ke child elements juga
+      if (element.tagName.toLowerCase() === 'g') {
+        element.querySelectorAll('rect, path, polygon, circle').forEach(child => {
+          child.classList.remove(
+            'kavling-status-kpr',
+            'kavling-status-stok', 
+            'kavling-status-rekom',
+            'kavling-status-disewakan',
+            'kavling-status-unknown'
+          );
+          child.classList.add(className);
+        });
       }
+      
+      coloredCount++;
+      
+      // LOG untuk beberapa kavling (sample)
+      if (coloredCount <= 5) {
+        console.log(`  ${kode} → ${className} (skema: "${item.skema}")`);
+      }
+      
     } else {
       notFoundCount++;
       if (notFoundCount <= 5) {
@@ -468,13 +446,23 @@ function colorizeKavling(kavlingData) {
         !el.classList.contains('kavling-status-rekom') &&
         !el.classList.contains('kavling-status-disewakan')) {
       
-      el.classList.add('kavling-status-unknown');
-      el.style.cssText = '';
+      // Hapus inline styles
+      el.style.fill = '';
+      el.style.stroke = '';
       
+      // Hapus kelas status sebelumnya
+      el.classList.remove('kavling-status-unknown');
+      
+      // Tambahkan kelas unknown
+      el.classList.add('kavling-status-unknown');
+      
+      // Jika element adalah group, tambahkan ke child elements
       if (el.tagName.toLowerCase() === 'g') {
         el.querySelectorAll('rect, path, polygon, circle').forEach(child => {
+          child.style.fill = '';
+          child.style.stroke = '';
+          child.classList.remove('kavling-status-unknown');
           child.classList.add('kavling-status-unknown');
-          child.style.cssText = '';
         });
       }
       
@@ -482,25 +470,24 @@ function colorizeKavling(kavlingData) {
     }
   });
   
-  console.log(`🎨 Selesai: ${coloredCount} kavling berwarna, ${unknownCount} putih, ${notFoundCount} tidak ditemukan`);
-   // DEBUG FINAL: Cek status M1_177 setelah coloring
-  const m1Element = document.getElementById('M1_177');
-  if (m1Element) {
-    setTimeout(() => {
-      console.log(`🔍 FINAL CHECK M1_177 (setelah 500ms):`);
-      console.log(`   Element:`, m1Element);
-      console.log(`   Classes:`, Array.from(m1Element.classList));
-      console.log(`   Is STOK?`, m1Element.classList.contains('kavling-status-stok'));
-      console.log(`   Is REKOM?`, m1Element.classList.contains('kavling-status-rekom'));
-      
-      // Force check CSS
-      const style = window.getComputedStyle(m1Element);
-      console.log(`   Computed fill:`, style.fill);
-    }, 500);
-  }
+  console.log(`✅ Selesai: ${coloredCount} kavling berwarna, ${unknownCount} putih, ${notFoundCount} tidak ditemukan`);
+  
+  // LOG hasil akhir
+  const finalCategoryCount = {};
+  allBlocksWithId.forEach(el => {
+    if (el.classList.contains('kavling-status-kpr')) finalCategoryCount.kpr = (finalCategoryCount.kpr || 0) + 1;
+    if (el.classList.contains('kavling-status-stok')) finalCategoryCount.stok = (finalCategoryCount.stok || 0) + 1;
+    if (el.classList.contains('kavling-status-rekom')) finalCategoryCount.rekom = (finalCategoryCount.rekom || 0) + 1;
+    if (el.classList.contains('kavling-status-disewakan')) finalCategoryCount.disewakan = (finalCategoryCount.disewakan || 0) + 1;
+    if (el.classList.contains('kavling-status-unknown')) finalCategoryCount.unknown = (finalCategoryCount.unknown || 0) + 1;
+  });
+  
+  console.log('🎯 Hasil akhir pewarnaan:', finalCategoryCount);
 }
 
-  // Hapus semua warna status -----------------------
+// ===============================
+// HAPUS SEMUA WARNA STATUS
+// ===============================
 function clearStatusColors() {
   // Hapus kelas warna dari semua elemen kavling
   document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]')
@@ -643,8 +630,6 @@ function resetStatusMode() {
   statusData = null;
   console.log('🔄 Mode status dinonaktifkan (warna tetap disimpan)');
 }
-
-// Ambil list blok berdasarkan kategori warna dari peta
 
 // Ambil list blok berdasarkan kategori warna dari peta - DIPERBAIKI
 function getKavlingListFromMap(type) {
@@ -868,6 +853,7 @@ function downloadAsCSV(type) {
   
   console.log(`✅ CSV untuk ${type} berhasil didownload (${window.currentDownloadList.length} data)`);
 }
+
 // Copy list ke clipboard
 function copyToClipboard() {
   if (window.currentDownloadList && window.currentDownloadList.length > 0) {
@@ -1496,10 +1482,12 @@ document.addEventListener('DOMContentLoaded', () => {
         map.innerHTML = '<div style="padding:40px;text-align:center;color:#666">Gagal memuat peta. Silakan refresh halaman.</div>';
       });
   }
-// ===============================
-// DARK MODE TOGGLE
-// ===============================
-document.getElementById('darkModeToggle')?.addEventListener('click', toggleDarkMode);
+  
+  // ===============================
+  // DARK MODE TOGGLE
+  // ===============================
+  document.getElementById('darkModeToggle')?.addEventListener('click', toggleDarkMode);
+  
   // ===============================
   // TOMBOL STATUS KAVLING
   // ===============================
@@ -1520,9 +1508,6 @@ document.getElementById('darkModeToggle')?.addEventListener('click', toggleDarkM
     resetStatusMode();
   });
   
-  // Event listener untuk tombol download di panel status (akan di-attach ulang nanti)
-  // Dipindahkan ke fungsi updateStatusPanel
-
   // ===============================
   // MODAL SERTIFIKAT
   // ===============================
