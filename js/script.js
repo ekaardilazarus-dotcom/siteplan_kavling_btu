@@ -1736,3 +1736,165 @@ document.addEventListener('DOMContentLoaded', () => {
   // Terapkan dark mode saat load
   applyDarkMode();
 });
+ // ===============================
+  // FUNGSI TESTING
+  // ===============================
+  window.testCertificateAPI = async function(type, value) {
+    const testType = type || 'shm';
+    const testValue = value || 'B.00350';
+
+    console.log(`🧪 Testing API Sertifikat: ${testType} = ${testValue}`);
+
+    const url = `${CERT_API_URL}?certificate=${encodeURIComponent(testValue)}&type=${testType}&_t=${Date.now()}`;
+
+    console.log('URL:', url);
+
+    try {
+      const res = await fetch(url);
+      console.log('Status:', res.status, res.statusText);
+
+      const text = await res.text();
+      console.log('Raw response:', text);
+
+      try {
+        const json = JSON.parse(text);
+        console.log('Parsed JSON:', json);
+        return json;
+      } catch (e) {
+        console.error('Gagal parse JSON:', e);
+        return text;
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+      return null;
+    }
+  };
+
+  // ===============================
+  // FUNGSI DEBUG API
+  // ===============================
+
+  // Fungsi untuk test koneksi API
+  window.testStatusAPI = async function() {
+    console.log('🧪 Testing Status API Connection...');
+
+    const testUrls = [
+      `${API_URL}?action=status`,
+      `${API_URL}?action=status&callback=test`,
+      'https://script.google.com/macros/s/AKfycbwbBmXFoTtWa0XxK-ogxueDUkjzAKzhE7sPQaDMQvTIy7_FhA-DGMBJyYzzTyUVXw/exec?action=status'
+    ];
+
+    for (let i = 0; i < testUrls.length; i++) {
+      const url = testUrls[i];
+      console.log(`\n🔗 Testing URL ${i+1}: ${url}`);
+
+      try {
+        const startTime = Date.now();
+        const response = await fetch(url + '&_t=' + Date.now());
+        const endTime = Date.now();
+
+        console.log(`⏱️ Response time: ${endTime - startTime}ms`);
+        console.log(`📊 Status: ${response.status} ${response.statusText}`);
+
+        const text = await response.text();
+        console.log(`📄 Response length: ${text.length} characters`);
+
+        // Coba parse JSON
+        try {
+          const json = JSON.parse(text);
+          console.log('✅ Valid JSON:', json);
+
+          // Tampilkan summary jika ada
+          if (json.summary) {
+            console.log('📈 Summary:', json.summary);
+          }
+          if (json.data && Array.isArray(json.data)) {
+            console.log(`📊 Data count: ${json.data.length}`);
+            if (json.data.length > 0) {
+              console.log('📝 Sample data:', json.data[0]);
+            }
+          }
+
+        } catch (e) {
+          console.log('⚠️ Not valid JSON, first 200 chars:', text.substring(0, 200));
+        }
+
+      } catch (error) {
+        console.log(`❌ Error: ${error.message}`);
+      }
+    }
+
+    console.log('\n📋 TEST COMPLETE');
+  };
+
+  // Fungsi untuk cek data langsung di Console
+  window.checkStatusData = function() {
+    console.log('🔍 Checking statusData:', statusData);
+    console.log('🔍 Is Status Mode:', isStatusMode);
+
+    if (statusData) {
+      console.log('📊 Data structure:', {
+        status: statusData.status,
+        totalRecords: statusData.totalRecords,
+        summary: statusData.summary,
+        dataLength: statusData.data ? statusData.data.length : 0
+      });
+
+      // Hitung kategori manual
+      if (statusData.data && Array.isArray(statusData.data)) {
+        const counts = {
+          kpr: 0,
+          stok: 0,
+          rekom: 0,
+          disewakan: 0,
+          lainnya: 0
+        };
+
+        statusData.data.forEach(item => {
+          counts[item.kategori] = (counts[item.kategori] || 0) + 1;
+        });
+
+        console.log('🧮 Manual counts:', counts);
+      }
+    }
+  };
+
+  // ===============================
+  // EVENT LISTENER UNTUK POPUP
+  // ===============================
+
+  // Event listener untuk klik di luar popup - MODIFIKASI
+  document.addEventListener('click', function(e) {
+    const popup = document.querySelector('.kavling-popup');
+    const modal = document.getElementById('certificateModal');
+    const statusPanel = document.getElementById('statusPanel');
+
+    // JANGAN tutup panel status saat klik di luar
+    if (statusPanel && statusPanel.style.display === 'block') {
+      // Biarkan panel status tetap terbuka
+      return;
+    }
+
+    // Untuk kavling popup
+    if (popup && popup.style.display === 'flex') {
+      const isCloseBtn = e.target.classList.contains('close-kavling-popup') || 
+                         e.target.classList.contains('kavling-close-btn');
+
+      // HANYA tutup jika klik tombol close
+      if (isCloseBtn) {
+        document.body.removeChild(popup);
+      }
+    }
+
+    // Untuk modal sertifikat - HANYA tutup via tombol
+    if (modal && modal.style.display === 'flex') {
+      const isCloseBtn = e.target.classList.contains('close-modal') ||
+                         e.target.id === 'closeModal';
+
+      if (isCloseBtn) {
+        modal.style.display = 'none';
+      }
+      // Abaikan klik di luar - jangan tutup
+    }
+  });
+}); // PENUTUP UNTUK DOMContentLoaded
