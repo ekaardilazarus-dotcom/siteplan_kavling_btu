@@ -124,19 +124,19 @@
         <div class="results-column">
           <div class="results-header">
             <h4>Hasil Pencarian</h4>
-            <button id="clearAll" class="clear-results-btn">
-              <span>🗑️</span> Bersihkan
-            </button>
+            <div style="display: flex; gap: 8px;">
+              <button id="downloadExcel" class="clear-results-btn" style="background: #2e7d32; display: none;">
+                <span>📊</span> Excel
+              </button>
+              <button id="clearAll" class="clear-results-btn">
+                <span>🗑️</span> Bersihkan
+              </button>
+            </div>
           </div>
           <div id="certificateResults" class="compact-results-box">
             <p class="placeholder">
               Hasil pencarian akan ditampilkan di sini...
             </p>
-          </div>
-          <div class="results-footer">
-            <button id="downloadExcel" class="compact-search-btn" style="background: #2e7d32; width: auto; padding: 10px 20px; display: none;">
-              <span>📊</span> Download Excel
-            </button>
           </div>
         </div>
       </div>
