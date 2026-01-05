@@ -382,11 +382,20 @@ function colorizeKavling(kavlingData) {
     const kode = item.kode.trim().toUpperCase();
     const kategori = item.kategori || 'unknown';
 
+    // Coba cari elemen dengan ID persis
     let element = document.getElementById(kode);
 
     if (!element) {
-      const elements = document.querySelectorAll(`[id*="${kode}"]`);
-      if (elements.length > 0) element = elements[0];
+      // PERBAIKAN: Normalisasi format kode (Contoh: UJ22_11 -> UJ22-11 jika di SVG pakai dash)
+      const normalizedKode = kode.replace(/[-_]/g, '');
+      const allElements = document.querySelectorAll('[id]');
+      for (let i = 0; i < allElements.length; i++) {
+        const normalizedId = allElements[i].id.toUpperCase().replace(/[-_]/g, '');
+        if (normalizedId === normalizedKode) {
+          element = allElements[i];
+          break;
+        }
+      }
     }
 
     if (element) {
