@@ -5,7 +5,10 @@
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbzx4wkSSkg5HthYkRzqMQ7eITxqYf0DUJhjTdBEsO3PnrxFJ2eCtIuIbDAGIo3saYz9/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbyEPaUBAg2n3732mTnukOnoxA6eN6eTEjso929InZZEbIqjycGzb8zuSJdLmyfaFEJf3w/exec';
-
+// 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
+const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
+//------------------- pembeda saja -----------------------
+//----
 let kavlingIndex = [];
 let originalViewBox = null;
 let viewBoxState = null;
@@ -1678,7 +1681,63 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('certificateModal').style.display = 'none';
     }
   });
+// ===============================
+  // MODAL BARU: PENCARIAN KAVLING (Database Kavling)
+  // ===============================
 
+  // 🆕 Buka modal kavling
+  document.getElementById('searchByKavling')?.addEventListener('click', () => {
+    document.getElementById('kavlingModal').style.display = 'flex';
+  });
+
+  // 🆕 Tutup modal kavling
+  document.querySelector('.close-kavling-modal')?.addEventListener('click', () => {
+    document.getElementById('kavlingModal').style.display = 'none';
+  });
+
+  document.getElementById('closeKavlingModal')?.addEventListener('click', () => {
+    document.getElementById('kavlingModal').style.display = 'none';
+  });
+
+  // 🆕 Pencarian Nama USER (Kolom H)
+  document.getElementById('searchNamaUser')?.addEventListener('click', async () => {
+    const namaUser = document.getElementById('kavlingNamaUser').value.trim();
+    if (!namaUser) {
+      alert('Mohon masukkan Nama USER');
+      return;
+    }
+    await searchKavling(namaUser, 'kolom_h', 'Nama USER');
+  });
+
+  // 🆕 Pencarian Status Kavling
+  document.getElementById('searchStatus')?.addEventListener('click', async () => {
+    const status = document.getElementById('kavlingStatus').value;
+    if (!status) {
+      alert('Mohon pilih status kavling');
+      return;
+    }
+    
+    // Get data dari statusData yang sudah diambil sebelumnya
+    if (statusData && statusData.data) {
+      const filteredData = statusData.data.filter(item => item.kategori === status);
+      displayKavlingResults(filteredData, status);
+    } else {
+      // Fetch data status dulu
+      const data = await fetchKavlingStatus();
+      if (data && data.data) {
+        const filteredData = data.data.filter(item => item.kategori === status);
+        displayKavlingResults(filteredData, status);
+      }
+    }
+  });
+
+  // 🆕 ENTER KEY SUPPORT untuk Nama USER
+  document.getElementById('kavlingNamaUser')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('searchNamaUser').click();
+    }
+  });
   // Tombol bersihkan
   document.getElementById('clearAll')?.addEventListener('click', () => {
     document.querySelectorAll('.compact-input').forEach(input => input.value = '');
@@ -1714,21 +1773,131 @@ document.addEventListener('DOMContentLoaded', () => {
     const certNumber = document.getElementById('certNamaSHM').value.trim();
     await searchCertificateNew(certNumber, 'nama_shm', 'Nama SHM');
   });
-// Pencarian Nama USER (Kolom H)
-document.getElementById('searchKolomH')?.addEventListener('click', async () => {
-  const namaUser = document.getElementById('certKolomH').value.trim();
-  if (!namaUser) {
-    alert('Mohon masukkan Nama USER');
-    return;
-  }
-  await searchCertificateNew(namaUser, 'kolom_h', 'Nama USER');
-});
   // Nama Pemilik Lama / EX
   document.getElementById('searchExOwner')?.addEventListener('click', async () => {
     const certNumber = document.getElementById('certExOwner').value.trim();
     await searchCertificateNew(certNumber, 'ex_owner', 'Nama Pemilik Lama / EX');
   });
+// ===============================
+// FUNGSI PENCARIAN KAVLING (Database Kavling)
+// ===============================
+async function searchKavling(searchTerm, searchType, displayName) {
+  try {
+    const resultsBox = document.getElementById('kavlingResults');
+    resultsBox.innerHTML = `
+      <div class="cert-loading">
+        <div class="cert-loading-spinner"></div>
+        <div style="color:#666;font-size:14px;margin-top:10px;">
+          Mencari ${displayName}: <strong>${searchTerm}</strong>
+        </div>
+      </div>
+    `;
+// ✅ GUNAKAN API_URL (database kavling)
+    const url = `${KAVLING_API_URL}?certificate=${encodeURIComponent(searchTerm)}&type=${searchType}&_t=${Date.now()}`;
+    console.log('🌐 Mengakses API Kavling:', url);
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    console.log('📦 Response API Kavling:', data);
 
+    if (data.status === 'success' && data.results && data.results.length > 0) {
+      let html = `<div class="cert-total-found">
+        ✅ Ditemukan: <strong>${data.totalFound}</strong> hasil untuk 
+        <strong>${displayName}: "${searchTerm}"</strong>
+      </div>`;
+
+      data.results.forEach((result, index) => {
+        html += `
+          <div class="cert-result-item">
+            <div style="font-weight:600; margin-bottom:8px; color:#2196f3; font-size:14px;">
+              <span style="background:#e3f2fd; padding:2px 8px; border-radius:4px; margin-right:8px;">${index + 1}</span>
+              ${searchType === 'kolom_h' ? 'Nama USER' : 'Data'}: <strong>${result.nomor}</strong>
+            </div>
+            
+            <div style="font-size:12px; color:#999; margin-bottom:10px;">
+              📍 <strong>Baris database:</strong> ${result.row}
+            </div>`;
+
+        if (result.data && result.data.trim() !== '') {
+          html += `
+            <div style="font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
+                       font-size:12px; line-height:1.5; white-space:pre-wrap; 
+                       background:#f9f9f9; padding:12px; border-radius:6px; 
+                       border:1px dashed #ddd; margin-top:8px;">
+              ${result.data.trim()}
+            </div>`;
+        }
+
+        html += `</div>`;
+      });
+
+      resultsBox.innerHTML = html;
+    } else {
+      resultsBox.innerHTML = `
+        <div style="padding:30px; text-align:center; color:#e65100;">
+          <div style="font-size:18px; margin-bottom:15px; font-weight:600;">
+            🔍 ${displayName} tidak ditemukan
+          </div>
+          <div style="font-size:14px; color:#757575;">
+            ${displayName}: <strong>${searchTerm}</strong>
+          </div>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('❌ Error search kavling:', error);
+    document.getElementById('kavlingResults').innerHTML = `
+      <div style="padding:20px;text-align:center;color:#c62828;">
+        <div style="font-size:16px;margin-bottom:10px;">❌ Gagal mengambil data</div>
+        <div style="font-size:14px;">Error: ${error.message}</div>
+      </div>
+    `;
+  }
+}
+
+// ===============================
+// FUNGSI DISPLAY HASIL KAVLING (untuk Status)
+// ===============================
+function displayKavlingResults(data, statusType) {
+  const resultsBox = document.getElementById('kavlingResults');
+  
+  if (!data || data.length === 0) {
+    resultsBox.innerHTML = `
+      <div style="padding:30px; text-align:center; color:#666;">
+        Tidak ditemukan data dengan status "${statusType}"
+      </div>
+    `;
+    return;
+  }
+
+  let html = `<div class="cert-total-found">
+    ✅ Ditemukan: <strong>${data.length}</strong> kavling dengan status: 
+    <strong>${statusType.toUpperCase()}</strong>
+  </div>`;
+
+  data.forEach((item, index) => {
+    html += `
+      <div class="cert-result-item">
+        <div style="font-weight:600; margin-bottom:8px; color:#2196f3; font-size:14px;">
+          <span style="background:#e3f2fd; padding:2px 8px; border-radius:4px; margin-right:8px;">${index + 1}</span>
+          Kavling: <strong>${item.kode}</strong>
+        </div>
+        
+        <div style="font-size:13px; color:#666; margin-bottom:5px;">
+          📋 Skema: ${item.skema || '-'}
+        </div>
+        
+        ${item.tanggal ? `
+        <div style="font-size:13px; color:#666; margin-bottom:10px;">
+          📅 Tanggal: ${item.tanggal}
+        </div>` : ''}
+      </div>
+    `;
+  });
+
+  resultsBox.innerHTML = html;
+}
   // ===============================
   // ENTER KEY SUPPORT UNTUK SEMUA INPUT SERTIFIKAT
   // ===============================
@@ -1759,13 +1928,6 @@ document.getElementById('searchKolomH')?.addEventListener('click', async () => {
       document.getElementById('searchNamaSHM').click();
     }
   });
-// ENTER KEY SUPPORT untuk Kolom H
-document.getElementById('certKolomH')?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    document.getElementById('searchKolomH').click();
-  }
-});
   // ENTER KEY SUPPORT untuk Nama Pemilik Lama
   document.getElementById('certExOwner')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
