@@ -1133,7 +1133,7 @@ function toggleDownloadExcelButton() {
   const resultsBox = document.getElementById('certificateResults');
   const hasResults = resultsBox.querySelectorAll('.cert-result-item').length > 0;
   if (btnDownloadExcel) {
-    btnDownloadExcel.style.display = hasResults ? 'flex' : 'none';
+    btnDownloadExcel.style.display = hasResults ? 'inline-flex' : 'none';
   }
 }
 
