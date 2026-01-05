@@ -1714,10 +1714,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const certNumber = document.getElementById('certNamaSHM').value.trim();
     await searchCertificateNew(certNumber, 'nama_shm', 'Nama SHM');
   });
-// Pencarian Kolom H Update Nama User
+// Pencarian Nama USER (Kolom H)
 document.getElementById('searchKolomH')?.addEventListener('click', async () => {
-  const certNumber = document.getElementById('certKolomH').value.trim();
-  await searchCertificateNew(certNumber, 'kolom_h', 'Pencarian Kolom H');
+  const namaUser = document.getElementById('certKolomH').value.trim();
+  if (!namaUser) {
+    alert('Mohon masukkan Nama USER');
+    return;
+  }
+  await searchCertificateNew(namaUser, 'kolom_h', 'Nama USER');
 });
   // Nama Pemilik Lama / EX
   document.getElementById('searchExOwner')?.addEventListener('click', async () => {
