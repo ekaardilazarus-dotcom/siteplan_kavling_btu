@@ -1168,163 +1168,163 @@ h1 {
 /* =============================== */
 @media (max-width: 1024px) {
   #search-container {
-    width: 320px;
-    right: 20px;
+    width: 300px;
+    right: 15px;
+    top: 15px;
   }
   
   #button-container {
-    width: 180px;
+    width: 170px;
+    left: 15px;
+    top: 15px;
   }
   
   #status-container {
-    right: 360px;
-    width: 150px;
+    right: 330px;
+    width: 140px;
+    top: 15px;
   }
   
   .status-panel {
-    width: 300px;
-    right: 15px;
-  }
-  
-  /* Responsive untuk layout kompak modal */
-  .modal-compact-layout {
-    flex-direction: column;
-    gap: 20px;
-    max-height: none;
-  }
-  
-  .input-column {
-    flex: none;
-    border-right: none;
-    border-bottom: 1px solid #e0e0e0;
-    padding-right: 0;
-    padding-bottom: 15px;
-    width: 100%;
-    max-height: 50vh;
-  }
-  
-  .results-column {
-    width: 100%;
-    min-height: 400px;
-  }
-  
-  .compact-results-box {
-    min-height: 350px;
-    max-height: 50vh;
+    width: 280px;
+    right: 10px;
+    top: 85px;
   }
 }
 
 @media (max-width: 768px) {
-  #search-container {
-    position: static;
-    width: calc(100% - 40px);
-    margin: 20px auto;
-    max-width: 400px;
-    order: 2;
+  body {
+    overflow-x: hidden;
   }
-  
-  #button-container {
-    position: static;
-    width: calc(100% - 40px);
-    margin: 20px auto;
-    max-width: 400px;
-    order: 1;
-  }
-  
-  #status-container {
-    position: static;
-    width: calc(100% - 40px);
-    margin: 10px auto;
-    order: 3;
-  }
-  
+
   h1 {
-    font-size: 22px;
-    margin: 15px;
+    font-size: 18px;
+    margin: 10px;
+    padding: 0 10px;
   }
-  
+
+  /* Fixed containers positioning for mobile */
+  #button-container {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: calc(100% - 30px);
+    margin: 10px auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  #button-container button {
+    margin: 0;
+    font-size: 11px;
+    padding: 8px 5px;
+  }
+
+  #darkModeToggle {
+    grid-column: span 2;
+  }
+
+  #search-container {
+    position: relative;
+    top: 0;
+    right: 0;
+    width: calc(100% - 30px);
+    margin: 10px auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  #status-container {
+    position: relative;
+    top: 0;
+    right: 0;
+    width: calc(100% - 30px);
+    margin: 10px auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
   #map {
-    margin-top: 0;
-    height: 60vh;
+    height: 50vh;
+    margin: 10px;
+    width: calc(100% - 20px);
   }
-  
-  .modal-body {
+
+  /* Modal responsiveness */
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+
+  .modal-compact-layout {
     flex-direction: column;
+    padding: 10px;
+    overflow-y: auto;
   }
-  
-  .cert-column {
-    min-width: 100%;
+
+  .input-column {
+    flex: none;
+    width: 100%;
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    max-height: none;
   }
-  
-  /* Panel status fullscreen di mobile */
+
+  .results-column {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    margin-top: 15px;
+  }
+
+  .compact-results-box {
+    min-height: 250px;
+  }
+
+  /* Status Panel for Mobile */
   .status-panel {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     width: 90%;
-    max-width: 350px;
+    right: 5%;
+    left: 5%;
+    top: 10%;
     max-height: 80vh;
   }
-  
-  .status-panel-body {
-    max-height: 60vh;
+
+  /* Popup responsiveness */
+  .kavling-popup-content {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .kavling-popup-body {
+    padding: 15px;
+  }
+
+  .download-list-container {
+    max-height: 300px;
   }
 }
 
 @media (max-width: 480px) {
+  #button-container {
+    grid-template-columns: 1fr;
+  }
+  
+  #darkModeToggle {
+    grid-column: span 1;
+  }
+
+  .modal-header h3 {
+    font-size: 14px;
+  }
+
+  .status-btn span:last-child,
   .cert-btn span:last-child {
-    display: none;
+    font-size: 11px;
   }
-  
-  .cert-btn::after {
-    content: '📋';
-    font-size: 14px;
-  }
-  
-  .modal-footer {
-    flex-direction: column;
-  }
-  
-  .modal-footer button {
-    width: 100%;
-  }
-  
-  .status-btn span:last-child {
-    display: none;
-  }
-  
-  .status-btn::after {
-    content: '🎨';
-    font-size: 14px;
-  }
-  /* Responsive untuk mobile */
-@media (max-width: 768px) {
-  #statusPanel {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-height: 70vh;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
-  }
-  
-  .status-panel-body.minimized {
-    max-height: 100px;
-  }
-  
-  .status-panel-body {
-    transition: max-height 0.3s ease;
-  }
-  
-  .status-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-}
 }
 
 /* =============================== */
