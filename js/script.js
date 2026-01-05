@@ -10,6 +10,7 @@ const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
 //------------------- pembeda saja -----------------------
 //----
 let kavlingIndex = [];
+let currentKavlingResults = [];
 let originalViewBox = null;
 let viewBoxState = null;
 let lastFocusedEl = null;
@@ -1553,7 +1554,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('search');
   const resultsBox = document.getElementById('search-results');
   const resetBtn = document.getElementById('resetZoom');
+// Di dalam DOMContentLoaded, tambahkan:
+// Event listener untuk download Excel kavling
+document.getElementById('downloadExcelKavling')?.addEventListener('click', generateExcelFromKavlingResults);
 
+// Tombol bersihkan hasil kavling
+document.getElementById('clearKavlingResults')?.addEventListener('click', () => {
+  document.getElementById('kavlingNamaUser').value = '';
+  document.getElementById('kavlingStatus').value = '';
+  document.getElementById('kavlingResults').innerHTML = 
+    '<p class="placeholder" style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px 20px; color: #757575; font-style: italic;">Hasil pencarian kavling akan ditampilkan di sini...</p>';
+  
+  // Sembunyikan tombol Excel
+  document.getElementById('downloadExcelKavling').style.display = 'none';
+  currentKavlingResults = [];
+});
   searchInput.disabled = true;
 
   // ===============================
@@ -1716,7 +1731,13 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Mohon pilih status kavling');
       return;
     }
-    
+ // Disable tombol selama proses
+  const statusBtn = document.getElementById('searchStatus');
+  const originalText = statusBtn.innerHTML;
+  statusBtn.disabled = true;
+  statusBtn.innerHTML = '<span>⏳</span> Memproses...';
+  
+  try {
     // Get data dari statusData yang sudah diambil sebelumnya
     if (statusData && statusData.data) {
       const filteredData = statusData.data.filter(item => item.kategori === status);
@@ -1729,7 +1750,19 @@ document.addEventListener('DOMContentLoaded', () => {
         displayKavlingResults(filteredData, status);
       }
     }
-  });
+  } catch (error) {
+    console.error('Error pencarian status:', error);
+    document.getElementById('kavlingResults').innerHTML = `
+      <div style="padding:20px;text-align:center;color:#c62828;">
+        <div style="font-size:16px;margin-bottom:10px;">❌ Gagal memproses data</div>
+      </div>
+    `;
+  } finally {
+    // Enable tombol kembali
+    statusBtn.disabled = false;
+    statusBtn.innerHTML = originalText;
+  }
+});
 
   // 🆕 ENTER KEY SUPPORT untuk Nama USER
   document.getElementById('kavlingNamaUser')?.addEventListener('keydown', (e) => {
@@ -1784,11 +1817,19 @@ document.addEventListener('DOMContentLoaded', () => {
 async function searchKavling(searchTerm, searchType, displayName) {
   try {
     const resultsBox = document.getElementById('kavlingResults');
+    const excelBtn = document.getElementById('downloadExcelKavling');
+    
+    // Reset data sebelumnya
+    currentKavlingResults = [];
+    excelBtn.style.display = 'none';
+    //     ---
+    
     resultsBox.innerHTML = `
       <div class="cert-loading">
         <div class="cert-loading-spinner"></div>
         <div style="color:#666;font-size:14px;margin-top:10px;">
           Mencari ${displayName}: <strong>${searchTerm}</strong>
+          <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
         </div>
       </div>
     `;
@@ -1802,6 +1843,20 @@ async function searchKavling(searchTerm, searchType, displayName) {
     console.log('📦 Response API Kavling:', data);
 
     if (data.status === 'success' && data.results && data.results.length > 0) {
+
+      // Simpan data untuk Excel
+      currentKavlingResults = data.results.map(result => ({
+        nomor: result.nomor,
+        row: result.row,
+        nama: result.nama,
+        data: result.data || '',
+        searchTerm: searchTerm,
+        searchType: displayName
+      }));
+      
+      // Tampilkan tombol Excel
+      excelBtn.style.display = 'inline-flex';
+      
       let html = `<div class="cert-total-found">
         ✅ Ditemukan: <strong>${data.totalFound}</strong> hasil untuk 
         <strong>${displayName}: "${searchTerm}"</strong>
@@ -1861,42 +1916,181 @@ async function searchKavling(searchTerm, searchType, displayName) {
 // ===============================
 function displayKavlingResults(data, statusType) {
   const resultsBox = document.getElementById('kavlingResults');
+  const excelBtn = document.getElementById('downloadExcelKavling');
+
+  // Reset
+  currentKavlingResults = [];
+  excelBtn.style.display = 'none';
   
-  if (!data || data.length === 0) {
-    resultsBox.innerHTML = `
-      <div style="padding:30px; text-align:center; color:#666;">
-        Tidak ditemukan data dengan status "${statusType}"
+  // Tampilkan loading dulu
+  resultsBox.innerHTML = `
+    <div class="cert-loading">
+      <div class="cert-loading-spinner"></div>
+      <div style="color:#666;font-size:14px;margin-top:10px;">
+        Memproses data status: <strong>${statusType.toUpperCase()}</strong>
+        <br><span style="font-size:12px;color:#999;">Mohon tunggu...</span>
       </div>
-    `;
-    return;
+    </div>
+  `;
+  
+  // Simulasikan delay processing
+  setTimeout(() => {
+    if (!data || data.length === 0) {
+      resultsBox.innerHTML = `
+        <div style="padding:30px; text-align:center; color:#666;">
+          Tidak ditemukan data dengan status "${statusType}"
+        </div>
+      `;
+      return;
+    }
+    
+    // Simpan data untuk Excel
+    currentKavlingResults = data.map(item => ({
+      kode: item.kode,
+      skema: item.skema || '',
+      tanggal: item.tanggal || '',
+      kategori: item.kategori || '',
+      searchTerm: statusType,
+      searchType: `Status ${statusType.toUpperCase()}`
+    }));
+    
+    // Tampilkan tombol Excel
+    excelBtn.style.display = 'inline-flex';
+
+ let html = `<div class="cert-total-found">
+      ✅ Ditemukan: <strong>${data.length}</strong> kavling dengan status: 
+      <strong>${statusType.toUpperCase()}</strong>
+    </div>`;
+
+    data.forEach((item, index) => {
+      html += `
+        <div class="cert-result-item">
+          <div style="font-weight:600; margin-bottom:8px; color:#2196f3; font-size:14px;">
+            <span style="background:#e3f2fd; padding:2px 8px; border-radius:4px; margin-right:8px;">${index + 1}</span>
+            Kavling: <strong>${item.kode}</strong>
+          </div>
+          
+          <div style="font-size:13px; color:#666; margin-bottom:5px;">
+            📋 Skema: ${item.skema || '-'}
+          </div>
+          
+          ${item.tanggal ? `
+          <div style="font-size:13px; color:#666; margin-bottom:10px;">
+            📅 Tanggal: ${item.tanggal}
+          </div>` : ''}
+        </div>
+      `;
+    });
+
+    resultsBox.innerHTML = html;
+  }, 500); // Delay 0.5 detik untuk efek loading
+}
+
+  // ===============================
+// FUNGSI GENERATE EXCEL DARI HASIL KAVLING
+// ===============================
+async function generateExcelFromKavlingResults() {
+  try {
+    if (typeof XLSX === 'undefined') {
+      alert('Library Excel belum dimuat. Silakan tunggu sebentar atau muat ulang halaman.');
+      return;
+    }
+    
+    if (currentKavlingResults.length === 0) {
+      alert('Tidak ada data untuk di-download.');
+      return;
+    }
+    
+    const excelBtn = document.getElementById('downloadExcelKavling');
+    excelBtn.disabled = true;
+    const originalHTML = excelBtn.innerHTML;
+    excelBtn.innerHTML = '<span>⏳</span>...';
+    
+    const finalData = [];
+    
+    // Format data untuk Excel
+    if (currentKavlingResults[0]?.kode) {
+      // Format untuk data status kavling
+      currentKavlingResults.forEach((item, index) => {
+        finalData.push({
+          'No': index + 1,
+          'Kode Kavling': item.kode || '',
+          'Skema': item.skema || '',
+          'Tanggal': item.tanggal || '',
+          'Status': item.kategori || '',
+          'Keterangan': ''
+        });
+      });
+    } else {
+      // Format untuk data pencarian kolom H
+      currentKavlingResults.forEach((item, index) => {
+        // Parse data jika ada
+        let parsedData = {};
+        if (item.data && item.data.trim() !== '') {
+          const lines = item.data.split('\n');
+          lines.forEach(line => {
+            if (line.includes('=')) {
+              const parts = line.split('=');
+              const key = parts[0].trim();
+              const val = parts.slice(1).join('=').trim();
+              if (key) parsedData[key] = val;
+            }
+          });
+        }
+        
+        finalData.push({
+          'No': index + 1,
+          'Nama USER': item.nomor || '',
+          'Baris Database': item.row || '',
+          'Nama SHM': item.nama || '',
+          'Kavling': parsedData['Kavling'] || '',
+          'Pemohon': parsedData['Pemohon'] || '',
+          'Tipe': parsedData['Tipe'] || '',
+          'Pembiayaan': parsedData['Pembiayaan'] || '',
+          'Penjualan': parsedData['Penjualan'] || '',
+          'Tgl HO': parsedData['Tgl HO'] || '',
+          'SGB': parsedData['SGB'] || '',
+          'SHM': parsedData['SHM'] || '',
+          'NAMA SHM': parsedData['NAMA SHM'] || '',
+          'Luas': parsedData['Luas'] || '',
+          'Ref Induk': parsedData['Ref Induk'] || '',
+          'Induk': parsedData['Induk'] || '',
+          'Tgl Mutasi': parsedData['Tgl Mutasi'] || '',
+          'Penerima': parsedData['Penerima'] || '',
+          'Proses': parsedData['Proses'] || '',
+          'Keterangan': ''
+        });
+      });
+    }
+    
+    const worksheet = XLSX.utils.json_to_sheet(finalData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Kavling");
+    
+    // Generate nama file
+    let fileName = '';
+    if (currentKavlingResults[0]?.searchType) {
+      const searchType = currentKavlingResults[0].searchType.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+      const searchTerm = currentKavlingResults[0].searchTerm || '';
+      fileName = `kavling_${searchType}_${searchTerm}_${new Date().toISOString().slice(0,10)}.xlsx`;
+    } else {
+      fileName = `kavling_export_${new Date().getTime()}.xlsx`;
+    }
+    
+    XLSX.writeFile(workbook, fileName);
+    
+    excelBtn.disabled = false;
+    excelBtn.innerHTML = originalHTML;
+    
+    console.log(`✅ Excel kavling berhasil didownload (${currentKavlingResults.length} data)`);
+    
+  } catch (error) {
+    console.error('Excel kavling error:', error);
+    const excelBtn = document.getElementById('downloadExcelKavling');
+    excelBtn.disabled = false;
+    excelBtn.innerHTML = '<span>📊</span> Excel';
+    alert('Gagal membuat file Excel. Error: ' + error.message);
   }
-
-  let html = `<div class="cert-total-found">
-    ✅ Ditemukan: <strong>${data.length}</strong> kavling dengan status: 
-    <strong>${statusType.toUpperCase()}</strong>
-  </div>`;
-
-  data.forEach((item, index) => {
-    html += `
-      <div class="cert-result-item">
-        <div style="font-weight:600; margin-bottom:8px; color:#2196f3; font-size:14px;">
-          <span style="background:#e3f2fd; padding:2px 8px; border-radius:4px; margin-right:8px;">${index + 1}</span>
-          Kavling: <strong>${item.kode}</strong>
-        </div>
-        
-        <div style="font-size:13px; color:#666; margin-bottom:5px;">
-          📋 Skema: ${item.skema || '-'}
-        </div>
-        
-        ${item.tanggal ? `
-        <div style="font-size:13px; color:#666; margin-bottom:10px;">
-          📅 Tanggal: ${item.tanggal}
-        </div>` : ''}
-      </div>
-    `;
-  });
-
-  resultsBox.innerHTML = html;
 }
   // ===============================
   // ENTER KEY SUPPORT UNTUK SEMUA INPUT SERTIFIKAT
