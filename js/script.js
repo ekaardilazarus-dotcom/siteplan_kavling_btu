@@ -1209,7 +1209,26 @@ async function generateExcelFromResults() {
     const worksheet = XLSX.utils.json_to_sheet(finalData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
-    XLSX.writeFile(workbook, `btu_export_${new Date().getTime()}.xlsx`);
+    
+    // Simpan file dengan nama dinamis berdasarkan hasil pencarian
+    const resultsBox = document.getElementById('certificateResults');
+    const totalFoundEl = resultsBox.querySelector('.cert-total-found');
+    let fileName = `btu_export_${new Date().getTime()}.xlsx`;
+    
+    if (totalFoundEl) {
+      // Ambil teks pencarian dan jumlah hasil (contoh: "3 hasil untuk Nama SHM: UMANG GIANTO")
+      let cleanTitle = totalFoundEl.innerText
+        .replace('✅', '')
+        .replace('Ditemukan:', 'Ditemukan')
+        .replace(/["']/g, '')
+        .trim();
+      
+      // Ganti karakter yang tidak aman untuk nama file (spasi, dsb menjadi underscore)
+      const safeName = cleanTitle.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_');
+      fileName = `${safeName}.xlsx`;
+    }
+
+    XLSX.writeFile(workbook, fileName);
     
     btnDownloadExcel.disabled = false;
     btnDownloadExcel.innerHTML = originalHTML;
