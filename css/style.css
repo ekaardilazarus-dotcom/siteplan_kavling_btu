@@ -1,766 +1,222 @@
 /* =============================== */
 /* DASAR */
 /* =============================== */
-body, .kavling-popup-body, .modal-body, .results-box, .compact-results-box {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  background: #f5f5f5;
+:root {
+  --bg-soft: #f0f4f8;
+  --bg-white: #ffffff;
+  --primary-color: #2c3e50;
+  --accent-color: #3498db;
+  --sidebar-bg: #ffffff;
+  --header-bg: #2c3e50;
+  --text-main: #2c3e50;
+  --border-color: #d1d9e6;
+  --shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
-h1 {
-  margin: 20px;
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  background: var(--bg-soft);
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* =============================== */
+/* LAYOUT STRUKTUR */
+/* =============================== */
+.main-header {
+  background: var(--header-bg);
+  color: white;
+  padding: 15px 20px;
   text-align: center;
-  color: #333;
-  font-size: 28px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+
+.main-header h1 {
+  margin: 0;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar Styling */
+.sidebar-left, .sidebar-right {
+  background: var(--sidebar-bg);
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+
+.sidebar-left {
+  flex: 0 0 calc(100% / 6); /* 1:4:1 ratio approx (1/6 = 16.6%) */
+}
+
+.sidebar-right {
+  flex: 0 0 calc(100% / 6);
+  border-right: none;
+  border-left: 1px solid var(--border-color);
+}
+
+.main-content {
+  flex: 1;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-content h3 {
+  font-size: 14px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--bg-soft);
+  padding-bottom: 8px;
 }
 
 /* =============================== */
 /* MAP CONTAINER */
 /* =============================== */
 #map {
-  width: 100%;
-  height: 75vh;
-  overflow: hidden;
-  cursor: grab;
-  border: 1px solid #ddd;
-  margin-top: 16px;
-  position: relative;
+  flex: 1;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-#map:active {
-  cursor: grabbing;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 #map svg {
   width: 100%;
   height: 100%;
   display: block;
-  will-change: transform;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* Loading state */
-.loading #map {
-  background: #f5f5f5 url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="%23ddd" stroke-width="8"/></svg>') center no-repeat;
-  background-size: 50px;
 }
 
 /* =============================== */
-/* INTERAKSI KAVLING */
+/* TOMBOL & INPUT SIDEBAR */
 /* =============================== */
-#map g[id^="KR" i],
-#map g[id^="UJ" i],
-#map g[id^="GA" i],
-#map g[id^="M" i],
-#map g[id^="Blok" i] {
-  cursor: pointer;
-  pointer-events: bounding-box;
-}
-
-#map g[id^="KR" i]:hover *,
-#map g[id^="UJ" i]:hover *,
-#map g[id^="GA" i]:hover *,
-#map g[id^="M" i]:hover *,
-#map g[id^="Blok" i]:hover * {
-  fill: #ffd54f !important;
-  stroke: #ff6f00 !important;
-  stroke-width: 2;
-}
-
-#map text { 
-  pointer-events: none; 
-}
-
-/* =============================== */
-/* CONTAINER TOMBOL DI KIRI */
-/* =============================== */
-#button-container {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 9999;
-  background: #fff;
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  width: 200px;
-}
-
-/* Tombol-tombol di container kiri */
-#resetZoom,
-.cert-btn {
-  padding: 10px 16px;
-  font-size: 13px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+.sidebar-content button, .dark-mode-btn {
   width: 100%;
-  text-align: center;
-}
-
-/* Tombol Lihat Semua Area */
-#resetZoom {
-  background: #4CAF50;
-  color: white;
-}
-
-#resetZoom:hover {
-  background: #45a049;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.2);
-}
-
-/* Tombol Cari berdasarkan Sertifikat */
-.cert-btn {
-  background: #2196F3;
-  color: white;
-}
-
-.cert-btn:hover {
-  background: #1976D2;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.2);
-}
-
-/* =============================== */
-/* CONTAINER TOMBOL STATUS DI KANAN */
-/* =============================== */
-#status-container {
-  position: fixed;
-  top: 20px;
-  right: 420px; /* disesuaikan agar tidak bertabrakan dengan search */
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 9998;
-  background: #fff;
+  margin-bottom: 10px;
   padding: 12px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  width: 160px;
-}
-
-.status-btn {
-  padding: 10px 16px;
-  font-size: 13px;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  white-space: nowrap;
-  font-weight: 500;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  text-align: center;
-  background: #9c27b0;
-  color: white;
+  gap: 10px;
+  font-size: 13px;
 }
 
-.status-btn:hover {
-  background: #7b1fa2;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(156, 39, 176, 0.2);
+#resetZoom { background: #2ecc71; color: white; }
+#resetZoom:hover { background: #27ae60; transform: translateY(-2px); }
+
+.cert-btn { background: #3498db; color: white; }
+.cert-btn:hover { background: #2980b9; transform: translateY(-2px); }
+
+.dark-mode-btn { background: #34495e; color: white; }
+.dark-mode-btn:hover { background: #2c3e50; transform: translateY(-2px); }
+
+.status-btn { background: #9b59b6; color: white; margin-top: 15px; }
+.status-btn:hover { background: #8e44ad; transform: translateY(-2px); }
+
+/* Search Container in Sidebar */
+#search-container-inline {
+  margin-bottom: 20px;
 }
 
-.status-btn.active {
-  background: #7b1fa2;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(156, 39, 176, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(156, 39, 176, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(156, 39, 176, 0); }
-}
-
-/* =============================== */
-/* SEARCH CONTAINER DI KANAN */
-/* =============================== */
-#search-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 380px;
-  background: #fff;
-  padding: 12px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* Row untuk input search saja */
-.search-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-/* Input pencarian */
 #search {
-  flex: 1;
-  padding: 10px 12px;
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--bg-soft);
+  border-radius: 8px;
   font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #f8f9fa;
   box-sizing: border-box;
 }
 
-/* dropdown hasil */
+#search:focus {
+  border-color: var(--accent-color);
+  outline: none;
+}
+
 #search-results {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
   list-style: none;
-  margin: 0;
   padding: 0;
-  max-height: 240px;
+  margin: 5px 0 0 0;
+  max-height: 150px;
   overflow-y: auto;
-  border: 1px solid #ddd;
+  background: white;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-  z-index: 10000;
+  position: absolute;
+  width: calc(100% / 6 - 40px);
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 #search-results li {
-  padding: 8px 10px;
+  padding: 10px;
   cursor: pointer;
-  font-size: 14px;
-  contain: content;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-#search-results li:hover {
-  background: #f5f5f5;
-}
+#search-results li:hover { background: var(--bg-soft); }
 
-/* HAPUS .rekap-box KARENA DIGANTI POPUP */
-.rekap-box {
-  display: none;
-}
-
-/* =============================== */
-/* POPUP HASIL KAVLING (MODAL) */
-/* =============================== */
-.kavling-popup {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 10002;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(3px);
-}
-
-.kavling-popup-content {
-  background: white;
-  width: 90%;
-  max-width: 700px;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  animation: modalSlideIn 0.3s ease-out;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Popup Header */
-.kavling-popup-header {
-  background: #4CAF50;
-  color: white;
-  padding: 18px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.kavling-popup-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.close-kavling-popup {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s;
-  flex-shrink: 0;
-}
-
-.close-kavling-popup:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Popup Body */
-.kavling-popup-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex-grow: 1;
-  font-family: 'Segoe UI', Arial, sans-serif;
-}
-
-/* Status colors dalam popup */
-.kavling-status-success {
-  color: #1b5e20;
-  background: #e8f5e9;
-  border-left: 4px solid #4caf50;
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-weight: 500;
-}
-
-.kavling-status-empty {
-  color: #e65100;
-  background: #fff3e0;
-  border-left: 4px solid #ff9800;
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-weight: 500;
-}
-
-.kavling-status-error {
-  color: #c62828;
-  background: #ffebee;
-  border-left: 4px solid #f44336;
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-weight: 500;
-}
-
-.kavling-status-notfound {
-  color: #e65100;
-  background: #fff3e0;
-  border-left: 4px solid #ff9800;
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-weight: 500;
-}
-
-/* Data content dalam popup */
-.kavling-data-content {
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  background: #f9f9f9;
-  padding: 16px;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-/* Popup Footer */
-.kavling-popup-footer {
-  padding: 16px 24px;
-  background: #f8f9fa;
-  border-top: 1px solid #e0e0e0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.kavling-close-btn {
-  padding: 10px 24px;
-  background: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.kavling-close-btn:hover {
-  background: #1976D2;
-}
-
-/* =============================== */
-/* PANEL STATISTIK STATUS */
-/* =============================== */
-.status-panel {
-  display: none;
-  position: fixed;
-  top: 90px;
-  right: 20px;
-  width: 320px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  z-index: 9997;
-  overflow: hidden;
-  border: 1px solid #e0e0e0;
-}
-
-.status-panel-header {
-  background: #673ab7;
-  color: white;
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.status-panel-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.close-status-panel {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  font-size: 20px;
-  cursor: pointer;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s;
-}
-
-.close-status-panel:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.status-panel-body {
-  padding: 20px;
-  background: #fafafa;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.status-panel-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.status-panel-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.status-panel-body::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: white;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  border: 1px solid #eee;
-  transition: all 0.2s;
-}
-
-.status-item:hover {
-  border-color: #ddd;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.status-color-sample {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  border: 2px solid rgba(0,0,0,0.1);
-  flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.status-info {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.status-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.status-count {
-  font-size: 14px;
-  font-weight: 700;
-  color: #2196F3;
-  background: #e3f2fd;
-  padding: 2px 10px;
-  border-radius: 12px;
-  min-width: 30px;
-  text-align: center;
-}
-
-.download-btn {
-  padding: 6px 12px;
-  background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.2s;
-  flex-shrink: 0;
-  position: relative;
-}
-
-.download-btn:hover {
-  background: #45a049;
-  transform: translateY(-1px);
-}
-
-.download-btn:active {
-  background: #3d8b40;
-}
-
-/* Tooltip untuk tombol download */
-.download-btn:hover::after {
-  content: "Download data " attr(data-type);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  white-space: nowrap;
-  z-index: 10000;
-  margin-bottom: 5px;
-}
-
-.download-btn:hover::before {
-  content: "";
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: #333;
-  margin-bottom: -5px;
-}
-
-.status-total {
+/* Status Panel Inline */
+.status-panel-inline {
   margin-top: 20px;
-  padding: 12px 16px;
-  background: #e8f5e9;
-  border-radius: 8px;
-  text-align: center;
-  color: #1b5e20;
-  font-size: 14px;
-  border: 1px solid #c8e6c9;
-}
-
-.status-panel-footer {
-  padding: 10px 20px;
-  background: #f5f5f5;
-  border-top: 1px solid #e0e0e0;
-  font-size: 11px;
-  color: #666;
-  text-align: center;
 }
 
 /* =============================== */
-/* WARNA KAVLING DI PETA */
+/* KAVLING COLORS (DARI SCRIPT) */
 /* =============================== */
-.kavling-status-kpr {
-  fill: #ff4444 !important;
-  stroke: #111111 !important;
-  stroke-width: 1.5 !important;
-}
-
-.kavling-status-stok {
-  fill: #90EE90 !important;     /* Hijau muda */
-  stroke: #111111 !important;   /* Hijau lebih gelap untuk border */
-  stroke-width: 1.5 !important;
-}
-
-.kavling-status-rekom {
-  fill: #ff44ff !important;
-  stroke: #111111 !important;
-  stroke-width: 1.5 !important;
-}
-
-.kavling-status-disewakan {
-  fill: #44ffff !important;
-  stroke: #111111 !important;
-  stroke-width: 1.5 !important;
-}
-
-/* WARNA PUTIH untuk kavling tidak diketahui */
-.kavling-status-unknown {
-  fill: #ffffff !important;           /* Putih */
-  stroke: #111111 !important;        /* Border hitam untuk kontras */
-  stroke-width: 1.5 !important;
-}
-
-.kavling-status-unknown:hover * {
-  fill: #f8f8f8 !important;          /* Putih sedikit lebih gelap saat hover */
-  stroke: #333333 !important;
-  stroke-width: 2 !important;
-  opacity: 0.95;
-}
-
-#map g.kavling-status-unknown:hover * {
-  fill: #f5f5f5 !important;
-  stroke: #222222 !important;
-  stroke-width: 2 !important;
-}
-
-/* Hover effect untuk kavling berstatus */
-#map g.kavling-status-kpr:hover * {
-  fill: #ff6666 !important;
-  stroke: #ff0000 !important;
-  stroke-width: 2 !important;
-}
-
-#map g.kavling-status-stok:hover * {
-  fill: #98FB98 !important;     /* Hijau muda lebih terang */
-  stroke: #00FF00 !important;   /* Hijau neon untuk hover */
-  stroke-width: 2 !important;
-}
-
-#map g.kavling-status-rekom:hover * {
-  fill: #ff66ff !important;
-  stroke: #ff00ff !important;
-  stroke-width: 2 !important;
-}
-
-#map g.kavling-status-disewakan:hover * {
-  fill: #66ffff !important;
-  stroke: #00ffff !important;
-  stroke-width: 2 !important;
-}
-
-
-/* Pastikan warna status override style default */
-#map g.kavling-status-kpr,
-#map g.kavling-status-stok,
-#map g.kavling-status-rekom,
-#map g.kavling-status-disewakan,
-#map g.kavling-status-unknown {
-  cursor: pointer !important;
-  pointer-events: bounding-box !important;
-}
-
-#map g.kavling-status-kpr *,
-#map g.kavling-status-stok *,
-#map g.kavling-status-rekom *,
-#map g.kavling-status-disewakan *,
-#map g.kavling-status-unknown * {
-  cursor: pointer !important;
-  pointer-events: auto !important;
-}
-
-/* Pastikan text tetap readable di atas warna */
-#map text {
-  z-index: 1 !important;
-  pointer-events: none !important;
-  paint-order: stroke !important;
-  stroke: white !important;
-  stroke-width: 2px !important;
-  stroke-linejoin: round !important;
-}
+.kavling-status-kpr { fill: #ff4444 !important; stroke: #111 !important; }
+.kavling-status-stok { fill: #90EE90 !important; stroke: #111 !important; }
+.kavling-status-rekom { fill: #ff44ff !important; stroke: #111 !important; }
+.kavling-status-disewakan { fill: #44ffff !important; stroke: #111 !important; }
+.kavling-status-unknown { fill: #ffffff !important; stroke: #111 !important; }
 
 /* =============================== */
-/* MODAL SERTIFIKAT */
+/* MODALS & OTHERS (Existing) */
 /* =============================== */
 .modal {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 10001;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(3px);
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(5px);
 }
 
 .modal-content {
   background: white;
   width: 90%;
   max-width: 900px;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
   overflow: hidden;
-  animation: modalSlideIn 0.3s ease-out;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Modal Header */
 .modal-header {
-  background: #2196F3;
+  background: var(--header-bg);
   color: white;
   padding: 20px;
   display: flex;
@@ -768,977 +224,93 @@ h1 {
   align-items: center;
 }
 
-.modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
+.modal-body { padding: 20px; overflow-y: auto; }
 
-.close-modal {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  font-size: 24px;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s;
-}
-
-.close-modal:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Modal Body */
-.modal-body {
-  padding: 25px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  overflow-y: auto;
-  flex-grow: 1;
-}
-
-/* LAYOUT BARU YANG LEBIH RAPAT */
 .modal-compact-layout {
-  padding: 15px;
   display: flex;
-  gap: 15px;
-  min-height: 500px;
-  max-height: 70vh;
+  gap: 20px;
 }
 
-/* Kolom kiri - Input pencarian (LEBIH RAPAT) */
 .input-column {
   flex: 0 0 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  border-right: 1px solid #e0e0e0;
+  border-right: 1px solid #eee;
   padding-right: 20px;
-  overflow-y: auto;
-  max-height: 60vh;
 }
 
-/* Kolom kanan - Hasil pencarian */
-.results-column {
-  flex: 1;
-  min-width: 350px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
+.results-column { flex: 1; }
 
-/* Grup input yang lebih kompak */
 .input-group {
-  margin-bottom: 4px;
-  padding: 10px;
   background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-  transition: all 0.3s;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
 }
 
-.input-group:hover {
-  background: #fff;
-  border-color: #dee2e6;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.input-group h4 {
-  margin: 0 0 8px 0;
-  color: #1a237e;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Input yang lebih kompak */
 .compact-input {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid #ced4da;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 13px;
-  margin-bottom: 8px;
-  transition: all 0.2s;
-  background: white;
 }
 
-.compact-input:focus {
-  outline: none;
-  border-color: #2196F3;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.15);
-}
-
-/* Tombol pencarian yang lebih kompak */
 .compact-search-btn {
   width: 100%;
   padding: 10px;
-  background: #4CAF50;
+  background: #27ae60;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  transition: all 0.2s;
 }
 
-.compact-search-btn:hover {
-  background: #45a049;
-  transform: translateY(-1px);
-  box-shadow: 0 3px 6px rgba(76, 175, 80, 0.2);
+.compact-results-box {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 15px;
+  min-height: 300px;
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
-/* Scrollbar custom untuk kolom input */
-.input-column::-webkit-scrollbar {
-  width: 6px;
+/* Popup style for plots */
+.kavling-popup {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 3000;
+  align-items: center; justify-content: center;
 }
 
-.input-column::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+.kavling-popup-content {
+  background: white;
+  width: 600px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-.input-column::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.input-column::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Header hasil dengan tombol bersihkan */
-.results-header {
+.kavling-popup-header {
+  background: #27ae60;
+  color: white;
+  padding: 15px;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #666;
 }
 
-.results-header h4 {
-  margin: 0;
-  color: #333;
-  font-size: 16px;
-  font-weight: 600;
-}
+.kavling-popup-body { padding: 20px; }
 
-/* Tombol bersihkan di header hasil */
-.clear-results-btn {
-  padding: 6px 12px;
-  background: #ff9800;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.2s;
-}
-
-.clear-results-btn:hover {
-  background: #f57c00;
-  transform: translateY(-1px);
-}
-
-/* Box hasil yang lebih tinggi */
-.compact-results-box {
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 15px;
-  flex: 1;
-  min-height: 400px;
-  max-height: 55vh;
-  overflow-y: auto;
-  font-size: 13px;
-}
-
-.results-column {
-  flex: 1;
-  min-width: 350px;
-  display: flex;
-  flex-direction: column;
-}
-
-.compact-results-box .placeholder {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #757575;
-  text-align: center;
-  font-style: italic;
-  margin: 0;
-  padding: 40px 20px;
-}
-
-/* =============================== */
-/* ANIMASI LOADING */
-/* =============================== */
-.loading-spinner {
-  display: inline-block;
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #4CAF50;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 15px auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-text {
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.loading-dots {
-  display: inline-block;
-  animation: dots 1.5s steps(4, end) infinite;
-}
-
-@keyframes dots {
-  0%, 20% { content: "."; }
-  40% { content: ".."; }
-  60%, 100% { content: "..."; }
-}
-
-.kavling-status-loading {
-  color: #1976D2;
-  background: #E3F2FD;
-  border-left: 4px solid #2196F3;
-  padding: 15px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-weight: 500;
-  text-align: center;
-}
-
-/* Popup loading state */
-.kavling-popup-loading .kavling-popup-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-}
-
-.kavling-popup .kavling-popup-content {
-  cursor: auto;
-}
-
-/* Loading untuk modal sertifikat */
-.cert-loading {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-.cert-loading-spinner {
-  display: inline-block;
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #2196F3;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 15px auto;
-}
-
-.cert-total-found {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
-  color: #1a237e !important;
-  margin: 10px 0 !important;
-  padding: 12px 15px !important;
-  background: #e8f5e9 !important;
-  border-radius: 8px !important;
-  border-left: 5px solid #4caf50 !important;
-  line-height: 1.4;
-}
-
-/* Style untuk hasil pencarian sertifikat */
-.cert-result-item {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-  margin-bottom: 15px;
-  padding: 15px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background: #fff;
-  transition: all 0.3s;
-}
-
-.cert-result-item:hover {
-  border-color: #2196F3;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-/* Loading untuk status panel */
-.status-loading {
-  text-align: center;
-  padding: 40px 20px;
-  color: #666;
-  font-style: italic;
-}
-
-.status-loading-spinner {
-  display: inline-block;
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #9c27b0;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 15px auto;
-}
-
-/* Style untuk tabel data download */
-.download-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  margin-top: 10px;
-}
-
-.download-table th {
-  background: #f5f5f5;
-  padding: 10px;
-  text-align: left;
-  border: 1px solid #ddd;
-  font-weight: 600;
-}
-
-.download-table td {
-  padding: 8px 10px;
-  border: 1px solid #ddd;
-  vertical-align: top;
-}
-
-.download-table tr:nth-child(even) {
-  background: #f9f9f9;
-}
-
-.download-table tr:hover {
-  background: #f0f0f0;
-}
-
-/* Style untuk data kosong */
-.status-empty {
-  text-align: center;
-  padding: 30px 20px;
-  color: #757575;
-  font-style: italic;
-  background: #f9f9f9;
-  border-radius: 8px;
-  margin: 10px 0;
-}
-
-/* Clearfix untuk panel status */
-.status-panel-body::after {
-  content: "";
-  display: table;
-  clear: both;
-}
-
-/* =============================== */
-/* RESPONSIVE ADJUSTMENTS */
-/* =============================== */
-@media (max-width: 1024px) {
-  #search-container {
-    width: 300px;
-    right: 15px;
-    top: 15px;
-  }
-  
-  #button-container {
-    width: 170px;
-    left: 15px;
-    top: 15px;
-  }
-  
-  #status-container {
-    right: 330px;
-    width: 140px;
-    top: 15px;
-  }
-  
-  .status-panel {
-    width: 280px;
-    right: 10px;
-    top: 85px;
-  }
-}
-
-@media (max-width: 768px) {
-  body {
-    overflow-x: hidden;
-  }
-
-  h1 {
-    font-size: 18px;
-    margin: 10px;
-    padding: 0 10px;
-  }
-
-  /* Fixed containers positioning for mobile */
-  #button-container {
-    position: relative;
-    top: 0;
-    left: 0;
-    width: calc(100% - 30px);
-    margin: 10px auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    padding: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  #button-container button {
-    margin: 0;
-    font-size: 11px;
-    padding: 8px 5px;
-  }
-
-  #darkModeToggle {
-    grid-column: span 2;
-  }
-
-  #search-container {
-    position: relative;
-    top: 0;
-    right: 0;
-    width: calc(100% - 30px);
-    margin: 10px auto;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  #status-container {
-    position: relative;
-    top: 0;
-    right: 0;
-    width: calc(100% - 30px);
-    margin: 10px auto;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-
-  #map {
-    height: 50vh;
-    margin: 10px;
-    width: calc(100% - 20px);
-  }
-
-  /* Modal responsiveness */
-  .modal-content {
-    width: 95%;
-    max-height: 95vh;
-  }
-
-  .modal-compact-layout {
-    flex-direction: column;
-    padding: 10px;
-    overflow-y: auto;
-  }
-
-  .input-column {
-    flex: none;
-    width: 100%;
-    padding-right: 0;
-    border-right: none;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 15px;
-    max-height: none;
-  }
-
-  .results-column {
-    flex: none;
-    width: 100%;
-    min-width: 0;
-    margin-top: 15px;
-  }
-
-  .compact-results-box {
-    min-height: 250px;
-  }
-
-  /* Status Panel for Mobile */
-  .status-panel {
-    width: 90%;
-    right: 5%;
-    left: 5%;
-    top: 10%;
-    max-height: 80vh;
-  }
-
-  /* Popup responsiveness */
-  .kavling-popup-content {
-    width: 95%;
-    margin: 10px;
-  }
-
-  .kavling-popup-body {
-    padding: 15px;
-  }
-
-  .download-list-container {
-    max-height: 300px;
-  }
-}
-
-@media (max-width: 480px) {
-  #button-container {
-    grid-template-columns: 1fr;
-  }
-  
-  #darkModeToggle {
-    grid-column: span 1;
-  }
-
-  .modal-header h3 {
-    font-size: 14px;
-  }
-
-  .status-btn span:last-child,
-  .cert-btn span:last-child {
-    font-size: 11px;
-  }
-}
-
-/* =============================== */
-/* LOADING STATE UNTUK STATUS PANEL */
-/* =============================== */
-
-.status-loading {
-  text-align: center;
-  padding: 40px 20px;
-  color: #666;
-}
-
-.status-loading-spinner {
-  display: inline-block;
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #9c27b0;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 15px auto;
-}
-
-.status-progress {
-  width: 100%;
-  background: #f0f0f0;
-  border-radius: 10px;
-  height: 10px;
-  margin: 20px 0;
-  overflow: hidden;
-}
-
-.status-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #9c27b0, #2196F3);
-  border-radius: 10px;
-  animation: progress 2s ease-in-out infinite;
-  width: 60%;
-}
-
-@keyframes progress {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
-}
-
-.status-debug-info {
-  background: #f8f9fa;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 15px;
-  margin-top: 15px;
-  font-family: monospace;
-  font-size: 12px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.status-debug-info h5 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 13px;
-}
-#map-loading {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.loading-content {
-  text-align: center;
-  padding: 30px;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #4CAF50;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 15px auto;
-}
-
-.loading-text {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.loading-subtext {
-  font-size: 12px;
-  color: #666;
-}
-
-/* =============================== */
-/* DARK MODE STYLES */
-/* =============================== */
-
-/* Tombol Dark Mode */
-.dark-mode-btn {
-  padding: 10px 16px;
-  font-size: 13px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  text-align: center;
-  background: #333;
-  color: white;
-  margin-top: 8px;
-}
-
-.dark-mode-btn:hover {
-  background: #555;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.dark-mode-btn.active {
-  background: #555;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
-}
-
-/* Dark Mode Theme */
+/* Dark Mode support (Basic) */
 body.dark-mode {
-  background: #121212 !important;
-  color: #e0e0e0 !important;
+  --bg-soft: #1a1a1a;
+  --bg-white: #2c2c2c;
+  --sidebar-bg: #2c2c2c;
+  --text-main: #ecf0f1;
+  --border-color: #444;
 }
 
-body.dark-mode h1 {
-  color: #ffffff !important;
-}
-
-body.dark-mode #map {
-  background: #1e1e1e !important;
-  border-color: #333 !important;
-}
-
-body.dark-mode #search-container,
-body.dark-mode #button-container,
-body.dark-mode #status-container,
-body.dark-mode .modal-content,
-body.dark-mode .kavling-popup-content,
-body.dark-mode .status-panel {
-  background: #1e1e1e !important;
-  color: #e0e0e0 !important;
-  border-color: #333 !important;
-}
-
-body.dark-mode #search,
-body.dark-mode #search-results,
-body.dark-mode .status-item,
-body.dark-mode .compact-results-box,
-body.dark-mode .input-group,
-body.dark-mode .cert-result-item,
-body.dark-mode .kavling-data-content,
-body.dark-mode .status-debug-info,
-body.dark-mode .status-content div[style*="background: #f9f9f9"],
-body.dark-mode .status-content div[style*="background: #fff"],
-body.dark-mode .modal-body div[style*="background:#f9f9f9"],
-body.dark-mode .results-header,
-body.dark-mode .modal-compact-layout .input-column {
-  background: #2d2d2d !important;
-  color: #e0e0e0 !important;
-  border-color: #444 !important;
-}
-
-body.dark-mode .compact-input {
-  background: #3d3d3d !important;
-  color: #e0e0e0 !important;
-  border-color: #555 !important;
-}
-
-body.dark-mode .compact-input:focus {
-  border-color: #2196F3 !important;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.15) !important;
-}
-
-body.dark-mode .modal-header,
-body.dark-mode .kavling-popup-header,
-body.dark-mode .status-header {
-  background: #333 !important;
-  color: #fff !important;
-}
-
-body.dark-mode .placeholder,
-body.dark-mode .loading-text,
-body.dark-mode .status-loading,
-body.dark-mode div[style*="color: #666"],
-body.dark-mode div[style*="color: #999"],
-body.dark-mode div[style*="color: #757575"] {
-  color: #aaa !important;
-}
-
-body.dark-mode .kavling-popup-footer,
-body.dark-mode .modal-footer,
-body.dark-mode .status-panel-footer {
-  background: #1a1a1a !important;
-  border-top-color: #333 !important;
-}
-
-body.dark-mode h3, 
-body.dark-mode h4,
-body.dark-mode .status-title,
-body.dark-mode .results-header h4 {
-  color: #ffffff !important;
-}
-
-/* Ensure map text stays readable */
-body.dark-mode #map text {
-  stroke: #1e1e1e !important;
-  fill: #e0e0e0 !important;
-}
-
-/* Ensure status labels are visible */
-body.dark-mode .status-count {
-  background: #1a237e !important;
-  color: #90caf9 !important;
-}
-
-body.dark-mode .cert-total-found {
-  background: #1b5e20 !important;
-  color: #a5d6a7 !important;
-  border-left-color: #4caf50 !important;
-}
-
-body.dark-mode .kavling-status-success {
-  background: #1b5e20 !important;
-  color: #a5d6a7 !important;
-}
-
-body.dark-mode .kavling-status-empty,
-body.dark-mode .kavling-status-notfound {
-  background: #4a2700 !important;
-  color: #ffcc80 !important;
-}
-
-body.dark-mode .kavling-status-error {
-  background: #4a0000 !important;
-  color: #ef9a9a !important;
-}
-
-body.dark-mode .status-total {
-  background: #1b5e20 !important;
-  color: #a5d6a7 !important;
-  border-color: #2e7d32 !important;
-}
-
-body.dark-mode .status-total span {
-  color: #81c784 !important;
-}
-
-/* Fix for inline styles that might override classes */
-body.dark-mode [style*="background: #fff"],
-body.dark-mode [style*="background: white"],
-body.dark-mode [style*="background-color: #fff"],
-body.dark-mode [style*="background-color: white"] {
-  background-color: #2d2d2d !important;
-}
-
-body.dark-mode .download-list-container .download-item {
-  color: #e0e0e0 !important;
-}
-
-body.dark-mode .download-list-container {
-  background: #2d2d2d !important;
-  color: #e0e0e0 !important;
-  border-color: #444 !important;
-}
-
-body.dark-mode .download-info-header {
-  background: #1b5e20 !important;
-}
-
-body.dark-mode .download-info-header div[style*="color:#1b5e20"] {
-  color: #a5d6a7 !important;
-}
-
-body.dark-mode .download-desc,
-body.dark-mode .download-status-label {
-  color: #aaa !important;
-}
-/* Tambah di style.css */
-/* Loading animation untuk status */
-.status-loading-btn {
-  position: relative;
-  opacity: 0.8;
-  cursor: wait !important;
-}
-
-.status-loading-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-/* =============================== */
-/* LOADING ANIMASI UNTUK KAVLING MODAL */
-/* =============================== */
-
-/* Spinner animasi */
-.kavling-loading-spinner {
-  display: inline-block;
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #2196F3;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 15px auto;
-}
-
-/* Progress bar animasi */
-.kavling-progress-bar {
-  width: 100%;
-  height: 6px;
-  background: #e0e0e0;
-  border-radius: 3px;
-  overflow: hidden;
-  margin: 20px 0;
-}
-
-.kavling-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #2196F3, #4CAF50);
-  border-radius: 3px;
-  animation: progressSlide 2s ease-in-out infinite;
-}
-
-@keyframes progressSlide {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
-}
-
-/* Loading dots animasi */
-.loading-dots::after {
-  content: '...';
-  animation: dots 1.5s steps(4, end) infinite;
-}
-
-/* Kotak loading khusus untuk modal kavling */
-.kavling-loading-container {
-  padding: 40px 20px;
-  text-align: center;
-  background: #f9f9f9;
-  border-radius: 8px;
-  min-height: 200px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.kavling-loading-text {
-  color: #333;
-  font-size: 16px;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.kavling-loading-subtext {
-  color: #666;
-  font-size: 14px;
-  margin-bottom: 5px;
-}
-
-/* Success state styling */
-.kavling-success-header {
-  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  border-left: 5px solid #4CAF50;
-}
-
-/* Error state styling */
-.kavling-error-container {
-  padding: 50px 20px;
-  text-align: center;
-  background: #ffebee;
-  border-radius: 8px;
-  border: 1px solid #ef9a9a;
-}
-
-/* Not found state styling */
-.kavling-notfound-container {
-  padding: 50px 20px;
-  text-align: center;
-  background: #fff3e0;
-  border-radius: 8px;
-  border: 1px solid #ffb74d;
-}
+body.dark-mode .sidebar-content h3 { color: #bdc3c7; }
+body.dark-mode #map { background: #333; }
+body.dark-mode .input-group { background: #333; }
+body.dark-mode .compact-results-box { background: #333; color: white; }
+body.dark-mode .modal-content { background: #2c2c2c; color: white; }
