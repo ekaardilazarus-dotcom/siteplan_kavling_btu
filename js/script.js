@@ -70,7 +70,9 @@ clickSound.volume = 0.5;
 // CLICK HANDLER GLOBAL
 // ===============================
 document.addEventListener('click', function(e) {
-  const target = e.target.closest('g[id^="GA"], g[id^="UJ"], g[id^="KR"], g[id^="M"], g[id^="Blok"], rect[id], path[id], polygon[id]');
+  // Hanya ambil target yang merupakan "Frame" (memiliki ID spesifik yang valid untuk pencarian)
+  const target = e.target.closest('g[id^="GA"], g[id^="UJ"], g[id^="KR"], g[id^="M"], g[id^="Blok"]');
+  
   if (target && target.id && target.id !== 'map') {
     const kode = target.id;
     
@@ -83,14 +85,10 @@ document.addEventListener('click', function(e) {
       el.classList.remove('highlight-kavling');
     });
     
-    // Add new highlight
-    if (target.tagName.toLowerCase() === 'g') {
-      target.querySelectorAll('rect, path, polygon, circle').forEach(child => {
-        child.classList.add('highlight-kavling');
-      });
-    } else {
-      target.classList.add('highlight-kavling');
-    }
+    // Add new highlight ke semua elemen di dalam grup Frame tersebut
+    target.querySelectorAll('rect, path, polygon, circle').forEach(child => {
+      child.classList.add('highlight-kavling');
+    });
     
     // Show Popup - Gunakan fetchDataForAddress agar mengambil data dari API
     if (typeof fetchDataForAddress === 'function') {
