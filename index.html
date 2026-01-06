@@ -18,21 +18,26 @@
   <div class="main-layout">
     <!-- BAGIAN KIRI -->
     <aside class="sidebar-left">
-      <div class="sidebar-content">
-        <h3>Menu Utama</h3>
-        <button id="resetZoom">Lihat Semua Area</button>
-        <button id="searchByCertificate" class="cert-btn">
-          <span>📋</span>
-          Cari berdasarkan Sertifikat
-        </button>
-        <button id="searchByKavling" class="cert-btn">
-          <span>🏠</span>
-          Cari berdasarkan Kavling
-        </button>
-        <button id="darkModeToggle" class="dark-mode-btn">
-          <span>🌙</span>
-          Dark Mode
-        </button>
+      <div class="sidebar-content" style="display: flex; flex-direction: column; height: 100%;">
+        <div style="flex: 1;">
+          <h3>Menu Utama</h3>
+          <button id="resetZoom">Lihat Semua Area</button>
+          <button id="searchByCertificate" class="cert-btn">
+            <span>📋</span>
+            Cari berdasarkan Sertifikat
+          </button>
+          <button id="searchByKavling" class="cert-btn">
+            <span>🏠</span>
+            Cari berdasarkan Kavling
+          </button>
+        </div>
+        
+        <div style="margin-top: auto; padding-top: 20px; border-top: 2px solid var(--bg-soft);">
+          <button id="darkModeToggle" class="dark-mode-btn">
+            <span>🌙</span>
+            Dark Mode
+          </button>
+        </div>
       </div>
     </aside>
 
