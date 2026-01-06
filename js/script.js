@@ -336,15 +336,30 @@ function updateStatusPanel(data) {
   categories.forEach(cat => {
     const count = countByAPI[cat.id] || 0;
     const borderStyle = cat.id === 'unknown' ? 'border: 1px solid #ddd;' : '';
+    
+    // Background solid dan Darker untuk area "ID" (ikon sebelah kiri)
+    let btnBg = '#ffffff';
+    let darkerBg = '#cccccc';
+    if (cat.id === 'kpr') { btnBg = '#ff4444'; darkerBg = '#cc0000'; }
+    else if (cat.id === 'stok') { btnBg = '#90EE90'; darkerBg = '#228b22'; }
+    else if (cat.id === 'rekom') { btnBg = '#ff44ff'; darkerBg = '#990099'; }
+    else if (cat.id === 'disewakan') { btnBg = '#44ffff'; darkerBg = '#008b8b'; }
 
     html += `
-      <div class="status-item clickable-status-item" data-type="${cat.id}" style="display: flex; align-items: center; padding: 12px; margin-bottom: 12px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.2s ease; border: 1px solid #e0e6ed;" onmouseover="this.style.backgroundColor='#e3f2fd'; this.style.borderColor='#2196F3'; this.style.transform='translateX(5px)'" onmouseout="this.style.backgroundColor='#fff'; this.style.borderColor='#e0e6ed'; this.style.transform='none'">
-        <div class="status-color-sample" style="width: 24px; height: 24px; border-radius: 6px; margin-right: 15px; background-color: ${cat.color}; border: 1.5px solid rgba(0,0,0,0.15);"></div>
+      <div class="status-item clickable-status-item" data-type="${cat.id}" 
+           style="display: flex; align-items: center; padding: 12px; margin-bottom: 12px; 
+                  background: ${btnBg}; border-radius: 12px; box-shadow: 0 4px 0 rgba(0,0,0,0.2); 
+                  cursor: pointer; transition: all 0.1s ease; border: 2px solid #000000;" 
+           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 0 rgba(0,0,0,0.2)'" 
+           onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 0 rgba(0,0,0,0.2)'"
+           onmousedown="this.style.transform='translateY(2px)'; this.style.boxShadow='0 1px 0 rgba(0,0,0,0.2)'"
+           onmouseup="this.style.transform='translateY(-2px)'">
+        <div class="status-color-sample" style="width: 28px; height: 28px; border-radius: 8px; margin-right: 15px; background-color: ${darkerBg}; border: 2px solid #000000; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);"></div>
         <div class="status-info" style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
-          <div class="status-title" style="font-size: 14px; font-weight: 600; color: #34495e;">${cat.title}</div>
+          <div class="status-title" style="font-size: 14px; font-weight: 800; color: #000000; text-shadow: 1px 1px 0 rgba(255,255,255,0.5);">${cat.title}</div>
           <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 16px; font-weight: 800; color: #2196F3; background: #fff; padding: 2px 12px; border-radius: 20px; border: 1px solid #d1d9e6;">${count}</div>
-            <span style="color: #bdc3c7; font-size: 18px;">›</span>
+            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 16px; font-weight: 900; color: #000000; background: rgba(255,255,255,0.9); padding: 2px 12px; border-radius: 20px; border: 2px solid #000000;">${count}</div>
+            <span style="color: #000000; font-size: 18px; font-weight: 900;">›</span>
           </div>
         </div>
       </div>
@@ -453,6 +468,8 @@ function colorizeKavling(kavlingData) {
         t.style.fill = '#000000';
         t.style.stroke = 'white';
         t.style.strokeWidth = '1px';
+        t.style.filter = 'none';
+        t.style.transform = 'none';
       });
 
       // Jika element adalah group, tambahkan ke child elements juga
@@ -511,6 +528,8 @@ function colorizeKavling(kavlingData) {
         t.style.fill = '#000000';
         t.style.stroke = 'white';
         t.style.strokeWidth = '1px';
+        t.style.filter = 'none';
+        t.style.transform = 'none';
       });
 
       // Jika element adalah group, tambahkan ke child elements
