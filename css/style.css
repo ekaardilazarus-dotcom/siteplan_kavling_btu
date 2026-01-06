@@ -1,189 +1,451 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DATA BTU MALANG</title>
-  <link rel="stylesheet" href="css/style.css?v=6">
-</head>
-<body>
+/* =============================== */
+/* DASAR */
+/* =============================== */
+:root {
+  --bg-soft: #eef2f7;
+  --bg-white: #ffffff;
+  --primary-color: #2c3e50;
+  --accent-color: #3498db;
+  --sidebar-bg: #ffffff;
+  --header-bg: #2c3e50;
+  --text-main: #2c3e50;
+  --border-color: #d1d9e6;
+  --shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
 
-  <header class="main-header">
-    <h1>DATA KAVLING DAN SERTIFIKAT BTU KNC MALANG</h1>
-  </header>
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  background: var(--bg-soft);
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
 
-  <div class="main-layout">
-    <!-- BAGIAN KIRI -->
-    <aside class="sidebar-left">
-      <div class="sidebar-content">
-        <h3>Menu Utama</h3>
-        <button id="resetZoom">Lihat Semua Area</button>
-        <button id="searchByCertificate" class="cert-btn">
-          <span>📋</span>
-          Cari berdasarkan Sertifikat
-        </button>
-        <button id="searchByKavling" class="cert-btn">
-          <span>🏠</span>
-          Cari berdasarkan Kavling
-        </button>
-        <button id="darkModeToggle" class="dark-mode-btn">
-          <span>🌙</span>
-          Dark Mode
-        </button>
-      </div>
-    </aside>
+/* =============================== */
+/* LAYOUT STRUKTUR */
+/* =============================== */
+.main-header {
+  background: var(--header-bg);
+  color: white;
+  padding: 15px 20px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 100;
+}
 
-    <!-- BAGIAN TENGAH -->
-    <main class="main-content">
-      <!-- Map container -->
-      <div id="map">
-        <div id="map-loading" style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
-          <div style="text-align: center;">
-            <div style="margin-bottom: 10px;">⏳ Memuat peta...</div>
-            <div style="font-size: 12px; color: #999;" id="map-status">Menghubungkan ke server</div>
-          </div>
-        </div>
-      </div>
-    </main>
+.main-header h1 {
+  margin: 0;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
 
-    <!-- BAGIAN KANAN -->
-    <aside class="sidebar-right">
-      <div class="sidebar-content">
-        <h3>Pencarian & Status</h3>
-        
-        <!-- SEARCH BOX -->
-        <div id="search-container-inline">
-          <div class="search-row">
-            <input id="search" placeholder="Cari kavling..." disabled>
-          </div>
-          <ul id="search-results"></ul>
-        </div>
+.main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
 
-        <!-- STATUS BUTTON -->
-        <div id="status-container-inline">
-          <button id="statusKavling" class="status-btn">
-            <span>🎨</span>
-            Status Kavling
-          </button>
-        </div>
+/* Sidebar Styling */
+.sidebar-left, .sidebar-right {
+  background: var(--sidebar-bg);
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
 
-        <!-- PANEL STATISTIK STATUS -->
-        <div id="statusPanel" class="status-panel-inline">
-          <div class="status-panel-body">
-            <!-- Content will be injected by JavaScript -->
-          </div>
-        </div>
-      </div>
-    </aside>
-  </div>
-  
-  <!-- MODALS & POPUPS (Tetap di luar layout utama) -->
-  <div id="kavlingPopupContainer"></div>
+.sidebar-left {
+  flex: 0 0 calc(100% / 6); /* 1:4:1 ratio approx (1/6 = 16.6%) */
+}
 
-  <!-- MODAL PENCARIAN SERTIFIKAT -->
-  <div id="certificateModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>🔍 Pencarian Berdasarkan Sertifikat</h3>
-        <button class="close-modal">&times;</button>
-      </div>
-      <div class="modal-body modal-compact-layout">
-        <div class="input-column">
-          <div class="input-group">
-            <h4><span>📜</span> Sertifikat Induk</h4>
-            <input type="text" id="certInduk" placeholder="Contoh: B.4462" class="compact-input">
-            <button id="searchInduk" class="compact-search-btn"><span>🔎</span> Cari Induk</button>
-          </div>
-          <div class="input-group">
-            <h4><span>👴</span> Nama Pemilik Lama</h4>
-            <input type="text" id="certExOwner" placeholder="Contoh: NAMA LAMA" class="compact-input">
-            <button id="searchExOwner" class="compact-search-btn"><span>🔎</span> Cari Pemilik</button>
-          </div>
-          <div class="input-group">
-            <h4><span>📄</span> SHGB</h4>
-            <input type="text" id="certSHGB" placeholder="Contoh: B.00350" class="compact-input">
-            <button id="searchSHGB" class="compact-search-btn"><span>📄</span> Cari SHGB</button>
-          </div>
-          <div class="input-group">
-            <h4><span>🏠</span> SHM</h4>
-            <input type="text" id="certSHM" placeholder="Contoh: 12.06..." class="compact-input">
-            <button id="searchSHM" class="compact-search-btn"><span>🔍</span> Cari SHM</button>
-          </div>
-          <div class="input-group">
-            <h4><span>👤</span> Nama SHM</h4>
-            <input type="text" id="certNamaSHM" placeholder="Contoh: UMANG" class="compact-input">
-            <button id="searchNamaSHM" class="compact-search-btn"><span>👤</span> Cari Nama</button>
-          </div>
-        </div>
-        <div class="results-column">
-          <div class="results-header">
-            <h4>Hasil Pencarian</h4>
-            <div style="display: flex; gap: 8px;">
-              <button id="downloadExcel" class="clear-results-btn" style="background: #2e7d32; display: none;"><span>📊</span> Excel</button>
-              <button id="clearAll" class="clear-results-btn"><span>🗑️</span> Bersihkan</button>
-            </div>
-          </div>
-          <div id="certificateResults" class="compact-results-box">
-            <p class="placeholder">Hasil pencarian akan ditampilkan di sini...</p>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="closeModal" class="primary-btn">Tutup</button>
-      </div>
-    </div>
-  </div>
+.sidebar-right {
+  flex: 0 0 calc(100% / 6);
+  border-right: none;
+  border-left: 1px solid var(--border-color);
+}
 
-  <!-- MODAL PENCARIAN KAVLING -->
-  <div id="kavlingModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>🏠 Pencarian Berdasarkan Kavling</h3>
-        <button class="close-kavling-modal">&times;</button>
-      </div>
-      <div class="modal-body modal-compact-layout">
-        <div class="input-column">
-          <div class="input-group">
-            <h4><span>👤</span> Nama USER</h4>
-            <input type="text" id="kavlingNamaUser" placeholder="Contoh: GUSTI" class="compact-input">
-            <button id="searchNamaUser" class="compact-search-btn"><span>🔍</span> Cari Nama</button>
-          </div>
-          <div class="input-group">
-            <h4><span>🎯</span> Status Kavling</h4>
-            <select id="kavlingStatus" class="compact-input">
-              <option value="">Pilih Status...</option>
-              <option value="kpr">KPR/TUNAI (SOLD)</option>
-              <option value="stok">STOK</option>
-              <option value="rekom">REKOM</option>
-              <option value="disewakan">DISEWAKAN</option>
-              <option value="unknown">TIDAK DIKETAHUI</option>
-            </select>
-            <button id="searchStatus" class="compact-search-btn"><span>🔍</span> Cari Status</button>
-          </div>
-        </div>
-        <div class="results-column">
-          <div class="results-header">
-            <h4>Hasil Pencarian Kavling</h4>
-            <div style="display: flex; gap: 8px;">
-              <button id="downloadExcelKavling" class="clear-results-btn" style="background: #2e7d32; display: none;"><span>📊</span> Excel</button>
-              <button id="clearKavlingResults" class="clear-results-btn"><span>🗑️</span> Bersihkan</button>
-            </div>
-          </div>
-          <div id="kavlingResults" class="compact-results-box">
-            <p class="placeholder">Hasil pencarian kavling akan ditampilkan di sini...</p>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="closeKavlingModal" class="primary-btn">Tutup</button>
-      </div>
-    </div>
-  </div>
+.main-content {
+  flex: 1;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="js/script.js?v=9"></script>
-</body>
-</html>
+.sidebar-content h3 {
+  font-size: 14px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--bg-soft);
+  padding-bottom: 8px;
+}
+
+/* =============================== */
+/* MAP CONTAINER */
+/* =============================== */
+#map {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+#map svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* =============================== */
+/* TOMBOL & INPUT SIDEBAR */
+/* =============================== */
+.sidebar-content button, .dark-mode-btn {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 14px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.1);
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.2;
+  text-align: center;
+  word-wrap: break-word;
+  white-space: normal;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 6px 10px rgba(0,0,0,0.1);
+  position: relative;
+  top: 0;
+}
+
+.sidebar-content button:hover, .dark-mode-btn:hover {
+  top: -2px;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.sidebar-content button:active, .dark-mode-btn:active {
+  top: 2px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 3px 5px rgba(0,0,0,0.1);
+}
+
+#resetZoom { background: #2ecc71; color: white; }
+#resetZoom:hover { background: #27ae60; }
+
+#searchByCertificate { background: #3498db; color: white; }
+#searchByCertificate:hover { background: #2980b9; }
+
+#searchByKavling { background: #f39c12; color: white; }
+#searchByKavling:hover { background: #d35400; }
+
+.dark-mode-btn { background: #34495e; color: white; }
+.dark-mode-btn:hover { background: #2c3e50; }
+
+.status-btn { background: #9b59b6; color: white; margin-top: 15px; }
+.status-btn:hover { background: #8e44ad; }
+
+/* Search Container in Sidebar */
+#search-container-inline {
+  margin-bottom: 20px;
+}
+
+#search {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--bg-soft);
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+#search:focus {
+  border-color: var(--accent-color);
+  outline: none;
+}
+
+#search-results {
+  list-style: none;
+  padding: 0;
+  margin: 5px 0 0 0;
+  max-height: 150px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  position: absolute;
+  width: calc(100% / 6 - 40px);
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+#search-results li {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+#search-results li:hover { background: var(--bg-soft); }
+
+/* Status Panel Inline */
+.status-panel-inline {
+  margin-top: 20px;
+}
+
+/* =============================== */
+/* KAVLING COLORS (DARI SCRIPT) */
+/* =============================== */
+.kavling-status-kpr { fill: #ff4444 !important; stroke: #111 !important; }
+.kavling-status-stok { fill: #90EE90 !important; stroke: #111 !important; }
+.kavling-status-rekom { fill: #ff44ff !important; stroke: #111 !important; }
+.kavling-status-disewakan { fill: #44ffff !important; stroke: #111 !important; }
+.kavling-status-unknown { fill: #ffffff !important; stroke: #111 !important; }
+
+/* =============================== */
+/* MODALS & OTHERS (Existing) */
+/* =============================== */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: white;
+  width: 90%;
+  max-width: 900px;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  background: var(--header-bg);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body { padding: 20px; overflow-y: auto; }
+
+.modal-compact-layout {
+  display: flex;
+  gap: 20px;
+}
+
+.input-column {
+  flex: 0 0 300px;
+  border-right: 1px solid #eee;
+  padding-right: 20px;
+}
+
+.results-column { flex: 1; display: flex; flex-direction: column; }
+
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #666;
+}
+
+/* Tombol bersihkan & Excel agar lebih terlihat */
+.clear-results-btn, #downloadExcel, #downloadExcelKavling {
+  padding: 12px 20px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 6px 12px rgba(0,0,0,0.15);
+  text-transform: uppercase;
+  color: white;
+  margin-left: 10px;
+  position: relative;
+  top: 0;
+}
+
+.clear-results-btn:hover, #downloadExcel:hover, #downloadExcelKavling:hover {
+  top: -2px;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.15);
+}
+
+.clear-results-btn:active, #downloadExcel:active, #downloadExcelKavling:active {
+  top: 2px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2), 0 3px 5px rgba(0,0,0,0.15);
+}
+
+.clear-results-btn {
+  background: #e67e22;
+}
+
+.clear-results-btn:hover {
+  background: #d35400;
+}
+
+#downloadExcel, #downloadExcelKavling {
+  background: linear-gradient(145deg, #2ecc71, #27ae60) !important;
+}
+
+#downloadExcel:hover, #downloadExcelKavling:hover {
+  background: linear-gradient(145deg, #27ae60, #2ecc71) !important;
+}
+
+.input-group {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+
+.compact-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.compact-search-btn {
+  width: 100%;
+  padding: 10px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.compact-results-box {
+  background: #f9f9f9;
+  border-radius: 12px;
+  padding: 15px;
+  min-height: 300px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+/* Popup style for plots */
+.kavling-popup {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 3000;
+  align-items: center; justify-content: center;
+}
+
+.kavling-popup-content {
+  background: white;
+  width: 600px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.kavling-popup-header {
+  background: #27ae60;
+  color: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.kavling-popup-body { padding: 20px; }
+
+.kavling-data-content {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  color: #333;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.kavling-status-success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Dark Mode support (Basic) */
+body.dark-mode {
+  --bg-soft: #1a1a1a;
+  --bg-white: #2c2c2c;
+  --sidebar-bg: #2c2c2c;
+  --text-main: #ecf0f1;
+  --border-color: #444;
+}
+
+body.dark-mode .sidebar-content h3 { color: #bdc3c7; }
+body.dark-mode #map { background: #333; }
+body.dark-mode .input-group { background: #333; }
+body.dark-mode .compact-results-box { background: #333; color: white; }
+body.dark-mode .modal-content { background: #2c2c2c; color: white; }
+
+/* Pastikan text tetap readable di atas warna */
+#map text {
+  z-index: 10 !important;
+  pointer-events: none !important;
+  paint-order: stroke !important;
+  stroke: white !important;
+  stroke-width: 1px !important;
+  stroke-linejoin: round !important;
+  fill: #000000 !important;
+}
+
+/* Effect 3D for clicked kavling */
+.highlight-kavling {
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4));
+  stroke: #000000 !important;
+  stroke-width: 2.5px !important;
+  paint-order: stroke fill !important;
+  transition: all 0.1s ease;
+  transform: translateY(-3px);
+}
+
+/* Ensure text inside SVG remains unchanged by effects */
+#map text, 
+#map g text,
+.highlight-kavling ~ text,
+g.highlight-kavling text {
+  filter: none !important;
+  transform: none !important;
+  brightness: 1 !important;
+  pointer-events: none !important;
+}
