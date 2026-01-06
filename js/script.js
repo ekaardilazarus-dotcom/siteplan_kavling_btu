@@ -61,8 +61,43 @@ function applyDarkMode() {
   }
 }
 // ===============================
-// HELPERS
+// AUDIO SETTINGS
 // ===============================
+const clickSound = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3');
+clickSound.volume = 0.5;
+
+// ===============================
+// CLICK HANDLER GLOBAL
+// ===============================
+document.addEventListener('click', function(e) {
+  const target = e.target.closest('g[id^="GA"], g[id^="UJ"], g[id^="KR"], g[id^="M"], g[id^="Blok"], rect[id], path[id], polygon[id]');
+  if (target && target.id && target.id !== 'map') {
+    const kode = target.id;
+    
+    // Play sound
+    clickSound.currentTime = 0;
+    clickSound.play().catch(err => console.log('Audio play failed:', err));
+    
+    // Remove previous highlight
+    document.querySelectorAll('.highlight-kavling').forEach(el => {
+      el.classList.remove('highlight-kavling');
+    });
+    
+    // Add new highlight
+    if (target.tagName.toLowerCase() === 'g') {
+      target.querySelectorAll('rect, path, polygon, circle').forEach(child => {
+        child.classList.add('highlight-kavling');
+      });
+    } else {
+      target.classList.add('highlight-kavling');
+    }
+    
+    // Show Popup - Gunakan fetchDataForAddress agar mengambil data dari API
+    if (typeof fetchDataForAddress === 'function') {
+      fetchDataForAddress(kode);
+    }
+  }
+});
 function parseViewBox(vb) {
   const [x, y, w, h] = vb.split(' ').map(Number);
   return { x, y, w, h };
@@ -86,6 +121,10 @@ function clearHighlight() {
           !target.classList.contains('kavling-status-disewakan') &&
           !target.classList.contains('kavling-status-unknown')) {
         el.style.cssText = '';
+      } else {
+        // Jika berstatus, pastikan stroke-width kembali normal
+        el.style.strokeWidth = '';
+        el.style.stroke = '';
       }
     });
 }
@@ -301,19 +340,21 @@ function updateStatusPanel(data) {
     const borderStyle = cat.id === 'unknown' ? 'border: 1px solid #ddd;' : '';
 
     html += `
-      <div class="status-item" style="display: flex; align-items: center; padding: 10px; margin-bottom: 8px; background: #fff; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); ${borderStyle}">
-        <div class="status-color-sample" style="width: 20px; height: 20px; border-radius: 4px; margin-right: 12px; background-color: ${cat.color}; ${cat.id === 'unknown' ? 'border: 1px solid #ccc;' : ''}"></div>
-        <div class="status-info" style="flex: 1;">
-          <div class="status-title" style="font-size: 14px; color: #555;">${cat.title}</div>
-          <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 18px; font-weight: bold; color: #333;">${count}</div>
+      <div class="status-item clickable-status-item" data-type="${cat.id}" style="display: flex; align-items: center; padding: 12px; margin-bottom: 12px; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.2s ease; border: 1px solid #e0e6ed;" onmouseover="this.style.backgroundColor='#e3f2fd'; this.style.borderColor='#2196F3'; this.style.transform='translateX(5px)'" onmouseout="this.style.backgroundColor='#fff'; this.style.borderColor='#e0e6ed'; this.style.transform='none'">
+        <div class="status-color-sample" style="width: 24px; height: 24px; border-radius: 6px; margin-right: 15px; background-color: ${cat.color}; border: 1.5px solid rgba(0,0,0,0.15);"></div>
+        <div class="status-info" style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
+          <div class="status-title" style="font-size: 14px; font-weight: 600; color: #34495e;">${cat.title}</div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 16px; font-weight: 800; color: #2196F3; background: #fff; padding: 2px 12px; border-radius: 20px; border: 1px solid #d1d9e6;">${count}</div>
+            <span style="color: #bdc3c7; font-size: 18px;">›</span>
+          </div>
         </div>
-        <button class="detail-btn" data-type="${cat.id}" style="padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🔍 Detail</button>
       </div>
     `;
   });
 
   html += `
-    <div class="status-total" style="text-align: center; padding: 15px; margin-top: 15px; background: #e8f5e9; border-radius: 8px; font-size: 18px;">
+    <div class="status-total" style="text-align: center; padding: 15px; margin-top: 15px; background: #e8f5e9; border-radius: 8px; font-size: 18px; border: 1px solid #c8e6c9;">
       <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${countByAPI.total}</span></strong>
     </div>
 
@@ -327,9 +368,9 @@ function updateStatusPanel(data) {
 
   panelBody.innerHTML = html;
 
-  // Re-attach event listeners
-  document.querySelectorAll('.detail-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
+  // Re-attach event listeners - Seluruh kotak sekarang menjadi tombol
+  document.querySelectorAll('.clickable-status-item').forEach(item => {
+    item.addEventListener('click', function() {
       const type = this.getAttribute('data-type');
       showKavlingListByCategory(type);
     });
@@ -405,8 +446,16 @@ function colorizeKavling(kavlingData) {
         'kavling-status-unknown'
       );
 
-      // Tambahkan kelas baru
+      // Hapus kelas baru
       element.classList.add(className);
+
+      // Pastikan warna teks tetap hitam saat grup diwarnai
+      const textEls = element.querySelectorAll('text');
+      textEls.forEach(t => {
+        t.style.fill = '#000000';
+        t.style.stroke = 'white';
+        t.style.strokeWidth = '1px';
+      });
 
       // Jika element adalah group, tambahkan ke child elements juga
       if (element.tagName.toLowerCase() === 'g') {
@@ -457,6 +506,14 @@ function colorizeKavling(kavlingData) {
 
       // Tambahkan kelas unknown
       el.classList.add('kavling-status-unknown');
+
+      // Pastikan warna teks tetap hitam
+      const textEls = el.querySelectorAll('text');
+      textEls.forEach(t => {
+        t.style.fill = '#000000';
+        t.style.stroke = 'white';
+        t.style.strokeWidth = '1px';
+      });
 
       // Jika element adalah group, tambahkan ke child elements
       if (el.tagName.toLowerCase() === 'g') {
@@ -1058,7 +1115,9 @@ function showKavlingPopup(address, result) {
       statusClass = 'kavling-status-success';
       statusText = '✅ Data ditemukan';
       if (result.data && result.data.trim() !== '') {
-        dataContent = `<div class="kavling-data-content">${result.data.trim()}</div>`;
+        // Normalisasi data: hapus spasi berlebih di awal tiap baris
+        const normalizedData = result.data.trim().split('\n').map(line => line.trim()).join('\n');
+        dataContent = `<div class="kavling-data-content">${normalizedData}</div>`;
       } else {
         dataContent = '<div style="text-align:center;padding:30px;color:#666;">Data kosong</div>';
       }
