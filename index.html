@@ -7,172 +7,150 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DATA BTU MALANG</title>
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 
-  <h1>DATA KAVLING DAN SERTIFIKAT BTU KNC MALANG</h1>
+  <header class="main-header">
+    <h1>DATA KAVLING DAN SERTIFIKAT BTU KNC MALANG</h1>
+  </header>
 
-  <!-- CONTAINER TOMBOL DI KIRI -->
-  <div id="button-container">
-    <button id="resetZoom">Lihat Semua Area</button>
-    <button id="searchByCertificate" class="cert-btn">
-      <span>📋</span>
-      Cari berdasarkan Sertifikat
-    </button>
-    <!-- TOMBOL BARU: Pencarian Kavling -->
-    <button id="searchByKavling" class="cert-btn">
-      <span>🏠</span>
-      Cari berdasarkan Kavling
-    </button>
-    <!-- dark mode -->
-    <button id="darkModeToggle" class="dark-mode-btn">
-      <span>🌙</span>
-      Dark Mode
-    </button>
-  </div>
+  <div class="main-layout">
+    <!-- BAGIAN KIRI -->
+    <aside class="sidebar-left">
+      <div class="sidebar-content">
+        <h3>Menu Utama</h3>
+        <button id="resetZoom">Lihat Semua Area</button>
+        <button id="searchByCertificate" class="cert-btn">
+          <span>📋</span>
+          Cari berdasarkan Sertifikat
+        </button>
+        <button id="searchByKavling" class="cert-btn">
+          <span>🏠</span>
+          Cari berdasarkan Kavling
+        </button>
+        <button id="darkModeToggle" class="dark-mode-btn">
+          <span>🌙</span>
+          Dark Mode
+        </button>
+      </div>
+    </aside>
 
-  <!-- CONTAINER TOMBOL STATUS DI KANAN (BARU) -->
-  <div id="status-container">
-    <button id="statusKavling" class="status-btn">
-      <span>🎨</span>
-      Status Kavling
-    </button>
-  </div>
+    <!-- BAGIAN TENGAH -->
+    <main class="main-content">
+      <!-- Map container -->
+      <div id="map">
+        <div id="map-loading" style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
+          <div style="text-align: center;">
+            <div style="margin-bottom: 10px;">⏳ Memuat peta...</div>
+            <div style="font-size: 12px; color: #999;" id="map-status">Menghubungkan ke server</div>
+          </div>
+        </div>
+      </div>
+    </main>
 
-  <!-- PANEL STATISTIK STATUS (BARU - AWALNYA DISEMBUNYIKAN) -->
-  <div id="statusPanel" class="status-panel">
-    <div class="status-panel-body">
-      <!-- Content will be injected by JavaScript -->
-    </div>
-  </div>
+    <!-- BAGIAN KANAN -->
+    <aside class="sidebar-right">
+      <div class="sidebar-content">
+        <h3>Pencarian & Status</h3>
+        
+        <!-- SEARCH BOX -->
+        <div id="search-container-inline">
+          <div class="search-row">
+            <input id="search" placeholder="Cari kavling..." disabled>
+          </div>
+          <ul id="search-results"></ul>
+        </div>
 
-  <!-- SEARCH BOX DI KANAN -->
-  <div id="search-container">
-    <div class="search-row">
-      <input id="search" placeholder="Cari kavling..." disabled>
-    </div>
-    <ul id="search-results"></ul>
+        <!-- STATUS BUTTON -->
+        <div id="status-container-inline">
+          <button id="statusKavling" class="status-btn">
+            <span>🎨</span>
+            Status Kavling
+          </button>
+        </div>
+
+        <!-- PANEL STATISTIK STATUS -->
+        <div id="statusPanel" class="status-panel-inline">
+          <div class="status-panel-body">
+            <!-- Content will be injected by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </aside>
   </div>
   
-  <!-- POPUP HASIL KAVLING (AKAN DITAMBAHKAN OLEH JS) -->
+  <!-- MODALS & POPUPS (Tetap di luar layout utama) -->
   <div id="kavlingPopupContainer"></div>
 
-  <!-- Map container -->
-  <div id="map">
-    <div id="map-loading" style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666;">
-      <div style="text-align: center;">
-        <div style="margin-bottom: 10px;">⏳ Memuat peta...</div>
-        <div style="font-size: 12px; color: #999;" id="map-status">Menghubungkan ke server</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL PENCARIAN SERTIFIKAT (Database Sertifikat) -->
+  <!-- MODAL PENCARIAN SERTIFIKAT -->
   <div id="certificateModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
         <h3>🔍 Pencarian Berdasarkan Sertifikat</h3>
         <button class="close-modal">&times;</button>
       </div>
-      
       <div class="modal-body modal-compact-layout">
-        <!-- KOLOM KIRI: Input Pencarian -->
         <div class="input-column">
-          <!-- Sertifikat Induk -->
           <div class="input-group">
             <h4><span>📜</span> Sertifikat Induk</h4>
             <input type="text" id="certInduk" placeholder="Contoh: B.4462" class="compact-input">
-            <button id="searchInduk" class="compact-search-btn">
-              <span>🔎</span> Cari Induk
-            </button>
+            <button id="searchInduk" class="compact-search-btn"><span>🔎</span> Cari Induk</button>
           </div>
-          
-          <!-- NAMA PEMILIK LAMA -->
           <div class="input-group">
-            <h4><span>👴</span> Nama Pemilik Lama / EX</h4>
-            <input type="text" id="certExOwner" placeholder="Contoh: NAMA LAMA / PEMILIK SEBELUMNYA" class="compact-input">
-            <button id="searchExOwner" class="compact-search-btn">
-              <span>🔎</span> Cari Pemilik Lama
-            </button>
+            <h4><span>👴</span> Nama Pemilik Lama</h4>
+            <input type="text" id="certExOwner" placeholder="Contoh: NAMA LAMA" class="compact-input">
+            <button id="searchExOwner" class="compact-search-btn"><span>🔎</span> Cari Pemilik</button>
           </div>
-          
-          <!-- SHGB -->
           <div class="input-group">
             <h4><span>📄</span> SHGB</h4>
             <input type="text" id="certSHGB" placeholder="Contoh: B.00350" class="compact-input">
-            <button id="searchSHGB" class="compact-search-btn">
-              <span>📄</span> Cari SHGB
-            </button>
+            <button id="searchSHGB" class="compact-search-btn"><span>📄</span> Cari SHGB</button>
           </div>
-          
-          <!-- SHM -->
           <div class="input-group">
             <h4><span>🏠</span> SHM</h4>
-            <input type="text" id="certSHM" placeholder="Contoh: 12.06.000000510.0" class="compact-input">
-            <button id="searchSHM" class="compact-search-btn">
-              <span>🔍</span> Cari SHM
-            </button>
+            <input type="text" id="certSHM" placeholder="Contoh: 12.06..." class="compact-input">
+            <button id="searchSHM" class="compact-search-btn"><span>🔍</span> Cari SHM</button>
           </div>
-          
-          <!-- Nama SHM -->
           <div class="input-group">
             <h4><span>👤</span> Nama SHM</h4>
-            <input type="text" id="certNamaSHM" placeholder="Contoh: UMANG GIANTO" class="compact-input">
-            <button id="searchNamaSHM" class="compact-search-btn">
-              <span>👤</span> Cari Nama
-            </button>
+            <input type="text" id="certNamaSHM" placeholder="Contoh: UMANG" class="compact-input">
+            <button id="searchNamaSHM" class="compact-search-btn"><span>👤</span> Cari Nama</button>
           </div>
         </div>
-        
-        <!-- KOLOM KANAN: Hasil Pencarian -->
         <div class="results-column">
           <div class="results-header">
             <h4>Hasil Pencarian</h4>
             <div style="display: flex; gap: 8px;">
-              <button id="downloadExcel" class="clear-results-btn" style="background: #2e7d32; display: none;">
-                <span>📊</span> Excel
-              </button>
-              <button id="clearAll" class="clear-results-btn">
-                <span>🗑️</span> Bersihkan
-              </button>
+              <button id="downloadExcel" class="clear-results-btn" style="background: #2e7d32; display: none;"><span>📊</span> Excel</button>
+              <button id="clearAll" class="clear-results-btn"><span>🗑️</span> Bersihkan</button>
             </div>
           </div>
           <div id="certificateResults" class="compact-results-box">
-            <p class="placeholder">
-              Hasil pencarian akan ditampilkan di sini...
-            </p>
+            <p class="placeholder">Hasil pencarian akan ditampilkan di sini...</p>
           </div>
         </div>
       </div>
-      
       <div class="modal-footer">
         <button id="closeModal" class="primary-btn">Tutup</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL BARU: PENCARIAN KAVLING (Database Kavling) -->
+  <!-- MODAL PENCARIAN KAVLING -->
   <div id="kavlingModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
         <h3>🏠 Pencarian Berdasarkan Kavling</h3>
         <button class="close-kavling-modal">&times;</button>
       </div>
-      
       <div class="modal-body modal-compact-layout">
-        <!-- KOLOM KIRI: Input Pencarian -->
         <div class="input-column">
-          <!-- Nama USER (Kolom H) -->
           <div class="input-group">
             <h4><span>👤</span> Nama USER</h4>
-            <input type="text" id="kavlingNamaUser" placeholder="Contoh: GUSTI VIRMANDI" class="compact-input">
-            <button id="searchNamaUser" class="compact-search-btn">
-              <span>🔍</span> Cari Nama USER
-            </button>
+            <input type="text" id="kavlingNamaUser" placeholder="Contoh: GUSTI" class="compact-input">
+            <button id="searchNamaUser" class="compact-search-btn"><span>🔍</span> Cari Nama</button>
           </div>
-          
-          <!-- STATUS KAVLING (Optional) -->
           <div class="input-group">
             <h4><span>🎯</span> Status Kavling</h4>
             <select id="kavlingStatus" class="compact-input">
@@ -183,33 +161,22 @@
               <option value="disewakan">DISEWAKAN</option>
               <option value="unknown">TIDAK DIKETAHUI</option>
             </select>
-            <button id="searchStatus" class="compact-search-btn">
-              <span>🔍</span> Cari Status
-            </button>
+            <button id="searchStatus" class="compact-search-btn"><span>🔍</span> Cari Status</button>
           </div>
         </div>
-        
-        <!-- KOLOM KANAN: Hasil Pencarian -->
         <div class="results-column">
           <div class="results-header">
             <h4>Hasil Pencarian Kavling</h4>
             <div style="display: flex; gap: 8px;">
-              <button id="downloadExcelKavling" class="clear-results-btn" style="background: #2e7d32; display: none;">
-                <span>📊</span> Excel
-              </button>
-              <button id="clearKavlingResults" class="clear-results-btn">
-                <span>🗑️</span> Bersihkan
-              </button>
+              <button id="downloadExcelKavling" class="clear-results-btn" style="background: #2e7d32; display: none;"><span>📊</span> Excel</button>
+              <button id="clearKavlingResults" class="clear-results-btn"><span>🗑️</span> Bersihkan</button>
             </div>
           </div>
           <div id="kavlingResults" class="compact-results-box">
-            <p class="placeholder">
-              Hasil pencarian kavling akan ditampilkan di sini...
-            </p>
+            <p class="placeholder">Hasil pencarian kavling akan ditampilkan di sini...</p>
           </div>
         </div>
       </div>
-      
       <div class="modal-footer">
         <button id="closeKavlingModal" class="primary-btn">Tutup</button>
       </div>
@@ -217,6 +184,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="js/script.js?v=9"></script> <!-- Update version -->
+  <script src="js/script.js?v=9"></script>
 </body>
 </html>
