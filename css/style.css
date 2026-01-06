@@ -431,10 +431,21 @@ body.dark-mode .modal-content { background: #2c2c2c; color: white; }
 
 /* Effect 3D for clicked kavling */
 .highlight-kavling {
-  filter: drop-shadow(0 0 8px rgba(0,0,0,0.5)) brightness(1.2);
-  stroke: #ffffff !important;
-  stroke-width: 3px !important;
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.4));
+  stroke: #000000 !important;
+  stroke-width: 2.5px !important;
   paint-order: stroke fill !important;
   transition: all 0.1s ease;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+}
+
+/* Ensure text inside SVG remains unchanged by effects */
+#map text, 
+#map g text,
+.highlight-kavling ~ text,
+g.highlight-kavling text {
+  filter: none !important;
+  transform: none !important;
+  brightness: 1 !important;
+  pointer-events: none !important;
 }
