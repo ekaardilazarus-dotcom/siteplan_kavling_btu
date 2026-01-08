@@ -1,4 +1,87 @@
 // ===============================
+// QUOTES SYSTEM
+// ===============================
+const quotes = [
+  "Jangan takut, aku menyertaimu.", "Segala sesuatu dapat kutanggung.", "Kasih tidak berkesudahan.",
+  "Untuk segala ada waktunya.", "Engkaulah kekuatan dan perisaiku.", "Aku merancang damai untukmu.",
+  "Lakukan dengan segenap hatimu.", "Serahkan hidup pada kebaikan.", "Percayalah dengan sepenuh hati.",
+  "Harapan tak pernah mengecewakan.", "Damai sejahtera untuk semua.", "Mintalah, maka akan diberikan.",
+  "Saat lemah, kita justru kuat.", "Hidup berkelimpahan menantimu.", "Bersukacitalah senantiasa.",
+  "Gembalamu takkan meninggalkanmu.", "Kekuatanmu diperbarui setiap hari.", "Yakinlah pada akhir yang baik.",
+  "Jalan kebenaran adalah cahaya.", "Kasih setia baru tiap pagi.", "Iman adalah dasar pengharapan.",
+  "Dalam kesesakan ada pertolongan.", "Tetaplah percaya dan berharap.", "Dekatlah pada yang patah hati.",
+  "Rahmat dan kebenaran menyertaimu.", "Bersama kesulitan ada kemudahan.", "Bersabarlah, kebaikan menyertaimu.",
+  "Jangan berduka, kita bersama.", "Hati yang tenang adalah anugerah.", "Pertolongan selalu sangat dekat.",
+  "Bersyukurlah atas setiap nikmat.", "Beban tak pernah melebihi kekuatan.", "Berbuat baiklah, cinta mengasihi.",
+  "Hati tenang dengan mengingat kebaikan.", "Pengampunan dan kasih sayang nyata.", "Berlomba-lombalah dalam kebaikan.",
+  "Berikanlah kabar gembira selalu.", "Menanglah dengan kesabaranmu.", "Kebaikan hapuskan kejahatan.",
+  "Derajatmu akan ditinggikan.", "Mohonlah pertolongan dengan sabar.", "Jalan keluar pasti akan datang.",
+  "Rezeki telah dijamin untukmu.", "Jangan putus asa dari rahmat.", "Kebaikanmu takkan disia-siakan.",
+  "Berjalanlah dengan rendah hati.", "Tetaplah di jalan yang lurus.", "Kemenangan bagi yang bertakwa.",
+  "Tempat kembali pada kebaikan.", "Kasih sayang untuk yang berserah.", "Hati adalah pangkal segalanya.",
+  "Pikiran adalah pelopor segalanya.", "Kasih sayang adalah obat dunia.", "Kunci kebahagiaan ada di dalam.",
+  "Seribu lilin dari satu nyala.", "Perbuatan baik adalah harta sejati.", "Kesabaran adalah kekuatan tertinggi.",
+  "Perhatikan saat ini, hadiah sejati.", "Kejelasan pikiran bawakan damai.", "Bebaskan diri dari kebencian.",
+  "Kebahagiaan tumbuh dari kebaikan.", "Kehidupan adalah perjalanan belajar.", "Penguasaan diri adalah kemenangan.",
+  "Hargailah setiap nafas kehidupan.", "Batin yang tenang adalah karunia.", "Lakukan dengan penuh perhatian.",
+  "Kebijaksanaan membebaskan derita.", "Kedamaian dimulai dari senyuman.", "Cinta kasih melampaui segalanya.",
+  "Setiap awal adalah momen baru.", "Kendalikan pikiran, kuasai hidup.", "Kehidupan adalah anugerah berharga.",
+  "Kebaikan adalah investasi terbaik.", "Semua makhluk pantas bahagia.", "Jadilah cahaya bagi dirimu sendiri.",
+  "Percayalah pada perjalanan hidupmu.", "Besok adalah halaman baru.", "Kamu lebih kuat dari yang kaukira.",
+  "Kebahagiaan adalah sebuah pilihan.", "Kegagalan adalah guru terbaik.", "Mimpi memberi sayap pada jiwa.",
+  "Lakukan yang terbaik, itu cukup.", "Harapan adalah kompas kehidupan.", "Setiap langkah kecil berarti.",
+  "Kebesaran hati mengalahkan segalanya.", "Teruslah bergerak maju.", "Percaya pada proses waktumu.",
+  "Keberanian adalah tindakan berani.", "Setiap awan memiliki cahaya.", "Hidup adalah petualangan berani.",
+  "Syukur mengubah apa yang kita punya.", "Kamu layak mendapatkan kebaikan.", "Mulailah dari tempatmu berdiri.",
+  "Cahaya terang dalam gelap.", "Keajaiban terjadi setiap hari.", "Percaya, ceritamu belum selesai.",
+  "Waktu yang tepat adalah sekarang.", "Bangkit setiap kali terjatuh.", "Kamu adalah kapten jiwamu.",
+  "Dunia butuh cahaya unikmu."
+];
+
+function updateQuote() {
+  const displayElement = document.getElementById('quote-display');
+  if (!displayElement) return;
+
+  // Fade out
+  displayElement.classList.remove('visible');
+
+  setTimeout(() => {
+    const randomIndex = Math.floor(Math.random() * quotes.length);
+    displayElement.textContent = quotes[randomIndex];
+    // Fade in
+    displayElement.classList.add('visible');
+  }, 1500); // Wait for fade out to complete
+}
+
+setInterval(updateQuote, 15000);
+window.addEventListener('DOMContentLoaded', updateQuote);
+
+// ===============================
+// DATE & TIME DISPLAY
+// ===============================
+function updateDateTime() {
+  const now = new Date();
+  const options = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit',
+    hour12: false 
+  };
+  const dateTimeString = now.toLocaleDateString('id-ID', options);
+  const displayElement = document.getElementById('datetime-display');
+  if (displayElement) {
+    displayElement.textContent = dateTimeString;
+  }
+}
+
+setInterval(updateDateTime, 1000);
+updateDateTime();
+
+// ===============================
 // FINAL CLEAN SCRIPT – SVG MAP
 // Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
@@ -310,7 +393,7 @@ function updateStatusPanel(data) {
 
   // ========== BUAT HTML PANEL ==========
   let html = `
-    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #673ab7; border-bottom: 1px solid #ddd; color: white; cursor: move;">
+    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #673ab7; color: white; cursor: move;">
       <h4 style="margin: 0; font-size: 16px;">📊 Statistik Status Kavling</h4>
       <div style="display: flex; gap: 5px;">
         <button class="close-status-btn" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
@@ -329,37 +412,48 @@ function updateStatusPanel(data) {
     { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444' },
     { id: 'stok', title: 'STOK', color: '#90EE90' },
     { id: 'rekom', title: 'REKOM', color: '#ff44ff' },
-    { id: 'disewakan', title: 'DISEWAKAN', color: '#44ffff' },
+    { id: 'disewakan', title: 'DISEWAKAN', color: '#007FFF' },
     { id: 'unknown', title: 'TIDAK DIKETAHUI (PUTIH)', color: '#ffffff' }
   ];
 
-  categories.forEach(cat => {
+    categories.forEach(cat => {
     const count = countByAPI[cat.id] || 0;
     const borderStyle = cat.id === 'unknown' ? 'border: 1px solid #ddd;' : '';
     
     // Background solid dan Darker untuk area "ID" (ikon sebelah kiri)
     let btnBg = '#ffffff';
     let darkerBg = '#cccccc';
+    let textColor = 'white';
+    let textShadow = '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 1px 1px 2px rgba(0,0,0,0.5)';
+    let countBg = 'rgba(255,255,255,0.2)';
+    let countColor = 'white';
+    let countBorder = 'rgba(255,255,255,0.3)';
+
     if (cat.id === 'kpr') { btnBg = '#ff4444'; darkerBg = '#cc0000'; }
     else if (cat.id === 'stok') { btnBg = '#90EE90'; darkerBg = '#228b22'; }
     else if (cat.id === 'rekom') { btnBg = '#ff44ff'; darkerBg = '#990099'; }
-    else if (cat.id === 'disewakan') { btnBg = '#44ffff'; darkerBg = '#008b8b'; }
+    else if (cat.id === 'disewakan') { btnBg = '#007FFF'; darkerBg = '#005BB5'; }
+    else if (cat.id === 'unknown') { 
+      textColor = '#666666'; 
+      textShadow = 'none';
+      countBg = 'rgba(0,0,0,0.05)';
+      countColor = '#333333';
+      countBorder = 'rgba(0,0,0,0.1)';
+    }
 
     html += `
       <div class="status-item clickable-status-item" data-type="${cat.id}" 
            style="display: flex; align-items: center; padding: 12px; margin-bottom: 12px; 
                   background: ${btnBg}; border-radius: 12px; box-shadow: 0 4px 0 rgba(0,0,0,0.2); 
-                  cursor: pointer; transition: all 0.1s ease; border: 2px solid #000000;" 
-           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 0 rgba(0,0,0,0.2)'" 
-           onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 0 rgba(0,0,0,0.2)'"
-           onmousedown="this.style.transform='translateY(2px)'; this.style.boxShadow='0 1px 0 rgba(0,0,0,0.2)'"
-           onmouseup="this.style.transform='translateY(-2px)'">
-        <div class="status-color-sample" style="width: 28px; height: 28px; border-radius: 8px; margin-right: 15px; background-color: ${darkerBg}; border: 2px solid #000000; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);"></div>
+                  cursor: pointer; transition: all 0.1s ease; border: 1px solid rgba(0,0,0,0.2);
+                  color: ${textColor}; font-weight: 700;
+                  text-shadow: ${textShadow};">
+        <div class="status-color-sample" style="width: 24px; height: 24px; border-radius: 6px; margin-right: 12px; background-color: ${darkerBg}; border: 1px solid rgba(0,0,0,0.3); box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);"></div>
         <div class="status-info" style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
-          <div class="status-title" style="font-size: 14px; font-weight: 800; color: #000000; text-shadow: 1px 1px 0 rgba(255,255,255,0.5);">${cat.title}</div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 16px; font-weight: 900; color: #000000; background: rgba(255,255,255,0.9); padding: 2px 12px; border-radius: 20px; border: 2px solid #000000;">${count}</div>
-            <span style="color: #000000; font-size: 18px; font-weight: 900;">›</span>
+          <div class="status-title" style="font-size: 13px; font-weight: 700;">${cat.title}</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 14px; font-weight: 800; background: ${countBg}; color: ${countColor}; padding: 2px 10px; border-radius: 15px; border: 1px solid ${countBorder}; min-width: 25px; text-align: center;">${count}</div>
+            <span style="font-size: 16px; font-weight: 800;">›</span>
           </div>
         </div>
       </div>
