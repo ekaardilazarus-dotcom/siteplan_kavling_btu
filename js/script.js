@@ -86,7 +86,7 @@ updateDateTime();
 // Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzx4wkSSkg5HthYkRzqMQ7eITxqYf0DUJhjTdBEsO3PnrxFJ2eCtIuIbDAGIo3saYz9/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz-XDREJa-ZydWZY1xoPRlqixDRyGBMm9ycg1AMSPciIFQ1AzFbkUSycfjGuTY77HJe/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbyEPaUBAg2n3732mTnukOnoxA6eN6eTEjso929InZZEbIqjycGzb8zuSJdLmyfaFEJf3w/exec';
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
