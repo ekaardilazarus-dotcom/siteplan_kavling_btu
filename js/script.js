@@ -1,4 +1,73 @@
 // ===============================
+// ACCESS CODE SYSTEM
+// ===============================
+let accessLevel = null;
+
+function showAccessCodePopup() {
+  const overlay = document.createElement('div');
+  overlay.id = 'accessCodeOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(100,100,200,0.95);display:flex;align-items:center;justify-content:center;z-index:10000;';
+  
+  const popup = document.createElement('div');
+  popup.style.cssText = 'background:white;padding:30px;border-radius:12px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);max-width:350px;width:90%;';
+  
+  popup.innerHTML = `
+    <h2 style="margin:0 0 20px 0;color:#333;font-size:20px;">Masukan Kode Akses</h2>
+    <input type="text" id="accessCodeInput" placeholder="Kode Akses... ( BTU999 )" style="width:100%;padding:12px;font-size:16px;border:2px solid #ddd;border-radius:8px;box-sizing:border-box;margin-bottom:15px;text-align:center;">
+    <p id="accessCodeError" style="color:#c62828;font-size:14px;margin:0 0 15px 0;display:none;">Kode akses tidak valid!</p>
+    <button id="accessCodeSubmit" style="width:100%;padding:12px;background:#4CAF50;color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;">Masuk</button>
+  `;
+  
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+  
+  const input = document.getElementById('accessCodeInput');
+  const submitBtn = document.getElementById('accessCodeSubmit');
+  const errorMsg = document.getElementById('accessCodeError');
+  
+  function validateCode() {
+    const code = input.value.trim().toUpperCase();
+    if (code === 'F888') {
+      accessLevel = 'full';
+      overlay.remove();
+      applyAccessRestrictions();
+    } else if (code === 'BTU999') {
+      accessLevel = 'limited';
+      overlay.remove();
+      applyAccessRestrictions();
+    } else {
+      errorMsg.style.display = 'block';
+      input.style.borderColor = '#c62828';
+    }
+  }
+  
+  submitBtn.addEventListener('click', validateCode);
+  input.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') validateCode();
+  });
+  input.addEventListener('input', function() {
+    errorMsg.style.display = 'none';
+    input.style.borderColor = '#ddd';
+  });
+  
+  input.focus();
+}
+
+function applyAccessRestrictions() {
+  if (accessLevel === 'limited') {
+    const certBtn = document.getElementById('searchByCertificate');
+    if (certBtn) certBtn.style.display = 'none';
+    
+    const namaUserGroup = document.querySelector('#kavlingNamaUser')?.closest('.input-group');
+    if (namaUserGroup) namaUserGroup.style.display = 'none';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  showAccessCodePopup();
+});
+
+// ===============================
 // QUOTES SYSTEM
 // ===============================
 const quotes = [
