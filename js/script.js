@@ -854,9 +854,6 @@ function showStatusPanel(data) {
 
 // Nonaktifkan mode status
 function resetStatusMode() {
-  // JANGAN reset warna kavling - pertahankan warna untuk persistence
-  // clearStatusColors(); // DIKOMENTARI agar warna tetap ada
-
   // Sembunyikan panel
   const panel = document.getElementById('statusPanel');
   if (panel) panel.style.display = 'none';
@@ -2756,7 +2753,6 @@ async function generateExcelFromKavlingResults() {
   resetBtn.onclick = () => {
     const svg = map.querySelector('svg');
     clearHighlight();
-    clearStatusColors(); // Juga reset warna status
 
     if (svg && originalViewBox) {
       svg.setAttribute('viewBox', originalViewBox);
@@ -2768,10 +2764,6 @@ async function generateExcelFromKavlingResults() {
     resultsBox.innerHTML = '';
     closeKavlingPopup();
 
-    // Juga reset mode status jika aktif
-    if (isStatusMode) {
-      resetStatusMode();
-    }
   };
 
   // ===============================
