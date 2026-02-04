@@ -215,7 +215,7 @@ function applyDarkMode() {
 // ===============================
 // AUDIO SETTINGS
 // ===============================
-const clickSound = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3');
+const clickSound = new Audio('js/klik.mp3');
 clickSound.volume = 0.5;
 
 // ===============================
