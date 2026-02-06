@@ -13,7 +13,7 @@ function showAccessCodePopup() {
   
   popup.innerHTML = `
     <h2 style="margin:0 0 20px 0;color:#333;font-size:20px;">Masukan Kode Akses</h2>
-    <input type="text" id="accessCodeInput" placeholder="Kode Akses... ( BTU999 )" style="width:100%;padding:12px;font-size:16px;border:2px solid #ddd;border-radius:8px;box-sizing:border-box;margin-bottom:15px;text-align:center;">
+    <input type="text" id="accessCodeInput" placeholder="Kode Akses = BTU999" style="width:100%;padding:12px;font-size:16px;border:2px solid #ddd;border-radius:8px;box-sizing:border-box;margin-bottom:15px;text-align:center;">
     <p id="accessCodeError" style="color:#c62828;font-size:14px;margin:0 0 15px 0;display:none;">Kode akses tidak valid!</p>
     <button id="accessCodeSubmit" style="width:100%;padding:12px;background:#4CAF50;color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;">Masuk</button>
   `;
