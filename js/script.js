@@ -31,10 +31,24 @@ function showAccessCodePopup() {
       accessLevel = 'full';
       overlay.remove();
       applyAccessRestrictions();
+      
+      // Otomatisasi status setelah 2 detik
+      setTimeout(() => {
+        if (typeof fetchKavlingStatus === 'function') {
+          fetchKavlingStatus();
+        }
+      }, 2000);
     } else if (code === 'BTU999') {
       accessLevel = 'limited';
       overlay.remove();
       applyAccessRestrictions();
+
+      // Otomatisasi status setelah 2 detik
+      setTimeout(() => {
+        if (typeof fetchKavlingStatus === 'function') {
+          fetchKavlingStatus();
+        }
+      }, 2000);
     } else {
       errorMsg.style.display = 'block';
       input.style.borderColor = '#c62828';
@@ -462,19 +476,11 @@ function updateStatusPanel(data) {
 
   // ========== BUAT HTML PANEL ==========
   let html = `
-    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #673ab7; color: white; cursor: move;">
-      <h4 style="margin: 0; font-size: 16px;">📊 Statistik Status Kavling</h4>
-      <div style="display: flex; gap: 5px;">
-        <button class="close-status-btn" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
-      </div>
+    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #673ab7; color: white;">
+      <h4 style="margin: 0; font-size: 15px;">📊 Statistik Status Kavling</h4>
     </div>
 
     <div class="status-content" style="padding: 15px;">
-      <div style="margin-bottom: 15px; text-align: center;">
-        <button onclick="fetchKavlingStatus()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-          <span>🔄</span> Refresh Data
-        </button>
-      </div>
   `;
 
   const categories = [
