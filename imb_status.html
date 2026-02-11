@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Status Kavling IMB/PBG/SLF</title>
+  
+  <!-- Proteksi Akses -->
+  <script>
+    if (sessionStorage.getItem('imb_access') !== 'f888') {
+      alert('Akses ditolak. Silakan masukkan kode akses di halaman utama.');
+      window.location.href = 'index.html';
+    }
+  </script>
+
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/imb_status.css">
 </head>
