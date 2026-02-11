@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Status Kavling IMB/PBG/SLF</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/imb_status.css">
+</head>
+<body>
+
+  <header>
+    <h1>STOK BERDASARKAN STATUS KAVLING IMB/PBG/SLF</h1>
+    <div class="header-actions">
+      <a href="index.html" class="back-home-btn">
+        <span>🏠</span> Kembali ke Utama
+      </a>
+      <button id="refreshBtn" class="refresh-btn">
+        <span>🔄</span> Refresh Database
+      </button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- LEFT SIDEBAR (1 Part) -->
+    <aside class="sidebar-filter">
+      <div class="category-label">Stok</div>
+      <button class="filter-btn btn-stok" data-category="stok_imb">
+        Stok dengan IMB/PBG/SLF
+        <span class="count-badge">0</span>
+      </button>
+      <button class="filter-btn btn-stok-no" data-category="stok_no_imb">
+        Stok belum ada IMB/PBG/SLF
+        <span class="count-badge">0</span>
+      </button>
+
+      <div class="category-label">Rekomendasi</div>
+      <button class="filter-btn btn-rekom" data-category="rekom_imb">
+        Rekom dengan IMB/PBG/SLF
+        <span class="count-badge">0</span>
+      </button>
+      <button class="filter-btn btn-rekom-no" data-category="rekom_no_imb">
+        Rekom belum ada IMB/PBG/SLF
+        <span class="count-badge">0</span>
+      </button>
+
+      <div class="category-label">Status Penjualan</div>
+      <button class="filter-btn btn-terjual" data-category="terjual_imb">
+        Terjual dengan IMB/PBG/SLF
+        <span class="count-badge">0</span>
+      </button>
+      <button class="filter-btn btn-terjual-no" data-category="terjual_no_imb">
+        Terjual tanpa IMB/PBG/SLF
+        <span class="count-badge">0</span>
+      </button>
+
+      <div class="category-label">Tersewa</div>
+      <button class="filter-btn btn-tersewa" data-category="tersewa_imb">
+        Tersewa dengan IMB/PBG/SLF
+        <span class="count-badge">0</span>
+      </button>
+      <button class="filter-btn btn-tersewa-no" data-category="tersewa_no_imb">
+        Tersewa tanpa IMB/PBG/SLF
+        <span class="count-badge">0</span>
+      </button>
+
+      <div class="category-label">Lainnya</div>
+      <button class="filter-btn btn-unknown" data-category="unknown">
+        Tidak diketahui
+        <span class="count-badge">0</span>
+      </button>
+    </aside>
+
+    <!-- RIGHT CONTENT (4 Parts) -->
+    <main class="content-area">
+      <div class="content-header">
+        <input type="text" id="searchInput" placeholder="🔍 Cari data kavling..." class="search-input">
+        <button id="downloadBtnFull" class="download-btn" disabled>
+          <span>📥</span> Download data (csv) * Lengkap
+        </button>
+        <button id="downloadBtnEMS" class="download-btn" disabled style="margin-left: 10px;">
+          <span>📥</span> Download data (csv) *support ems
+        </button>
+      </div>
+      <div class="table-container">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th>Nomor Sertifikat</th>
+              <th>Alamat Lokasi Kavling</th>
+              <th>Nomor IMB/PBG/SLF</th>
+              <th>Penerima IMB/PBG/SLF</th>
+              <th>Update Penerima IMB/PGB/SLF</th>
+              <th>Update tanggal Mutasi IMB/PBG/SLF</th>
+              <th>Register IMB/PBG/SLF</th>
+              <th>Referensi Sertifikat</th>
+              <th>Tahun Terbit Sertifikat</th>
+              <th>Tahun Akhir Sertifikat</th>
+              <th>Kode Elektronik</th>
+              <th>Surat Ukur</th>
+              <th>Tanggal Surat Ukur</th>
+              <th>Luas Sertifikat</th>
+              <th>Luas Bangunan</th>
+              <th>Pemegang Hak Sekarang</th>
+              <th>Pemegang Hak Lama</th>
+              <th>Kelurahan</th>
+              <th>Petok Letter C</th>
+              <th>Skema Pembiayaan</th>
+              <th>Tipe Kavling</th>
+              <th>Blok Cluster</th>
+              <th>User Pemohon</th>
+              <th>Skema Penjualan</th>
+              <th>IDPEL KWH</th>
+              <th>Tanggal Pasang PDAM</th>
+              <th>ID PDAM</th>
+              <th>Nomor PBB</th>
+              <th>Nomor Debitur User</th>
+              <th>BPUJL</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Data will be populated here -->
+          </tbody>
+        </table>
+        
+        <div id="loadingState" class="loading-overlay">
+          <div class="icon-md">⏳</div>
+          <div>Memuat data...</div>
+        </div>
+        
+        <div id="emptyState" class="empty-state">
+          <div class="icon-lg">📂</div>
+          <h3>Silakan Pilih Status</h3>
+          <p>Pilih salah satu status di sebelah kiri untuk menampilkan data.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/imb_status.js"></script>
+
+</body>
+</html>
