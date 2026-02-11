@@ -29,6 +29,8 @@ function showAccessCodePopup() {
     const code = input.value.trim().toUpperCase();
     if (code === 'F888') {
       accessLevel = 'full';
+      sessionStorage.setItem('access_level', 'full'); // Simpan level akses
+      sessionStorage.setItem('imb_access', 'f888'); // Simpan akses untuk IMB
       overlay.remove();
       applyAccessRestrictions();
       
@@ -40,6 +42,7 @@ function showAccessCodePopup() {
       }, 2000);
     } else if (code === 'BTU999') {
       accessLevel = 'limited';
+      sessionStorage.setItem('access_level', 'limited'); // Simpan level akses
       overlay.remove();
       applyAccessRestrictions();
 
@@ -72,13 +75,33 @@ function applyAccessRestrictions() {
     const certBtn = document.getElementById('searchByCertificate');
     if (certBtn) certBtn.style.display = 'none';
     
+    // Sembunyikan tombol IMB jika akses terbatas
+    const imbBtn = document.getElementById('checkImbStatus');
+    if (imbBtn) imbBtn.style.display = 'none';
+    
     const namaUserGroup = document.querySelector('#kavlingNamaUser')?.closest('.input-group');
     if (namaUserGroup) namaUserGroup.style.display = 'none';
+  } else if (accessLevel === 'full') {
+    // Pastikan tombol IMB terlihat jika akses penuh
+    const imbBtn = document.getElementById('checkImbStatus');
+    if (imbBtn) imbBtn.style.display = 'block';
   }
 }
 
 window.addEventListener('DOMContentLoaded', function() {
-  showAccessCodePopup();
+  const savedAccess = sessionStorage.getItem('access_level');
+  if (savedAccess) {
+    accessLevel = savedAccess;
+    applyAccessRestrictions();
+    // Otomatisasi status jika sudah login
+    setTimeout(() => {
+      if (typeof fetchKavlingStatus === 'function') {
+        fetchKavlingStatus();
+      }
+    }, 1000);
+  } else {
+    showAccessCodePopup();
+  }
 });
 
 // ===============================
@@ -3086,8 +3109,20 @@ async function generateExcelFromKavlingResults() {
   // BUTTON IMB/PBG/SLF
   // ===============================
   document.getElementById('checkImbStatus')?.addEventListener('click', () => {
-    // Membuka halaman status IMB di tab baru
-    window.open('imb_status.html', '_blank');
+    // Jika sudah memasukkan kode F888 di awal, langsung masuk
+    if (sessionStorage.getItem('imb_access') === 'f888') {
+      window.location.href = 'imb_status.html';
+      return;
+    }
+
+    // Jika belum (misal masuk pakai BTU999), minta kode khusus
+    const accessCode = prompt('Masukkan Kode Akses Khusus IMB:');
+    if (accessCode === 'f888') {
+      sessionStorage.setItem('imb_access', 'f888');
+      window.location.href = 'imb_status.html';
+    } else if (accessCode !== null) {
+      alert('Kode akses salah!');
+    }
   });
 
 }); // PENUTUP UNTUK DOMContentLoaded
