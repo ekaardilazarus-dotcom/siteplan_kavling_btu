@@ -291,7 +291,7 @@ thead {
   background: #f1f1f1;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 10;
 }
 
 th {
@@ -301,6 +301,40 @@ th {
   color: #444;
   border: 1px solid #ccc; /* Clearer border */
   background-color: #e0e0e0; /* Slightly darker header background */
+}
+
+/* Freeze pane for Column 1 (Nomor Sertifikat) and Column 2 (Alamat Lokasi Kavling) */
+th:nth-child(1), td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background-color: inherit;
+}
+
+th:nth-child(2), td:nth-child(2) {
+  position: sticky;
+  left: 150px; /* Adjust based on width of 1st column */
+  z-index: 5;
+  background-color: inherit;
+}
+
+/* Specific z-index for frozen headers to stay above frozen cells */
+th:nth-child(1), th:nth-child(2) {
+  z-index: 15;
+  background-color: #e0e0e0;
+}
+
+/* Ensure alternating row colors and hover states work with sticky background */
+tr:nth-child(even) td {
+  background-color: #f9f9f9;
+}
+
+tr:nth-child(odd) td {
+  background-color: #ffffff;
+}
+
+tr:hover td {
+  background-color: #fafafa !important;
 }
 
 td {
