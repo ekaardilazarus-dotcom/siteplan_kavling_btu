@@ -299,7 +299,7 @@ th {
   text-align: left;
   font-weight: 600;
   color: #444;
-  border: 1px solid #ccc; /* Clearer border */
+  border: 1px solid #999; /* Clearer border */
   background-color: #e0e0e0; /* Slightly darker header background */
 }
 
@@ -309,6 +309,7 @@ th:nth-child(1), td:nth-child(1) {
   left: 0;
   z-index: 5;
   background-color: inherit;
+  border-right: 2px solid #888;
 }
 
 th:nth-child(2), td:nth-child(2) {
@@ -316,6 +317,7 @@ th:nth-child(2), td:nth-child(2) {
   left: 150px; /* Adjust based on width of 1st column */
   z-index: 5;
   background-color: inherit;
+  border-right: 2px solid #888;
 }
 
 /* Specific z-index for frozen headers to stay above frozen cells */
@@ -339,7 +341,7 @@ tr:hover td {
 
 td {
   padding: 10px 15px;
-  border: 1px solid #ccc; /* Clearer border */
+  border: 1px solid #bbb; /* Clearer border */
   color: #555;
 }
 
