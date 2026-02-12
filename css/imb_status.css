@@ -287,11 +287,12 @@ table {
   display: none;
 }
 
-thead {
-  background: #f1f1f1;
+/* Header Sticky Base */
+thead th {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 1;
+  background-color: #e0e0e0;
 }
 
 th {
@@ -299,50 +300,104 @@ th {
   text-align: left;
   font-weight: 600;
   color: #444;
-  border: 1px solid #999; /* Clearer border */
+  border: 1px solid #ccc; /* Clearer border */
   background-color: #e0e0e0; /* Slightly darker header background */
 }
 
-/* Freeze pane for Column 1 (Nomor Sertifikat) and Column 2 (Alamat Lokasi Kavling) */
-th:nth-child(1), td:nth-child(1) {
-  position: sticky;
-  left: 0;
-  z-index: 5;
-  background-color: inherit;
-  border-right: 2px solid #888;
+/* Sortable Header Styles */
+.sortable {
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+  transition: background-color 0.2s;
 }
 
-th:nth-child(2), td:nth-child(2) {
-  position: sticky;
-  left: 150px; /* Adjust based on width of 1st column */
-  z-index: 5;
-  background-color: inherit;
-  border-right: 2px solid #888;
+.sortable:hover {
+  background-color: #d0d0d0 !important;
 }
 
-/* Specific z-index for frozen headers to stay above frozen cells */
-th:nth-child(1), th:nth-child(2) {
-  z-index: 15;
-  background-color: #e0e0e0;
+.sort-icon {
+  margin-left: 5px;
+  font-size: 12px;
+  display: inline-block;
+  opacity: 0.6;
 }
 
-/* Ensure alternating row colors and hover states work with sticky background */
-tr:nth-child(even) td {
-  background-color: #f9f9f9;
+.sortable.asc .sort-icon {
+  opacity: 1;
+  content: '🔼';
 }
 
-tr:nth-child(odd) td {
-  background-color: #ffffff;
-}
-
-tr:hover td {
-  background-color: #fafafa !important;
+.sortable.desc .sort-icon {
+  opacity: 1;
+  content: '🔽';
 }
 
 td {
   padding: 10px 15px;
-  border: 1px solid #bbb; /* Clearer border */
+  border: 1px solid #ccc; /* Clearer border */
   color: #555;
+}
+
+/* Freeze Pane for Column 1, 2, and 3 */
+th:nth-child(1), td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: #f9f9f9;
+  min-width: 50px;
+  max-width: 50px;
+  width: 50px;
+  text-align: center;
+  border-right: 1px solid #ccc !important;
+  background-clip: padding-box;
+}
+
+th:nth-child(2), td:nth-child(2) {
+  position: sticky;
+  left: 50px;
+  z-index: 2;
+  background-color: #f9f9f9;
+  min-width: 140px;
+  max-width: 140px;
+  width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-right: 1px solid #ccc !important;
+  background-clip: padding-box;
+}
+
+th:nth-child(3), td:nth-child(3) {
+  position: sticky;
+  left: 190px; /* 50px (No) + 140px (Sertifikat) */
+  z-index: 2;
+  background-color: #f9f9f9;
+  min-width: 190px;
+  max-width: 190px;
+  width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-right: 2px solid #bbb !important; /* Visual separator */
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  background-clip: padding-box;
+}
+
+/* Ensure header cells stay on top of sticky column cells */
+thead th:nth-child(1), 
+thead th:nth-child(2),
+thead th:nth-child(3) {
+  z-index: 4; /* Higher than both vertical and horizontal sticky */
+  background-color: #d0d0d0; /* Distinct color for frozen headers */
+  border-bottom: 2px solid #bbb;
+  top: 0;
+}
+
+tr:hover td:nth-child(1), 
+tr:hover td:nth-child(2),
+tr:hover td:nth-child(3) {
+  background-color: #f0f0f0;
 }
 
 tr:hover {
