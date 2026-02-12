@@ -15,6 +15,7 @@ let globalData = {};
 let currentCategory = '';
 let currentSearchTerm = '';
 let currentTableData = []; // Data yang sedang ditampilkan di tabel (setelah filter)
+let currentSortOrder = 'asc'; // 'asc' or 'desc'
 
 // Helper: Format Date DD/MM/YYYY
 function formatDate(dateString) {
@@ -101,13 +102,30 @@ async function fetchData() {
   }
 }
 
+// Helper: Filter data berdasarkan term pencarian
+function getFilteredData(data, searchTerm) {
+  if (!searchTerm) return data;
+  const term = searchTerm.toLowerCase();
+  return data.filter(item => {
+    return (
+      (item.alamat_lokasi_kavling && item.alamat_lokasi_kavling.toLowerCase().includes(term)) ||
+      (item.no_sertifikat && item.no_sertifikat.toLowerCase().includes(term)) ||
+      (item.blok_cluster && item.blok_cluster.toLowerCase().includes(term)) ||
+      (item.nomor_imb && item.nomor_imb.toLowerCase().includes(term)) ||
+      (item.user_pemohon && item.user_pemohon.toLowerCase().includes(term)) ||
+      (item.pemegang_hak_sekarang && item.pemegang_hak_sekarang.toLowerCase().includes(term))
+    );
+  });
+}
+
 // Update Badges Count
 function updateBadges() {
   const buttons = document.querySelectorAll('.filter-btn');
   buttons.forEach(btn => {
     const category = btn.getAttribute('data-category');
     if (category && globalData[category]) {
-      const count = globalData[category].length;
+      const filtered = getFilteredData(globalData[category], currentSearchTerm);
+      const count = filtered.length;
       const badge = btn.querySelector('.count-badge');
       if (badge) badge.textContent = count;
     }
@@ -150,20 +168,18 @@ function applyFilterAndRender() {
   let data = globalData[currentCategory] || [];
   
   // Filter berdasarkan Search Term
-  if (currentSearchTerm) {
-    const term = currentSearchTerm.toLowerCase();
-    data = data.filter(item => {
-      // Cari di berbagai field penting
-      return (
-        (item.alamat_lokasi_kavling && item.alamat_lokasi_kavling.toLowerCase().includes(term)) ||
-        (item.no_sertifikat && item.no_sertifikat.toLowerCase().includes(term)) ||
-        (item.blok_cluster && item.blok_cluster.toLowerCase().includes(term)) ||
-        (item.nomor_imb && item.nomor_imb.toLowerCase().includes(term)) ||
-        (item.user_pemohon && item.user_pemohon.toLowerCase().includes(term)) ||
-        (item.pemegang_hak_sekarang && item.pemegang_hak_sekarang.toLowerCase().includes(term))
-      );
-    });
-  }
+  data = getFilteredData(data, currentSearchTerm);
+
+  // Sorting: Alamat Lokasi Kavling (Natural Sort)
+  data.sort((a, b) => {
+    const valA = a.alamat_lokasi_kavling || '';
+    const valB = b.alamat_lokasi_kavling || '';
+    
+    // Gunakan localeCompare dengan numeric: true untuk pengurutan alami (misal: M1, M2, M10)
+    const compareResult = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+    
+    return currentSortOrder === 'asc' ? compareResult : -compareResult;
+  });
   
   // Simpan data hasil filter untuk keperluan download
   currentTableData = data;
@@ -198,9 +214,10 @@ function applyFilterAndRender() {
   // Gunakan Fragment untuk performa lebih baik
   const fragment = document.createDocumentFragment();
   
-  data.forEach(item => {
+  data.forEach((item, index) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td style="text-align: center;">${index + 1}</td>
       <td>${item.no_sertifikat || ''}</td>
       <td>${item.alamat_lokasi_kavling || ''}</td>
       <td>${item.nomor_imb || ''}</td>
@@ -246,7 +263,86 @@ function updateDownloadButtons(enable) {
   if (downloadBtnEMS) downloadBtnEMS.disabled = !enable;
 }
 
-// Download CSV Function
+// Download Excel Function
+window.downloadExcel = function() {
+  if (!currentTableData || currentTableData.length === 0) return;
+
+  const allHeaders = [
+    { label: 'No Sertifikat', key: 'no_sertifikat' },
+    { label: 'Alamat Lokasi Kavling', key: 'alamat_lokasi_kavling' },
+    { label: 'Nomor IMB/PBG/SLF', key: 'nomor_imb' },
+    { label: 'Penerima IMB/PBG/SLF', key: 'penerima_imb' },
+    { label: 'Update Penerima IMB/PGB/SLF', key: 'update_penerima_imb' },
+    { label: 'Update tanggal Mutasi IMB/PBG/SLF', key: 'update_tgl_mutasi' },
+    { label: 'Register IMB/PBG/SLF', key: 'register_imb' },
+    { label: 'Referensi Sertifikat', key: 'referensi_sertifikat' },
+    { label: 'Tahun Terbit Sertifikat', key: 'tahun_terbit_sertifikat' },
+    { label: 'Tahun Akhir Sertifikat', key: 'tahun_akhir_sertifikat' },
+    { label: 'Kode Elektronik', key: 'kode_elektronik' },
+    { label: 'Surat Ukur', key: 'surat_ukur' },
+    { label: 'Tanggal Surat Ukur', key: 'tanggal_surat_ukur' },
+    { label: 'Luas Sertifikat', key: 'luas_sertifikat' },
+    { label: 'Luas Bangunan', key: 'luas_bangunan' },
+    { label: 'Pemegang Hak Sekarang', key: 'pemegang_hak_sekarang' },
+    { label: 'Pemegang Hak Lama', key: 'pemegang_hak_lama' },
+    { label: 'Kelurahan', key: 'kelurahan' },
+    { label: 'Petok Letter C', key: 'petok_letter_c' },
+    { label: 'Skema Pembiayaan', key: 'skema_pembiayaan' },
+    { label: 'Tipe Kavling', key: 'tipe_kavling' },
+    { label: 'Blok Cluster', key: 'blok_cluster' },
+    { label: 'User Pemohon', key: 'user_pemohon' },
+    { label: 'Skema Penjualan', key: 'skema_penjualan' },
+    { label: 'IDPEL KWH', key: 'idpel_kwh' },
+    { label: 'Tanggal Pasang PDAM', key: 'tanggal_pasang_pdam' },
+    { label: 'ID PDAM', key: 'id_pdam' },
+    { label: 'Nomor PBB', key: 'nomor_pbb' },
+    { label: 'Nomor Debitur User', key: 'nomor_debitur_user' },
+    { label: 'BPUJL', key: 'bpujl' }
+  ];
+
+  // Prepare data for XLSX
+  const excelData = currentTableData.map((row, index) => {
+    const rowObj = { 'No': index + 1 };
+    allHeaders.forEach(h => {
+      let val = row[h.key] || '';
+      
+      // Force empty for specific columns
+      if (['kode_elektronik', 'nomor_pbb', 'nomor_debitur_user'].includes(h.key)) {
+        val = '';
+      }
+      // Format Luas Bangunan
+      else if (h.key === 'luas_bangunan') {
+        val = formatLuas(val);
+      }
+      // Format dates
+      else if (['update_tgl_mutasi', 'tanggal_surat_ukur', 'tanggal_pasang_pdam', 'tahun_terbit_sertifikat', 'tahun_akhir_sertifikat'].includes(h.key)) {
+        val = formatDate(val);
+      }
+      
+      rowObj[h.label] = val;
+    });
+    return rowObj;
+  });
+
+  // Create Worksheet
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Data Kavling");
+
+  // Get unique filename
+  const categoryLabel = document.querySelector(`.filter-btn[data-category="${currentCategory}"]`)?.textContent.split('\n')[0].trim() || 'Data';
+  const searchSuffix = currentSearchTerm ? `_search_${currentSearchTerm}` : '';
+  const timestamp = new Date().toISOString().slice(0, 10);
+  let filename = `Data_${categoryLabel}${searchSuffix}_${timestamp}.xlsx`;
+  
+  // Sanitize filename (remove invalid characters like / \ : * ? " < > |)
+  filename = filename.replace(/[\/\\:*?"<>|]/g, '_').replace(/\s+/g, '_');
+
+  // Download
+  XLSX.writeFile(workbook, filename);
+};
+
+// Download CSV Function (Keep for EMS or general)
 window.downloadCSV = function(mode) {
   if (!currentTableData || currentTableData.length === 0) return;
 
@@ -365,7 +461,7 @@ window.onload = function() {
   // Download button listener
   const downloadBtnFull = document.getElementById('downloadBtnFull');
   if(downloadBtnFull) {
-    downloadBtnFull.addEventListener('click', () => downloadCSV('full'));
+    downloadBtnFull.addEventListener('click', () => downloadExcel());
   }
 
   const downloadBtnEMS = document.getElementById('downloadBtnEMS');
@@ -378,8 +474,31 @@ window.onload = function() {
   if (searchInput) {
     searchInput.addEventListener('input', function(e) {
       currentSearchTerm = e.target.value;
+      updateBadges(); // Perbarui semua jumlah di tombol sidebar
       applyFilterAndRender();
     });
+  }
+
+  // Sorting Listener
+  const sortHeader = document.getElementById('sortAlamat');
+  if (sortHeader) {
+    sortHeader.addEventListener('click', function() {
+      // Toggle order
+      currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+      
+      // Update UI
+      this.classList.toggle('asc', currentSortOrder === 'asc');
+      this.classList.toggle('desc', currentSortOrder === 'desc');
+      const icon = this.querySelector('.sort-icon');
+      if (icon) icon.textContent = currentSortOrder === 'asc' ? '🔼' : '🔽';
+      
+      applyFilterAndRender();
+    });
+    
+    // Set initial class
+    sortHeader.classList.add('asc');
+    const icon = sortHeader.querySelector('.sort-icon');
+    if (icon) icon.textContent = '🔼';
   }
 
   // Load Data
