@@ -1,0 +1,215 @@
+/* Specific styles for Certificate Search Page */
+
+.input-group-search {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.input-group-search label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.search-row {
+  display: flex;
+  gap: 5px;
+}
+
+.search-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.mini-search-btn {
+  background: #673ab7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mini-search-btn:hover {
+  background: #512da8;
+}
+
+.clear-btn {
+  margin-top: 10px;
+  padding: 12px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.clear-btn:hover {
+  background: #d32f2f;
+}
+
+.download-btn {
+  background: #2196f3 !important;
+}
+
+.download-btn:hover {
+  background: #1976d2 !important;
+}
+
+.back-home-btn {
+  background: #2196f3 !important;
+}
+
+.back-home-btn:hover {
+   background: #1976d2 !important;
+ }
+
+ .search-status-info {
+   margin-right: auto;
+   font-size: 14px;
+   color: #444;
+ }
+
+.search-status-info strong {
+  color: #2196f3;
+}
+
+/* Override sidebar color to match certificate theme if needed */
+.sidebar-filter {
+  background-color: #e3f2fd;
+  color: #333;
+  min-width: 280px;
+}
+
+.sidebar-header h3 {
+  color: #1976d2;
+}
+
+.input-group-search label {
+  color: #1976d2;
+}
+
+/* Reset Tabel untuk menghilangkan gap */
+.results-table {
+  border-collapse: separate !important; /* Gunakan separate untuk sticky border yang lebih baik */
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+/* Header Sticky Base (Scroll Vertical) */
+th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  background-color: #bbdefb !important; /* Biru muda untuk header */
+  border-bottom: 2px solid #64b5f6 !important;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #0d47a1 !important; /* Biru tua untuk teks header */
+}
+
+th, td {
+  border-right: 1px solid #bbdefb !important;
+  border-bottom: 1px solid #bbdefb !important;
+  padding: 0 !important;
+}
+
+/* FREEZE PANE (Scroll Horizontal) */
+
+/* Kolom 1: No */
+th:nth-child(1), td:nth-child(1) {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 10 !important;
+  background-color: #e3f2fd;
+  width: 45px !important;
+  min-width: 45px !important;
+  max-width: 45px !important;
+}
+
+/* Kolom 2: No Sertifikat */
+th:nth-child(2), td:nth-child(2) {
+  position: sticky !important;
+  left: 45px !important;
+  z-index: 10 !important;
+  background-color: #e3f2fd;
+  width: 200px !important;
+  min-width: 200px !important;
+}
+
+/* Kolom 3: Alamat Kavling */
+th:nth-child(3), td:nth-child(3) {
+  position: sticky !important;
+  left: 245px !important;
+  z-index: 10 !important;
+  background-color: #e3f2fd;
+  width: 300px !important;
+  min-width: 300px !important;
+  box-shadow: 2px 0 5px rgba(33, 150, 243, 0.2);
+}
+
+/* Pertemuan Vertical & Horizontal Sticky (Header 3 Kolom Pertama) */
+thead th:nth-child(1), 
+thead th:nth-child(2), 
+thead th:nth-child(3) {
+  z-index: 110 !important;
+  background-color: #bbdefb !important;
+}
+
+/* Container untuk isi cell */
+.cell-content {
+  padding: 8px 10px; /* Diperkecil dari 12px */
+  display: block;
+  box-sizing: border-box;
+  font-size: 13px; /* Ukuran font diperkecil sedikit agar lebih kompak */
+  white-space: nowrap; /* Mencegah wrap agar kolom tetap ramping */
+}
+
+/* Header Cells Alignment */
+.header-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 8px 10px; /* Diperkecil dari 12px */
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 13px;
+}
+
+/* Sorting Styles (Dikembalikan) */
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+th.sortable:hover {
+  background-color: #d0d0d0 !important;
+}
+
+.sort-icon {
+  margin-left: 4px;
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.no-content {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 8px 0; /* Diperkecil dari 12px */
+}
