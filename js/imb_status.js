@@ -16,6 +16,7 @@ let currentCategory = '';
 let currentSearchTerm = '';
 let currentTableData = []; // Data yang sedang ditampilkan di tabel (setelah filter)
 let currentSortOrder = 'asc'; // 'asc' or 'desc'
+let currentSortColumn = 'alamat_lokasi_kavling'; // Default sort column
 
 // Helper: Format Date DD/MM/YYYY
 function formatDate(dateString) {
@@ -170,13 +171,13 @@ function applyFilterAndRender() {
   // Filter berdasarkan Search Term
   data = getFilteredData(data, currentSearchTerm);
 
-  // Sorting: Alamat Lokasi Kavling (Natural Sort)
+  // Sorting Logic
   data.sort((a, b) => {
-    const valA = a.alamat_lokasi_kavling || '';
-    const valB = b.alamat_lokasi_kavling || '';
+    let valA = a[currentSortColumn] || '';
+    let valB = b[currentSortColumn] || '';
     
-    // Gunakan localeCompare dengan numeric: true untuk pengurutan alami (misal: M1, M2, M10)
-    const compareResult = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+    // Gunakan localeCompare dengan numeric: true untuk pengurutan alami
+    const compareResult = String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
     
     return currentSortOrder === 'asc' ? compareResult : -compareResult;
   });
@@ -491,23 +492,50 @@ window.onload = function() {
   const sortHeader = document.getElementById('sortAlamat');
   if (sortHeader) {
     sortHeader.addEventListener('click', function() {
-      // Toggle order
-      currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+      if (currentSortColumn === 'alamat_lokasi_kavling') {
+        currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+      } else {
+        currentSortColumn = 'alamat_lokasi_kavling';
+        currentSortOrder = 'asc';
+      }
       
-      // Update UI
-      this.classList.toggle('asc', currentSortOrder === 'asc');
-      this.classList.toggle('desc', currentSortOrder === 'desc');
-      const icon = this.querySelector('.sort-icon');
-      if (icon) icon.textContent = currentSortOrder === 'asc' ? '🔼' : '🔽';
-      
+      updateSortUI();
       applyFilterAndRender();
     });
-    
-    // Set initial class
-    sortHeader.classList.add('asc');
-    const icon = sortHeader.querySelector('.sort-icon');
-    if (icon) icon.textContent = '🔼';
   }
+
+  const sortSkema = document.getElementById('sortSkema');
+  if (sortSkema) {
+    sortSkema.addEventListener('click', function() {
+      if (currentSortColumn === 'skema_penjualan') {
+        currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+      } else {
+        currentSortColumn = 'skema_penjualan';
+        currentSortOrder = 'asc';
+      }
+      
+      updateSortUI();
+      applyFilterAndRender();
+    });
+  }
+
+  function updateSortUI() {
+    document.querySelectorAll('.sortable').forEach(header => {
+      header.classList.remove('asc', 'desc');
+      const icon = header.querySelector('.sort-icon');
+      if (icon) icon.textContent = '↕️';
+    });
+
+    const activeHeader = currentSortColumn === 'alamat_lokasi_kavling' ? sortHeader : sortSkema;
+    if (activeHeader) {
+      activeHeader.classList.add(currentSortOrder);
+      const icon = activeHeader.querySelector('.sort-icon');
+      if (icon) icon.textContent = currentSortOrder === 'asc' ? '🔼' : '🔽';
+    }
+  }
+  
+  // Set initial UI
+  updateSortUI();
 
   // Load Data
   fetchData();
