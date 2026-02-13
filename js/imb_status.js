@@ -2,8 +2,8 @@
 // KONEKSI DATABASE (APPSCRIPT API)
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxnzA8pzipqCFj8y8Yuor9GHqBLj18yk1-cFOsn8Tc2pDBGwjTh1fdyJchjbD7KQGhe/exec';
-const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbyEPaUBAg2n3732mTnukOnoxA6eN6eTEjso929InZZEbIqjycGzb8zuSJdLmyfaFEJf3w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxz9SLfNa9v38y5uDwVLurSS05Aoe6PhfZmEU_J-tfW1jntwopzDQ5vlydO-ara3ltO/exec';
+const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
 
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
@@ -330,13 +330,21 @@ window.downloadExcel = function() {
   XLSX.utils.book_append_sheet(workbook, worksheet, "Data Kavling");
 
   // Get unique filename
-  const categoryLabel = document.querySelector(`.filter-btn[data-category="${currentCategory}"]`)?.textContent.split('\n')[0].trim() || 'Data';
-  const searchSuffix = currentSearchTerm ? `_search_${currentSearchTerm}` : '';
-  const timestamp = new Date().toISOString().slice(0, 10);
-  let filename = `Data_${categoryLabel}${searchSuffix}_${timestamp}.xlsx`;
+  let categoryLabel = document.querySelector(`.filter-btn[data-category="${currentCategory}"]`)?.textContent.split('\n')[0].trim() || 'Data';
   
-  // Sanitize filename (remove invalid characters like / \ : * ? " < > |)
-  filename = filename.replace(/[\/\\:*?"<>|]/g, '_').replace(/\s+/g, '_');
+  // Format search part
+  const searchPart = currentSearchTerm ? `_${currentSearchTerm}` : '';
+  
+  // Format category part: replace spaces and special chars like /
+  const categoryPart = categoryLabel.replace(/[\/\s]+/g, '_');
+  
+  const timestamp = new Date().toISOString().slice(0, 10);
+  
+  // Final filename pattern: Data_[Search]_[Category]_[Date].xlsx
+  let filename = `Data${searchPart}_${categoryPart}_${timestamp}.xlsx`;
+  
+  // Sanitize filename final check (remove invalid characters like \ : * ? " < > |)
+  filename = filename.replace(/[\/\\:*?"<>|]/g, '_');
 
   // Download
   XLSX.writeFile(workbook, filename);
