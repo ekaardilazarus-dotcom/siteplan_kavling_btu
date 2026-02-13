@@ -1,0 +1,331 @@
+// ===============================
+// KONEKSI DATABASE SERTIFIKAT (APPSCRIPT API)
+// ===============================
+
+const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
+
+console.log('🔗 Certificate Database Connection Initialized');
+
+// Global State
+let globalCertData = []; 
+let filteredResults = [];
+let searchTimeout;
+let activeFilters = {
+  shgb: '',
+  shm: '',
+  nama_shm: '',
+  induk: '',
+  ex_owner: ''
+};
+
+// State untuk sorting
+let currentSort = {
+  column: null, // index kolom
+  direction: 'asc' // 'asc' atau 'desc'
+};
+
+// Helper: Format Date DD/MM/YYYY
+function formatDate(dateString) {
+  if (!dateString || dateString === '-' || dateString === '') return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (e) {
+    return dateString;
+  }
+}
+
+// Fetch Semua Data Sertifikat saat Inisialisasi
+async function initData() {
+  const loading = document.getElementById('loadingState');
+  const empty = document.getElementById('emptyState');
+  const table = document.getElementById('dataTable');
+  const info = document.getElementById('searchStatusInfo');
+  
+  loading.style.display = 'flex';
+  empty.style.display = 'none';
+  table.style.display = 'none';
+
+  try {
+    console.log('⏳ Memuat seluruh database sertifikat...');
+    const response = await fetch(`${CERT_API_URL}?action=get_all`);
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      console.log(`✅ Berhasil memuat ${result.totalRecords} data`);
+      globalCertData = result.results;
+      filteredResults = [...globalCertData];
+      renderTable();
+      info.innerHTML = `Menampilkan seluruh data database: <strong>${result.totalRecords} records</strong>`;
+    } else {
+      console.error('❌ Gagal memuat data:', result.message);
+      info.innerHTML = `<span style="color: red;">Gagal memuat data: ${result.message}</span>`;
+      empty.style.display = 'flex';
+    }
+    
+  } catch (error) {
+    console.error('❌ Error Fetching Data:', error);
+    info.innerHTML = `<span style="color: red;">Kesalahan koneksi database.</span>`;
+    empty.style.display = 'flex';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+// Fungsi Pencarian (Local Search untuk kecepatan & kestabilan)
+function performLocalSearch() {
+  const info = document.getElementById('searchStatusInfo');
+  
+  // Ambil semua nilai filter yang tidak kosong
+  const filters = Object.entries(activeFilters).filter(([_, val]) => val && val.trim().length > 0);
+
+  if (filters.length === 0) {
+    filteredResults = [...globalCertData];
+    info.innerHTML = `Menampilkan seluruh data database: <strong>${globalCertData.length} records</strong>`;
+    renderTable();
+    return;
+  }
+
+  // Lakukan filtering lokal pada globalCertData
+  filteredResults = globalCertData.filter(item => {
+    const d = item.fullData || [];
+    
+    // Cek setiap filter aktif
+    return filters.every(([type, value]) => {
+      const searchKey = value.toLowerCase().trim();
+      let cellValue = '';
+
+      switch(type) {
+        case 'shgb': cellValue = String(d[0] || '').toLowerCase(); break;     // A
+        case 'shm': cellValue = String(d[3] || '').toLowerCase(); break;      // D
+        case 'nama_shm': cellValue = String(d[4] || '').toLowerCase(); break; // E
+        case 'induk': cellValue = String(d[5] || '').toLowerCase(); break;    // F
+        case 'ex_owner': cellValue = String(d[13] || '').toLowerCase(); break; // N
+      }
+
+      // Matching fleksibel (menghapus spasi dan tanda baca untuk perbandingan)
+      const cleanCellValue = cellValue.replace(/[-\s().]/g, '');
+      const cleanSearchKey = searchKey.replace(/[-\s().]/g, '');
+
+      return cellValue.includes(searchKey) || cleanCellValue.includes(cleanSearchKey);
+    });
+  });
+
+  info.innerHTML = `Hasil filter: <strong>${filteredResults.length} ditemukan</strong>`;
+  
+  // Jika ada sort aktif, terapkan kembali sort setelah filter
+  if (currentSort.column !== null) {
+    applySortLogic();
+  } else {
+    renderTable();
+  }
+}
+
+// Fungsi Sorting Tabel
+function sortTable(columnIndex) {
+  // Jika klik kolom yang sama, toggle arah
+  if (currentSort.column === columnIndex) {
+    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSort.column = columnIndex;
+    currentSort.direction = 'asc';
+  }
+
+  // Update UI Header (Class sort)
+  updateSortHeaders();
+  
+  // Terapkan Logika Sort
+  applySortLogic();
+}
+
+function applySortLogic() {
+  const idx = currentSort.column;
+  const dir = currentSort.direction;
+
+  filteredResults.sort((a, b) => {
+    const valA = String((a.fullData && a.fullData[idx]) || '').toLowerCase();
+    const valB = String((b.fullData && b.fullData[idx]) || '').toLowerCase();
+
+    // Cek jika ini angka (untuk pengurutan nomor yang benar)
+    const numA = parseFloat(valA);
+    const numB = parseFloat(valB);
+
+    if (!isNaN(numA) && !isNaN(numB)) {
+      return dir === 'asc' ? numA - numB : numB - numA;
+    }
+
+    // Default string comparison
+    if (valA < valB) return dir === 'asc' ? -1 : 1;
+    if (valA > valB) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  renderTable();
+}
+
+function updateSortHeaders() {
+  const headers = document.querySelectorAll('th.sortable');
+  headers.forEach((th) => {
+    th.classList.remove('asc', 'desc'); // Sesuai class di imb_status.css
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.innerHTML = '⇅';
+
+    const onclickAttr = th.getAttribute('onclick');
+    if (onclickAttr && onclickAttr.includes(`sortTable(${currentSort.column})`)) {
+      th.classList.add(currentSort.direction); // 'asc' atau 'desc'
+      if (icon) icon.innerHTML = currentSort.direction === 'asc' ? '🔼' : '🔽';
+    }
+  });
+}
+
+// Render Table
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const table = document.getElementById('dataTable');
+  const empty = document.getElementById('emptyState');
+  const downloadBtn = document.getElementById('downloadBtnFull');
+
+  tbody.innerHTML = '';
+
+  if (filteredResults.length === 0) {
+    table.style.display = 'none';
+    empty.style.display = 'flex';
+    downloadBtn.disabled = true;
+    return;
+  }
+
+  table.style.display = 'table';
+  empty.style.display = 'none';
+  downloadBtn.disabled = false;
+
+  const fragment = document.createDocumentFragment();
+
+  filteredResults.forEach((item, index) => {
+    const tr = document.createElement('tr');
+    const d = item.fullData || [];
+    
+    // Column 0: No
+    const tdNo = document.createElement('td');
+    tdNo.style.textAlign = 'center';
+    tdNo.innerHTML = `<div class="no-content">${index + 1}</div>`;
+    tr.appendChild(tdNo);
+
+    // Columns 1-26 (Sertifikat Data)
+    for (let i = 0; i < 26; i++) {
+      const td = document.createElement('td');
+      let val = d[i] || '';
+      
+      // Formatting khusus untuk tanggal (7: Tahun Akhir Hak ditambahkan)
+      if (i === 7 || i === 10 || i === 18 || i === 19 || i === 21 || i === 23 || i === 25) {
+        val = formatDate(val);
+      }
+      
+      td.innerHTML = `<div class="cell-content">${val}</div>`;
+      tr.appendChild(td);
+    }
+    
+    fragment.appendChild(tr);
+  });
+
+  tbody.appendChild(fragment);
+}
+
+// Event Listeners
+function setupEventListeners() {
+  const inputs = {
+    shgb: 'certSHGB',
+    shm: 'certSHM',
+    nama_shm: 'certNamaSHM',
+    induk: 'certInduk',
+    ex_owner: 'certExOwner'
+  };
+
+  Object.entries(inputs).forEach(([type, id]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', (e) => {
+        activeFilters[type] = e.target.value;
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          performLocalSearch();
+        }, 300); // Delay lebih cepat (300ms) untuk local search
+      });
+      
+      // Support tombol cari (mini-search-btn) jika diklik
+      const btnId = 'btnSearch' + id.replace('cert', '');
+      document.getElementById(btnId)?.addEventListener('click', () => {
+        activeFilters[type] = el.value;
+        performLocalSearch();
+      });
+    }
+  });
+
+  // Download Excel
+  document.getElementById('downloadBtnFull')?.addEventListener('click', downloadExcel);
+}
+
+// Download Excel
+function downloadExcel() {
+  if (filteredResults.length === 0) return;
+
+  const headers = [
+    "No", "N0 SERTIFIKAT", "ALAMAT LOKASI KAVLING", "KELOMPOK SERTIFIKAT", "NOMOR SHM", 
+    "NAMA SHM", "INDUK TANAH SERTIFIKAT", "TAHUN TERBIT SERTIFIKAT", "TAHUN AKHIR HAK", 
+    "NIB", "SURAT UKUR", "TANGGAL SURAT UKUR", "LUAS SERTIFIKAT", "PEMEGANG HAK", 
+    "PEMILIK LAMA", "KELURAHAN", "PETOK LETER C SK SHGB", "PEMBIAYAAN", 
+    "TIPE KAVLING BERUPA", "TANGGAL MUTASI", "UPDATE TANGGAL MUTASI", 
+    "PENERIMA SERIFIKAT", "UPDATE PENERIMA SERTIFIKAT", "DITERIMA OLEH", 
+    "UPDATE DITERIMA OLEH", "PROSES SERTIFIKAT", "UPDATE PROSES SERTIFIKAT"
+  ];
+
+  const data = filteredResults.map((item, index) => {
+    const d = item.fullData || [];
+    return [
+      index + 1,
+      d[0] || '',
+      d[1] || '',
+      d[2] || '',
+      d[3] || '',
+      d[4] || '',
+      d[5] || '',
+      d[6] || '',
+      formatDate(d[7]),
+      d[8] || '',
+      d[9] || '',
+      formatDate(d[10]),
+      d[11] || '',
+      d[12] || '',
+      d[13] || '',
+      d[14] || '',
+      d[15] || '',
+      d[16] || '',
+      d[17] || '',
+      formatDate(d[18]),
+      formatDate(d[19]),
+      d[20] || '',
+      formatDate(d[21]),
+      d[22] || '',
+      formatDate(d[23]),
+      d[24] || '',
+      formatDate(d[25])
+    ];
+  });
+
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Hasil Pencarian Sertifikat");
+  
+  const timestamp = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(workbook, `Pencarian_Sertifikat_${timestamp}.xlsx`);
+}
+
+// Init on Load
+window.onload = () => {
+  setupEventListeners();
+  initData(); 
+};
