@@ -611,11 +611,11 @@ function updateStatusPanel(data) {
 
   // ========== BUAT HTML PANEL ==========
   let html = `
-    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #673ab7; color: white;">
-      <h4 style="margin: 0; font-size: 15px;">📊 Statistik Status Kavling</h4>
+    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #673ab7; color: white;">
+      <h4 style="margin: 0; font-size: 14px;">📊 Statistik Kavling</h4>
     </div>
 
-    <div class="status-content" style="padding: 15px;">
+    <div class="status-content" style="padding: 12px;">
   `;
 
   const categories = [
@@ -653,17 +653,17 @@ function updateStatusPanel(data) {
 
     html += `
       <div class="status-item clickable-status-item" data-type="${cat.id}" 
-           style="display: flex; align-items: center; padding: 12px; margin-bottom: 12px; 
-                  background: ${btnBg}; border-radius: 12px; box-shadow: 0 4px 0 rgba(0,0,0,0.2); 
-                  cursor: pointer; transition: all 0.1s ease; border: 1px solid rgba(0,0,0,0.2);
+           style="display: flex; align-items: center; padding: 10px; margin-bottom: 10px; 
+                  background: ${btnBg}; border-radius: 10px; box-shadow: 0 3px 0 rgba(0,0,0,0.15); 
+                  cursor: pointer; transition: all 0.1s ease; border: 1px solid rgba(0,0,0,0.1);
                   color: ${textColor}; font-weight: 700;
-                  text-shadow: ${textShadow};">
-        <div class="status-color-sample" style="width: 24px; height: 24px; border-radius: 6px; margin-right: 12px; background-color: ${darkerBg}; border: 1px solid rgba(0,0,0,0.3); box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);"></div>
-        <div class="status-info" style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
-          <div class="status-title" style="font-size: 13px; font-weight: 700;">${cat.title}</div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 14px; font-weight: 800; background: ${countBg}; color: ${countColor}; padding: 2px 10px; border-radius: 15px; border: 1px solid ${countBorder}; min-width: 25px; text-align: center;">${count}</div>
-            <span style="font-size: 16px; font-weight: 800;">›</span>
+                  text-shadow: ${textShadow}; width: 100%; box-sizing: border-box; overflow: hidden;">
+        <div class="status-color-sample" style="flex-shrink: 0; width: 18px; height: 18px; border-radius: 4px; margin-right: 10px; background-color: ${darkerBg}; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);"></div>
+        <div class="status-info" style="flex: 1; display: flex; justify-content: space-between; align-items: center; min-width: 0;">
+          <div class="status-title" style="font-size: 11px; font-weight: 700; line-height: 1.2; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-right: 5px;">${cat.title}</div>
+          <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 12px; font-weight: 800; background: ${countBg}; color: ${countColor}; padding: 1px 8px; border-radius: 12px; border: 1px solid ${countBorder}; min-width: 20px; text-align: center;">${count}</div>
+            <span style="font-size: 14px; font-weight: 800; opacity: 0.7;">›</span>
           </div>
         </div>
       </div>
@@ -671,15 +671,14 @@ function updateStatusPanel(data) {
   });
 
   html += `
-    <div class="status-total" style="text-align: center; padding: 15px; margin-top: 15px; background: #e8f5e9; border-radius: 8px; font-size: 18px; border: 1px solid #c8e6c9;">
+    <div class="status-total" style="text-align: center; padding: 12px; margin-top: 10px; background: #e8f5e9; border-radius: 8px; font-size: 15px; border: 1px solid #c8e6c9; width: 100%; box-sizing: border-box;">
       <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${countByAPI.total}</span></strong>
     </div>
 
-    <div class="status-debug-info" style="margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 6px; font-size: 12px; color: #666;">
-      <h5 style="margin: 0 0 8px 0; color: #333;">Info Data:</h5>
-      Data dari API (Konsisten)<br>
-      Total Records: ${data.totalRecords || 0}<br>
-      Last Updated: ${new Date().toLocaleTimeString()}
+    <div class="status-debug-info" style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 6px; font-size: 11px; color: #666; width: 100%; box-sizing: border-box; overflow: hidden;">
+      <h5 style="margin: 0 0 5px 0; color: #333; font-size: 11px;">Info Data:</h5>
+      API Sync Active<br>
+      Total: ${data.totalRecords || 0} | ${new Date().toLocaleTimeString()}
     </div>
   </div>`;
 
