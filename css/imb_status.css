@@ -290,10 +290,10 @@ table {
 
 /* Header Sticky Base */
 thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background-color: #e0e0e0;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  background-color: #e0e0e0 !important;
 }
 
 th {
@@ -389,10 +389,11 @@ th:nth-child(3), td:nth-child(3) {
 thead th:nth-child(1), 
 thead th:nth-child(2),
 thead th:nth-child(3) {
-  z-index: 4; /* Higher than both vertical and horizontal sticky */
-  background-color: #d0d0d0; /* Distinct color for frozen headers */
-  border-bottom: 2px solid #bbb;
-  top: 0;
+  z-index: 110 !important; /* Higher than vertical sticky (100) */
+  background-color: #d0d0d0 !important;
+  border-bottom: 2px solid #bbb !important;
+  position: sticky !important;
+  top: 0 !important;
 }
 
 tr:hover td:nth-child(1), 
