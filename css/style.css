@@ -91,7 +91,7 @@ body {
 /* Sidebar Styling */
 .sidebar-left, .sidebar-right {
   background: var(--sidebar-bg);
-  padding: 20px;
+  padding: 15px; /* Reduced from 20px */
   overflow-y: auto;
   border-right: 1px solid var(--border-color);
   box-shadow: var(--shadow);
@@ -99,11 +99,11 @@ body {
 }
 
 .sidebar-left {
-  flex: 0 0 calc(100% / 7); /* Even narrower (approx 14.3%) to maximize map space */
+  flex: 0 0 15%; /* Slightly wider for better text fit */
 }
 
 .sidebar-right {
-  flex: 0 0 calc(100% / 5); /* Keep right side at 20% */
+  flex: 0 0 22%; /* Slightly wider (from 20%) to prevent content cutoff */
   border-right: none;
   border-left: 1px solid var(--border-color);
 }
@@ -162,8 +162,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  font-size: 15px;
+  gap: 8px;
+  font-size: 13px; /* Reduced from 15px */
   line-height: 1.2;
   text-align: center;
   word-wrap: break-word;
@@ -307,6 +307,7 @@ body {
 /* Search Container in Sidebar */
 #search-container-inline {
   margin-bottom: 20px;
+  position: relative; /* Added for absolute positioning of results */
 }
 
 #search {
@@ -327,14 +328,14 @@ body {
   list-style: none;
   padding: 0;
   margin: 5px 0 0 0;
-  max-height: 150px;
+  max-height: 250px;
   overflow-y: auto;
   background: white;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   position: absolute;
-  width: calc(100% / 7 - 40px); /* Adjusted to match even narrower sidebar */
-  z-index: 100;
+  width: 100%; /* Now relative to parent container */
+  z-index: 1000;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
@@ -386,7 +387,7 @@ body.dark-mode .status-panel-inline {
 /* KAVLING COLORS (DARI SCRIPT) */
 /* =============================== */
 .kavling-status-kpr { fill: #ff4444 !important; stroke: #111 !important; }
-.kavling-status-stok { fill: #90EE90 !important; stroke: #111 !important; }
+.kavling-status-stok { fill: #306b30 !important; stroke: #111 !important; }
 .kavling-status-rekom { fill: #ff44ff !important; stroke: #111 !important; }
 .kavling-status-disewakan { fill: #007FFF !important; stroke: #111 !important; } /* Azure Blue */
 .kavling-status-unknown { fill: #ffffff !important; stroke: #111 !important; }
@@ -400,7 +401,7 @@ body.dark-mode .status-panel-inline {
     #00d2ff 0%,
     #3a7bd5 25%,
     #00d2ff 50%,
-    #3a7bd5 75%,
+    #3a85f0 75%,
     #00d2ff 100%
   );
   background-size: 200% auto;
