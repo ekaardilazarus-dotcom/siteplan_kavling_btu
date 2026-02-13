@@ -1,5 +1,9 @@
 /* Specific styles for Certificate Search Page */
 
+header {
+  background: linear-gradient(135deg, #1a237e, #0d47a1) !important; /* Deep Blue */
+}
+
 .input-group-search {
   margin-bottom: 15px;
   display: flex;
@@ -8,7 +12,7 @@
 }
 
 .input-group-search label {
-  font-size: 13px;
+  font-size: 12px; /* Reduced from 13px */
   font-weight: 600;
   color: #333;
 }
@@ -20,14 +24,14 @@
 
 .search-row input {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 10px; /* Reduced from 8px 12px */
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px; /* Reduced from 14px */
 }
 
 .mini-search-btn {
-  background: #673ab7;
+  background: #9c6bf1;
   color: white;
   border: none;
   border-radius: 6px;
@@ -90,11 +94,18 @@
 .sidebar-filter {
   background-color: #e3f2fd;
   color: #333;
-  min-width: 280px;
+  min-width: 220px; /* Reduced from 280px */
+  flex: 1 !important;
+}
+
+.content-area {
+  flex: 5 !important;
 }
 
 .sidebar-header h3 {
   color: #1976d2;
+  font-size: 15px; /* Added smaller font size */
+  margin: 0;
 }
 
 .input-group-search label {
@@ -212,4 +223,33 @@ th.sortable:hover {
   width: 100%;
   text-align: center;
   padding: 8px 0; /* Diperkecil dari 12px */
+}
+
+/* Loading Animation Styles */
+.loading-overlay {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(25, 118, 210, 0.1);
+  border-left-color: #1976d2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.icon-md {
+  font-size: 24px;
 }
