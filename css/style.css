@@ -392,6 +392,50 @@ body.dark-mode .status-panel-inline {
 .kavling-status-unknown { fill: #ffffff !important; stroke: #111 !important; }
 
 /* =============================== */
+/* FUTURISTIC ACCENTS */
+/* =============================== */
+.futuristic-text {
+  background: linear-gradient(
+    90deg,
+    #00d2ff 0%,
+    #3a7bd5 25%,
+    #00d2ff 50%,
+    #3a7bd5 75%,
+    #00d2ff 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shine-futuristic 3s linear infinite;
+  display: inline-block;
+  font-weight: bold;
+}
+
+@keyframes shine-futuristic {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.futuristic-footer {
+  position: fixed;
+  bottom: 8px;
+  right: 15px;
+  font-size: 11px;
+  opacity: 0.6;
+  z-index: 9999;
+  pointer-events: none;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  letter-spacing: 0.5px;
+}
+
+/* Dark mode adjustments for footer */
+body.dark-mode .futuristic-footer {
+  opacity: 0.5;
+}
+
+/* =============================== */
 /* MODALS & OTHERS (Existing) */
 /* =============================== */
 .modal {
