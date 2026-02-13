@@ -192,8 +192,8 @@ updateDateTime();
 // Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxnzA8pzipqCFj8y8Yuor9GHqBLj18yk1-cFOsn8Tc2pDBGwjTh1fdyJchjbD7KQGhe/exec';
-const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbyEPaUBAg2n3732mTnukOnoxA6eN6eTEjso929InZZEbIqjycGzb8zuSJdLmyfaFEJf3w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxz9SLfNa9v38y5uDwVLurSS05Aoe6PhfZmEU_J-tfW1jntwopzDQ5vlydO-ara3ltO/exec';
+const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
 //------------------- pembeda saja -----------------------
@@ -2113,9 +2113,9 @@ document.getElementById('clearKavlingResults')?.addEventListener('click', () => 
   // MODAL SERTIFIKAT
   // ===============================
 
-  // Buka modal
+  // Buka modal (DIUBAH KE HALAMAN SENDIRI SESUAI REQUEST)
   document.getElementById('searchByCertificate')?.addEventListener('click', () => {
-    document.getElementById('certificateModal').style.display = 'flex';
+    window.location.href = 'pencarian_sertifikat.html';
   });
 
   // Tutup modal
