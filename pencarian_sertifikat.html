@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pencarian Berdasarkan Sertifikat</title>
+  
+  <!-- Proteksi Akses -->
+  <script>
+    if (sessionStorage.getItem('imb_access') !== 'f888') {
+      alert('Akses ditolak. Silakan masukkan kode akses di halaman utama.');
+      window.location.href = 'index.html';
+    }
+  </script>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/imb_status.css">
+  <link rel="stylesheet" href="css/pencarian_sertifikat.css">
+</head>
+<body>
+
+  <header>
+    <h1>PENCARIAN BERDASARKAN SERTIFIKAT</h1>
+    <div class="header-actions">
+      <a href="index.html" class="back-home-btn">
+        <span>🏠</span> Kembali ke Utama
+      </a>
+      <a href="imb_status.html" class="back-home-btn" style="background: #673ab7 !important;">
+        <span>📊</span> Status IMB
+      </a>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- LEFT SIDEBAR: Search Inputs -->
+    <aside class="sidebar-filter">
+      <div class="sidebar-header">
+        <h3>🔍 Filter Pencarian</h3>
+      </div>
+      
+      <div class="input-group-search">
+        <label for="certSHGB">NO SERTIFIKAT (SHGB)</label>
+        <div class="search-row">
+          <input type="text" id="certSHGB" placeholder="Cari SHGB...">
+        </div>
+      </div>
+
+      <div class="input-group-search">
+        <label for="certSHM">NOMOR SHM</label>
+        <div class="search-row">
+          <input type="text" id="certSHM" placeholder="Cari SHM...">
+        </div>
+      </div>
+
+      <div class="input-group-search">
+        <label for="certNamaSHM">NAMA SHM</label>
+        <div class="search-row">
+          <input type="text" id="certNamaSHM" placeholder="Cari Nama SHM...">
+        </div>
+      </div>
+
+      <div class="input-group-search">
+        <label for="certInduk">INDUK TANAH SERTIFIKAT</label>
+        <div class="search-row">
+          <input type="text" id="certInduk" placeholder="Cari Sertifikat Induk...">
+        </div>
+      </div>
+
+      <div class="input-group-search">
+        <label for="certExOwner">PEMILIK LAMA</label>
+        <div class="search-row">
+          <input type="text" id="certExOwner" placeholder="Cari Pemilik Lama...">
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT CONTENT: Table Results -->
+    <main class="content-area">
+      <div class="content-header">
+        <div class="search-status-info" id="searchStatusInfo">
+          <!-- Info will be injected here -->
+        </div>
+        <button id="downloadBtnFull" class="download-btn" disabled>
+          <span>📊</span> Download Excel Sesuai Tabel
+        </button>
+      </div>
+      
+      <div class="table-container">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th><div class="no-content">No</div></th>
+              <th class="sortable" onclick="sortTable(0)">
+                <div class="header-content">N0 SERTIFIKAT <span class="sort-icon">⇅</span></div>
+              </th>
+              <th class="sortable" onclick="sortTable(1)">
+                <div class="header-content">ALAMAT LOKASI KAVLING <span class="sort-icon">⇅</span></div>
+              </th>
+              <th><div class="header-content">KELOMPOK SERTIFIKAT</div></th>
+              <th class="sortable" onclick="sortTable(3)">
+                <div class="header-content">NOMOR SHM <span class="sort-icon">⇅</span></div>
+              </th>
+              <th class="sortable" onclick="sortTable(4)">
+                <div class="header-content">NAMA SHM <span class="sort-icon">⇅</span></div>
+              </th>
+              <th class="sortable" onclick="sortTable(5)">
+                <div class="header-content">INDUK TANAH SERTIFIKAT <span class="sort-icon">⇅</span></div>
+              </th>
+              <th><div class="header-content">TAHUN TERBIT SERTIFIKAT</div></th>
+              <th><div class="header-content">TAHUN AKHIR HAK</div></th>
+              <th><div class="header-content">NIB</div></th>
+              <th><div class="header-content">SURAT UKUR</div></th>
+              <th><div class="header-content">TANGGAL SURAT UKUR</div></th>
+              <th><div class="header-content">LUAS SERTIFIKAT</div></th>
+              <th><div class="header-content">PEMEGANG HAK</div></th>
+              <th class="sortable" onclick="sortTable(13)">
+                <div class="header-content">PEMILIK LAMA <span class="sort-icon">⇅</span></div>
+              </th>
+              <th><div class="header-content">KELURAHAN</div></th>
+              <th><div class="header-content">PETOK LETER C SK SHGB</div></th>
+              <th><div class="header-content">PEMBIAYAAN</div></th>
+              <th><div class="header-content">TIPE KAVLING BERUPA</div></th>
+              <th><div class="header-content">TANGGAL MUTASI</div></th>
+              <th><div class="header-content">UPDATE TANGGAL MUTASI</div></th>
+              <th><div class="header-content">PENERIMA SERIFIKAT</div></th>
+              <th><div class="header-content">UPDATE PENERIMA SERTIFIKAT</div></th>
+              <th><div class="header-content">DITERIMA OLEH</div></th>
+              <th><div class="header-content">UPDATE DITERIMA OLEH</div></th>
+              <th><div class="header-content">PROSES SERTIFIKAT</div></th>
+              <th><div class="header-content">UPDATE PROSES SERTIFIKAT</div></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Data will be populated here -->
+          </tbody>
+        </table>
+        
+        <div id="loadingState" class="loading-overlay">
+          <div class="icon-md">⏳</div>
+          <div>Memuat data dari database sertifikat...</div>
+        </div>
+        
+        <div id="emptyState" class="empty-state">
+          <div class="icon-lg">🔍</div>
+          <h3>Database Sertifikat</h3>
+          <p>Ketik pada filter di kiri untuk mencari data sertifikat secara otomatis.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="futuristic-footer">
+    <span class="futuristic-text" style="font-weight: normal; font-size: 8px;">web by @ekalazarus</span>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="js/pencarian_sertifikat.js"></script>
+
+</body>
+</html>
