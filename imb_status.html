@@ -125,7 +125,10 @@
               <th>Tipe Kavling</th>
               <th>Blok Cluster</th>
               <th>User Pemohon</th>
-              <th>Skema Penjualan</th>
+              <th id="sortSkema" class="sortable">
+                Skema Penjualan
+                <span class="sort-icon">↕️</span>
+              </th>
               <th>IDPEL KWH</th>
               <th>Tanggal Pasang PDAM</th>
               <th>ID PDAM</th>
@@ -140,7 +143,7 @@
         </table>
         
         <div id="loadingState" class="loading-overlay">
-          <div class="icon-md">⏳</div>
+          <div class="spinner"></div>
           <div>Memuat data...</div>
         </div>
         
