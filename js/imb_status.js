@@ -217,6 +217,7 @@ function applyFilterAndRender() {
   
   data.forEach((item, index) => {
     const tr = document.createElement('tr');
+    tr.dataset.index = index; // Simpan index untuk referensi klik
     tr.innerHTML = `
       <td style="text-align: center;">${index + 1}</td>
       <td>${item.no_sertifikat || ''}</td>
@@ -250,11 +251,95 @@ function applyFilterAndRender() {
       <td></td> <!-- Nomor Debitur User (Dikosongkan) -->
       <td>${item.bpujl || ''}</td>
     `;
+    
+    // Tambahkan event listener klik baris
+    tr.addEventListener('click', () => openEditModal(item));
+    
     fragment.appendChild(tr);
   });
   
   tbody.appendChild(fragment);
 }
+
+// ===============================
+// MODAL EDIT LOGIC
+// ===============================
+
+const editFields = [
+  { label: 'Nomor Sertifikat', key: 'no_sertifikat', col: 13 },
+  { label: 'Alamat Lokasi Kavling', key: 'alamat_lokasi_kavling', col: 1 },
+  { label: 'Nomor IMB/PBG/SLF', key: 'nomor_imb', col: 32 },
+  { label: 'Penerima IMB/PBG/SLF', key: 'penerima_imb', col: 33 },
+  { label: 'Update Penerima IMB/PGB/SLF', key: 'update_penerima_imb', col: 34 },
+  { label: 'Update tgl Mutasi IMB', key: 'update_tgl_mutasi', col: 30, type: 'date' },
+  { label: 'Register IMB/PBG/SLF', key: 'register_imb', col: 31 },
+  { label: 'Referensi Sertifikat', key: 'referensi_sertifikat', col: 5 },
+  { label: 'Tahun Terbit Sertifikat', key: 'tahun_terbit_sertifikat', col: 36, type: 'date' },
+  { label: 'Tahun Akhir Sertifikat', key: 'tahun_akhir_sertifikat', col: 37, type: 'date' },
+  { label: 'Surat Ukur', key: 'surat_ukur', col: 38 },
+  { label: 'Tanggal Surat Ukur', key: 'tanggal_surat_ukur', col: 39, type: 'date' },
+  { label: 'Luas Sertifikat', key: 'luas_sertifikat', col: 17 },
+  { label: 'Luas Bangunan', key: 'luas_bangunan', col: 43 },
+  { label: 'Pemegang Hak Sekarang', key: 'pemegang_hak_sekarang', col: 44 },
+  { label: 'Pemegang Hak Lama', key: 'pemegang_hak_lama', col: 40 },
+  { label: 'Kelurahan', key: 'kelurahan', col: 41 },
+  { label: 'Skema Pembiayaan', key: 'skema_pembiayaan', col: 11 },
+  { label: 'Tipe Kavling', key: 'tipe_kavling', col: 6 },
+  { label: 'Blok Cluster', key: 'blok_cluster', col: 2 },
+  { label: 'User Pemohon', key: 'user_pemohon', col: 8 },
+  { label: 'Skema Penjualan', key: 'skema_penjualan', col: 9 },
+  { label: 'IDPEL KWH', key: 'idpel_kwh', col: 26 },
+  { label: 'Tanggal Pasang PDAM', key: 'tanggal_pasang_pdam', col: 27, type: 'date' },
+  { label: 'ID PDAM', key: 'id_pdam', col: 28 },
+  { label: 'BPUJL', key: 'bpujl', col: 23 }
+];
+
+function openEditModal(item) {
+  const modal = document.getElementById('editModal');
+  const detailGrid = document.getElementById('detailGrid');
+  
+  detailGrid.innerHTML = '';
+  
+  editFields.forEach(field => {
+    const div = document.createElement('div');
+    div.className = 'form-group';
+    
+    let value = item[field.key] || '';
+    // Jika tipe date, format ke DD/MM/YYYY untuk tampilan detail
+    if (field.type === 'date' && value) {
+      value = formatDate(value);
+    }
+    
+    div.innerHTML = `
+      <label>${field.label}</label>
+      <div class="detail-value">${value || '-'}</div>
+    `;
+    detailGrid.appendChild(div);
+  });
+  
+  modal.style.display = 'block';
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+
+// Inisialisasi Event Modal
+document.addEventListener('DOMContentLoaded', () => {
+  const closeBtn = document.querySelector('.close-btn');
+  const cancelBtn = document.querySelector('.cancel-btn');
+  
+  if (closeBtn) closeBtn.onclick = closeEditModal;
+  if (cancelBtn) cancelBtn.onclick = closeEditModal;
+  
+  // Close modal when clicking outside
+  window.onclick = (event) => {
+    const modal = document.getElementById('editModal');
+    if (event.target == modal) {
+      closeEditModal();
+    }
+  };
+});
 
 function updateDownloadButtons(enable) {
   const downloadBtnFull = document.getElementById('downloadBtnFull');
