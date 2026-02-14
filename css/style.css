@@ -387,7 +387,7 @@ body.dark-mode .status-panel-inline {
 /* KAVLING COLORS (DARI SCRIPT) */
 /* =============================== */
 .kavling-status-kpr { fill: #ff4444 !important; stroke: #111 !important; }
-.kavling-status-stok { fill: #306b30 !important; stroke: #111 !important; }
+.kavling-status-stok { fill: #2ecc71 !important; stroke: #111 !important; }
 .kavling-status-rekom { fill: #ff44ff !important; stroke: #111 !important; }
 .kavling-status-disewakan { fill: #007FFF !important; stroke: #111 !important; } /* Azure Blue */
 .kavling-status-unknown { fill: #ffffff !important; stroke: #111 !important; }
