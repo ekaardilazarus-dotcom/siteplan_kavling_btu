@@ -275,6 +275,11 @@ header h1 {
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   overflow: auto;
   border: 1px solid #eee;
+  cursor: grab;
+}
+
+.table-container.grabbing {
+  cursor: grabbing;
 }
 
 table {
@@ -679,6 +684,12 @@ tr:hover {
 }
 
 /* Row hover and cursor */
-#tableBody tr {
+#tableBody td {
+  cursor: inherit;
+}
+
+#tableBody td:nth-child(1),
+#tableBody td:nth-child(2),
+#tableBody td:nth-child(3) {
   cursor: pointer;
 }
