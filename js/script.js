@@ -192,7 +192,7 @@ updateDateTime();
 // Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxz9SLfNa9v38y5uDwVLurSS05Aoe6PhfZmEU_J-tfW1jntwopzDQ5vlydO-ara3ltO/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwwJNPD_385F6dXLY_R6hOPz2ZqHNHhWH8zf_MEbvnsREcWIJE5SEBq5jMInblF90g/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
@@ -640,7 +640,7 @@ function updateStatusPanel(data) {
     let countBorder = 'rgba(255,255,255,0.3)';
 
     if (cat.id === 'kpr') { btnBg = '#ff4444'; darkerBg = '#cc0000'; }
-    else if (cat.id === 'stok') { btnBg = '#90EE90'; darkerBg = '#228b22'; }
+    else if (cat.id === 'stok') { btnBg = '#2ecc71'; darkerBg = '#27ae60'; }
     else if (cat.id === 'rekom') { btnBg = '#ff44ff'; darkerBg = '#990099'; }
     else if (cat.id === 'disewakan') { btnBg = '#007FFF'; darkerBg = '#005BB5'; }
     else if (cat.id === 'unknown') { 
