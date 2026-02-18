@@ -168,9 +168,22 @@ th:nth-child(3), td:nth-child(3) {
   left: 245px !important;
   z-index: 10 !important;
   background-color: #e3f2fd;
-  width: 300px !important;
-  min-width: 300px !important;
+  width: 28ch !important;
+  min-width: 28ch !important;
+  max-width: 28ch !important;
   box-shadow: 2px 0 5px rgba(33, 150, 243, 0.2);
+}
+
+th:nth-child(6), td:nth-child(6),
+th:nth-child(7), td:nth-child(7),
+th:nth-child(14), td:nth-child(14),
+th:nth-child(17), td:nth-child(17),
+th:nth-child(18), td:nth-child(18),
+th:nth-child(23), td:nth-child(23),
+th:nth-child(27), td:nth-child(27) {
+  width: 28ch !important;
+  min-width: 28ch !important;
+  max-width: 28ch !important;
 }
 
 /* Pertemuan Vertical & Horizontal Sticky (Header 3 Kolom Pertama) */
@@ -188,6 +201,8 @@ thead th:nth-child(3) {
   box-sizing: border-box;
   font-size: 13px; /* Ukuran font diperkecil sedikit agar lebih kompak */
   white-space: nowrap; /* Mencegah wrap agar kolom tetap ramping */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Header Cells Alignment */
@@ -252,4 +267,13 @@ th.sortable:hover {
 
 .icon-md {
   font-size: 24px;
+}
+
+.table-container.grabbing {
+  user-select: none;
+}
+
+.table-container.grabbing th:nth-child(3),
+.table-container.grabbing td:nth-child(3) {
+  box-shadow: none !important;
 }
