@@ -267,8 +267,15 @@ function applyFilterAndRender() {
       <td>${item.bpujl || ''}</td>
     `;
     
-    // Tambahkan event listener klik baris
-    tr.addEventListener('click', () => openEditModal(item));
+    // Tambahkan event listener klik: hanya 3 kolom pertama yang bisa buka detail
+    tr.addEventListener('click', (e) => {
+      const cell = e.target.closest('td');
+      if (!cell) return;
+      const cellIndex = cell.cellIndex; // 0-based
+      if (cellIndex <= 2) {
+        openEditModal(item);
+      }
+    });
     
     fragment.appendChild(tr);
   });
@@ -384,6 +391,47 @@ function updateDownloadButtons(enable) {
   
   if (downloadBtnFull) downloadBtnFull.disabled = !enable;
   if (downloadBtnEMS) downloadBtnEMS.disabled = !enable;
+}
+
+function initTableGrabScroll() {
+  const container = document.querySelector('.table-container');
+  if (!container) return;
+
+  let isDown = false;
+  let startX;
+  let startY;
+  let scrollLeft;
+  let scrollTop;
+
+  container.addEventListener('mousedown', (e) => {
+    isDown = true;
+    container.classList.add('grabbing');
+    startX = e.pageX - container.offsetLeft;
+    startY = e.pageY - container.offsetTop;
+    scrollLeft = container.scrollLeft;
+    scrollTop = container.scrollTop;
+  });
+
+  container.addEventListener('mouseleave', () => {
+    isDown = false;
+    container.classList.remove('grabbing');
+  });
+
+  container.addEventListener('mouseup', () => {
+    isDown = false;
+    container.classList.remove('grabbing');
+  });
+
+  container.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - container.offsetLeft;
+    const y = e.pageY - container.offsetTop;
+    const walkX = x - startX;
+    const walkY = y - startY;
+    container.scrollLeft = scrollLeft - walkX;
+    container.scrollTop = scrollTop - walkY;
+  });
 }
 
 // Download Excel Function
@@ -703,4 +751,6 @@ window.onload = function() {
 
   // Load Data
   fetchData();
+
+  initTableGrabScroll();
 };
