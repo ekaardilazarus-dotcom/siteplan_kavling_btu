@@ -122,6 +122,7 @@
               <th>Kelurahan</th>
               <th>Petok Letter C</th>
               <th>Skema Pembiayaan</th>
+              <th>Serah Terima Kunci</th>
               <th>Tipe Kavling</th>
               <th>Blok Cluster</th>
               <th>User Pemohon</th>
@@ -169,6 +170,24 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="cancel-btn" onclick="closeEditModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="csvModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Pilih Jenis Data CSV</h2>
+        <span class="close-btn csv-close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="csv-modal-body">
+          <p>Pilih jenis data yang akan di-download untuk EMS:</p>
+          <div class="csv-button-group">
+            <button type="button" id="btnCsvSertifikat" class="csv-option-btn csv-primary">Data Sertifikat</button>
+            <button type="button" id="btnCsvProperty" class="csv-option-btn">Data Property</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
