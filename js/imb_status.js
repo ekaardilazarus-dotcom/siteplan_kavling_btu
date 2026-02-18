@@ -2,7 +2,7 @@
 // KONEKSI DATABASE (APPSCRIPT API)
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxz9SLfNa9v38y5uDwVLurSS05Aoe6PhfZmEU_J-tfW1jntwopzDQ5vlydO-ara3ltO/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwwJNPD_385F6dXLY_R6hOPz2ZqHNHhWH8zf_MEbvnsREcWIJE5SEBq5jMInblF90g/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
 
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
@@ -29,6 +29,20 @@ function formatDate(dateString) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}/${month}/${year}`;
+  } catch (e) {
+    return dateString;
+  }
+}
+
+function formatDateMDY(dateString) {
+  if (!dateString || dateString === '-' || dateString === '') return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
   } catch (e) {
     return dateString;
   }
@@ -240,6 +254,7 @@ function applyFilterAndRender() {
       <td>${item.kelurahan || ''}</td>
       <td>${item.petok_letter_c || ''}</td>
       <td>${item.skema_pembiayaan || ''}</td>
+      <td>${formatDate(item.serah_terima_kunci)}</td>
       <td>${item.tipe_kavling || ''}</td>
       <td>${item.blok_cluster || ''}</td>
       <td>${item.user_pemohon || ''}</td>
@@ -324,20 +339,42 @@ function closeEditModal() {
   document.getElementById('editModal').style.display = 'none';
 }
 
+function openCsvModal() {
+  const modal = document.getElementById('csvModal');
+  if (modal) modal.style.display = 'block';
+}
+
+function closeCsvModal() {
+  const modal = document.getElementById('csvModal');
+  if (modal) modal.style.display = 'none';
+}
+
 // Inisialisasi Event Modal
 document.addEventListener('DOMContentLoaded', () => {
   const closeBtn = document.querySelector('.close-btn');
   const cancelBtn = document.querySelector('.cancel-btn');
+  const csvCloseBtn = document.querySelector('.csv-close');
+  const csvSertifikatBtn = document.getElementById('btnCsvSertifikat');
+  const csvPropertyBtn = document.getElementById('btnCsvProperty');
   
   if (closeBtn) closeBtn.onclick = closeEditModal;
   if (cancelBtn) cancelBtn.onclick = closeEditModal;
+  if (csvCloseBtn) csvCloseBtn.onclick = closeCsvModal;
+  if (csvSertifikatBtn) csvSertifikatBtn.onclick = () => {
+    downloadCSV('sertifikat');
+    closeCsvModal();
+  };
+  if (csvPropertyBtn) csvPropertyBtn.onclick = () => {
+    downloadCSV('property');
+    closeCsvModal();
+  };
   
   // Close modal when clicking outside
   window.onclick = (event) => {
     const modal = document.getElementById('editModal');
-    if (event.target == modal) {
-      closeEditModal();
-    }
+    const csvModal = document.getElementById('csvModal');
+    if (event.target === modal) closeEditModal();
+    if (event.target === csvModal) closeCsvModal();
   };
 });
 
@@ -374,6 +411,7 @@ window.downloadExcel = function() {
     { label: 'Kelurahan', key: 'kelurahan' },
     { label: 'Petok Letter C', key: 'petok_letter_c' },
     { label: 'Skema Pembiayaan', key: 'skema_pembiayaan' },
+    { label: 'Serah Terima Kunci', key: 'serah_terima_kunci' },
     { label: 'Tipe Kavling', key: 'tipe_kavling' },
     { label: 'Blok Cluster', key: 'blok_cluster' },
     { label: 'User Pemohon', key: 'user_pemohon' },
@@ -401,7 +439,7 @@ window.downloadExcel = function() {
         val = formatLuas(val);
       }
       // Format dates
-      else if (['update_tgl_mutasi', 'tanggal_surat_ukur', 'tanggal_pasang_pdam', 'tahun_terbit_sertifikat', 'tahun_akhir_sertifikat'].includes(h.key)) {
+      else if (['update_tgl_mutasi', 'tanggal_surat_ukur', 'tanggal_pasang_pdam', 'tahun_terbit_sertifikat', 'tahun_akhir_sertifikat', 'serah_terima_kunci'].includes(h.key)) {
         val = formatDate(val);
       }
       
@@ -443,11 +481,6 @@ window.downloadCSV = function(mode) {
   const allHeaders = [
     { label: 'No Sertifikat', key: 'no_sertifikat' },
     { label: 'Alamat Lokasi Kavling', key: 'alamat_lokasi_kavling' },
-    { label: 'Nomor IMB/PBG/SLF', key: 'nomor_imb' },
-    { label: 'Penerima IMB/PBG/SLF', key: 'penerima_imb' },
-    { label: 'Update Penerima IMB/PGB/SLF', key: 'update_penerima_imb' },
-    { label: 'Update tanggal Mutasi IMB/PBG/SLF', key: 'update_tgl_mutasi' },
-    { label: 'Register IMB/PBG/SLF', key: 'register_imb' },
     { label: 'Referensi Sertifikat', key: 'referensi_sertifikat' },
     { label: 'Tahun Terbit Sertifikat', key: 'tahun_terbit_sertifikat' },
     { label: 'Tahun Akhir Sertifikat', key: 'tahun_akhir_sertifikat' },
@@ -462,6 +495,11 @@ window.downloadCSV = function(mode) {
     { label: 'Petok Letter C', key: 'petok_letter_c' },
     { label: 'Skema Pembiayaan', key: 'skema_pembiayaan' },
     { label: 'Tipe Kavling', key: 'tipe_kavling' },
+    { label: 'Nomor IMB/PBG/SLF', key: 'nomor_imb' },
+    { label: 'Penerima IMB/PBG/SLF', key: 'penerima_imb' },
+    { label: 'Update Penerima IMB/PGB/SLF', key: 'update_penerima_imb' },
+    { label: 'Update tanggal Mutasi IMB/PBG/SLF', key: 'update_tgl_mutasi' },
+    { label: 'Register IMB/PBG/SLF', key: 'register_imb' },
     { label: 'Blok Cluster', key: 'blok_cluster' },
     { label: 'User Pemohon', key: 'user_pemohon' },
     { label: 'Skema Penjualan', key: 'skema_penjualan' },
@@ -475,16 +513,51 @@ window.downloadCSV = function(mode) {
 
   let headers = allHeaders;
 
-  // Filter headers if mode is 'ems'
-  if (mode === 'ems') {
-    const excludedKeys = [
-      'update_tgl_mutasi',
-      'register_imb',
-      'nomor_imb',
-      'penerima_imb',
-      'update_penerima_imb'
+  if (mode === 'sertifikat' || mode === 'ems') {
+    const emsHeaders = [
+      { label: 'No Sertifikat', key: 'no_sertifikat' },
+      { label: 'Alamat Lokasi Kavling', key: 'alamat_lokasi_kavling' },
+      { label: 'Referensi Sertifikat', key: 'referensi_sertifikat' },
+      { label: 'Tahun Terbit Sertifikat', key: 'tahun_terbit_sertifikat' },
+      { label: 'Tahun Akhir Sertifikat', key: 'tahun_akhir_sertifikat' },
+      { label: 'Kode Elektronik', key: 'kode_elektronik' },
+      { label: 'Surat Ukur', key: 'surat_ukur' },
+      { label: 'Tanggal Surat Ukur', key: 'tanggal_surat_ukur' },
+      { label: 'Luas Sertifikat', key: 'luas_sertifikat' },
+      { label: 'Luas Bangunan', key: 'luas_bangunan' },
+      { label: 'Pemegang Hak Sekarang', key: 'pemegang_hak_sekarang' },
+      { label: 'Pemegang Hak Lama', key: 'pemegang_hak_lama' },
+      { label: 'Kelurahan', key: 'kelurahan' },
+      { label: 'Petok Letter C', key: 'petok_letter_c' },
+      { label: 'Skema Pembiayaan', key: 'skema_pembiayaan' },
+      { label: 'Tipe Kavling', key: 'tipe_kavling' },
+      { label: 'Nomor IMB/PBG/SLF', key: 'nomor_imb' }
     ];
-    headers = allHeaders.filter(h => !excludedKeys.includes(h.key));
+    headers = emsHeaders;
+  } else if (mode === 'property') {
+    const propertyHeaders = [
+      { label: 'Alamat Lokasi Kavling', key: 'alamat_lokasi_kavling' },
+      { label: 'No Sertifikat', key: 'no_sertifikat' },
+      { label: 'Blok Cluster', key: 'blok_cluster' },
+      { label: 'Referensi Sertifikat', key: 'referensi_sertifikat' },
+      { label: 'Tipe Kavling', key: 'tipe_kavling' },
+      { label: 'User Pemohon', key: 'user_pemohon' },
+      { label: 'Skema Penjualan', key: 'skema_penjualan' },
+      { label: 'Nomor Debitur User', key: 'nomor_debitur_user' },
+      { label: 'Serah Terima Kunci', key: 'serah_terima_kunci' },
+      { label: 'Luas Bangunan', key: 'luas_bangunan' },
+      { label: 'Pemegang Hak Sekarang', key: 'pemegang_hak_sekarang' },
+      { label: 'Pemegang Hak Lama', key: 'pemegang_hak_lama' },
+      { label: 'BPUJL', key: 'bpujl' },
+      { label: 'IDPEL KWH', key: 'idpel_kwh' },
+      { label: 'Tanggal Pasang PDAM', key: 'tanggal_pasang_pdam' },
+      { label: 'IDPL PDAM', key: 'id_pdam' },
+      { label: 'Penerima IMB/PBG/SLF', key: 'penerima_imb' },
+      { label: 'Skema Pembiayaan', key: 'skema_pembiayaan' },
+      { label: 'Nomor Register IMB/PBG/SLF', key: 'register_imb' },
+      { label: 'Nomor PBB', key: 'nomor_pbb' }
+    ];
+    headers = propertyHeaders;
   }
 
   // Create CSV Header
@@ -504,7 +577,7 @@ window.downloadCSV = function(mode) {
         val = formatLuas(val);
       }
       // Format dates if key matches
-      else if (['update_tgl_mutasi', 'tanggal_surat_ukur', 'tanggal_pasang_pdam', 'tahun_terbit_sertifikat', 'tahun_akhir_sertifikat'].includes(h.key)) {
+      else if (['update_tgl_mutasi', 'tanggal_surat_ukur', 'tanggal_pasang_pdam', 'tahun_terbit_sertifikat', 'tahun_akhir_sertifikat', 'serah_terima_kunci'].includes(h.key)) {
         val = formatDate(val);
       }
       
@@ -520,9 +593,15 @@ window.downloadCSV = function(mode) {
   const link = document.createElement("a");
   link.setAttribute("href", url);
   
-  const filename = mode === 'ems' 
-    ? `data_kavling_ems_${new Date().toISOString().slice(0,10)}.csv`
-    : `data_kavling_lengkap_${new Date().toISOString().slice(0,10)}.csv`;
+  let filename;
+  const datePart = new Date().toISOString().slice(0,10);
+  if (mode === 'sertifikat' || mode === 'ems') {
+    filename = `data_sertifikat_ems_${datePart}.csv`;
+  } else if (mode === 'property') {
+    filename = `data_property_ems_${datePart}.csv`;
+  } else {
+    filename = `data_kavling_lengkap_${datePart}.csv`;
+  }
     
   link.setAttribute("download", filename);
   link.style.visibility = 'hidden';
@@ -560,7 +639,7 @@ window.onload = function() {
 
   const downloadBtnEMS = document.getElementById('downloadBtnEMS');
   if(downloadBtnEMS) {
-    downloadBtnEMS.addEventListener('click', () => downloadCSV('ems'));
+    downloadBtnEMS.addEventListener('click', () => openCsvModal());
   }
   
   // Search Input Listener
