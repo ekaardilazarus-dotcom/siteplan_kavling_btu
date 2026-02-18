@@ -324,8 +324,60 @@ function downloadExcel() {
   XLSX.writeFile(workbook, `Pencarian_Sertifikat_${timestamp}.xlsx`);
 }
 
+function initTableGrabScroll() {
+  const container = document.querySelector('.table-container');
+  if (!container) return;
+
+  let isDown = false;
+  let startX = 0;
+  let startY = 0;
+  let scrollLeft;
+  let scrollTop;
+  let lastX = 0;
+  let lastY = 0;
+  let frameActive = false;
+
+  container.addEventListener('mousedown', (e) => {
+    isDown = true;
+    container.classList.add('grabbing');
+    startX = e.pageX - container.offsetLeft;
+    startY = e.pageY - container.offsetTop;
+    scrollLeft = container.scrollLeft;
+    scrollTop = container.scrollTop;
+  });
+
+  container.addEventListener('mouseleave', () => {
+    isDown = false;
+    container.classList.remove('grabbing');
+  });
+
+  container.addEventListener('mouseup', () => {
+    isDown = false;
+    container.classList.remove('grabbing');
+  });
+
+  container.addEventListener('mousemove', (e) => {
+    if (!isDown) return;
+    e.preventDefault();
+    lastX = e.pageX - container.offsetLeft;
+    lastY = e.pageY - container.offsetTop;
+
+    if (frameActive) return;
+    frameActive = true;
+
+    requestAnimationFrame(() => {
+      const walkX = lastX - startX;
+      const walkY = lastY - startY;
+      container.scrollLeft = scrollLeft - walkX;
+      container.scrollTop = scrollTop - walkY;
+      frameActive = false;
+    });
+  });
+}
+
 // Init on Load
 window.onload = () => {
   setupEventListeners();
   initData(); 
+  initTableGrabScroll();
 };
