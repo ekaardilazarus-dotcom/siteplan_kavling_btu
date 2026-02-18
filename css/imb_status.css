@@ -402,6 +402,15 @@ tr:hover td:nth-child(3) {
   background-color: #f0f0f0;
 }
 
+th:nth-child(21),
+td:nth-child(21) {
+  max-width: 28ch;
+  width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 tr:hover {
   background-color: #fafafa;
 }
@@ -583,6 +592,53 @@ tr:hover {
   min-height: 38px;
   display: flex;
   align-items: center;
+}
+
+.csv-modal-body {
+  padding: 25px;
+}
+
+.csv-modal-body p {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #555;
+  font-size: 14px;
+}
+
+.csv-button-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.csv-option-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.csv-option-btn:hover {
+  background-color: #eeeeee;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.csv-option-btn.csv-primary {
+  background-color: #2196F3;
+  border-color: #1976D2;
+  color: #fff;
+}
+
+.csv-option-btn.csv-primary:hover {
+  background-color: #1976D2;
 }
 
 .modal-footer {
