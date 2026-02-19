@@ -2,7 +2,7 @@
 // KONEKSI DATABASE (APPSCRIPT API)
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzM1dH1By3Vwj6tZ8GeXtpgKYpRl9zZp5ChM014Flx515cnHZN63OOt7WC4NbBSl5uR/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyg-AUBateyyWJpfVBBacMb32xnB0puC4dAdYhVni6MmwZKDbfcO_5lh0cird2Kecyk/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
 
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
