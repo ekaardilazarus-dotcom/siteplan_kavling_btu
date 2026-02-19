@@ -384,12 +384,21 @@ body.dark-mode .status-panel-inline {
 }
 
 /* =============================== */
-/* KAVLING COLORS (DARI SCRIPT) */
+/* KAVLING COLORS (DARI SCRIPT)   */
+/* Berpasangan: dengan IMB vs tanpa IMB */
 /* =============================== */
 .kavling-status-kpr { fill: #ff4444 !important; stroke: #111 !important; }
+.kavling-status-kpr-no-imb { fill: #ef5350 !important; stroke: #111 !important; }
+
 .kavling-status-stok { fill: #2ecc71 !important; stroke: #111 !important; }
-.kavling-status-rekom { fill: #ff44ff !important; stroke: #111 !important; }
-.kavling-status-disewakan { fill: #007FFF !important; stroke: #111 !important; } /* Azure Blue */
+.kavling-status-stok-no-imb { fill: #cddc39 !important; stroke: #111 !important; }
+
+.kavling-status-rekom { fill: #9c27b0 !important; stroke: #111 !important; }
+.kavling-status-rekom-no-imb { fill: #673ab7 !important; stroke: #111 !important; }
+
+.kavling-status-disewakan { fill: #2196F3 !important; stroke: #111 !important; }
+.kavling-status-disewakan-no-imb { fill: #03A9F4 !important; stroke: #111 !important; }
+
 .kavling-status-unknown { fill: #ffffff !important; stroke: #111 !important; }
 
 /* =============================== */
@@ -716,8 +725,7 @@ body.dark-mode .cert-total-found {
 g.highlight-kavling text {
   filter: none !important;
   transform: none !important;
-  brightness: 1 !important;
-  pointer-events: none !important;
+   pointer-events: none !important;
 }
 
 /* =============================== */
