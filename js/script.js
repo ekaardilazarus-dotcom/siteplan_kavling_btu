@@ -192,7 +192,7 @@ updateDateTime();
 // Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzM1dH1By3Vwj6tZ8GeXtpgKYpRl9zZp5ChM014Flx515cnHZN63OOt7WC4NbBSl5uR/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyg-AUBateyyWJpfVBBacMb32xnB0puC4dAdYhVni6MmwZKDbfcO_5lh0cird2Kecyk/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
@@ -563,6 +563,8 @@ function updateStatusPanel(data) {
     rekom_no_imb: 0,
     tersewa_imb: 0,
     tersewa_no_imb: 0,
+    dipinjam_imb: 0,
+    dipinjam_no_imb: 0,
     unknown: 0,
     total: 0
   };
@@ -577,6 +579,8 @@ function updateStatusPanel(data) {
     counts.rekom_no_imb = summaryImb.rekom_no_imb || 0;
     counts.tersewa_imb = summaryImb.tersewa_imb || 0;
     counts.tersewa_no_imb = summaryImb.tersewa_no_imb || 0;
+    counts.dipinjam_imb = summaryImb.dipinjam_imb || 0;
+    counts.dipinjam_no_imb = summaryImb.dipinjam_no_imb || 0;
     counts.unknown = summaryImb.unknown || 0;
     counts.total = summaryImb.total || (
       counts.terjual_imb +
@@ -587,6 +591,8 @@ function updateStatusPanel(data) {
       counts.rekom_no_imb +
       counts.tersewa_imb +
       counts.tersewa_no_imb +
+      counts.dipinjam_imb +
+      counts.dipinjam_no_imb +
       counts.unknown
     );
   } else if (data && Array.isArray(data.data)) {
@@ -604,7 +610,9 @@ function updateStatusPanel(data) {
       let imbCategory = item.imbCategory || 'unknown';
 
       if (!item.imbCategory) {
-        if (skema.includes('DISEWAKAN') || skema.includes('SEWA') || skema.includes('DIPINJAM')) {
+        if (skema.includes('DIPINJAM') || skema.includes('PINJAM')) {
+          imbCategory = hasImb ? 'dipinjam_imb' : 'dipinjam_no_imb';
+        } else if (skema.includes('DISEWAKAN') || skema.includes('SEWA')) {
           imbCategory = hasImb ? 'tersewa_imb' : 'tersewa_no_imb';
         } else if (skema.includes('REKOM') || skema.includes('REKOMENDASI')) {
           imbCategory = hasImb ? 'rekom_imb' : 'rekom_no_imb';
@@ -641,13 +649,20 @@ function updateStatusPanel(data) {
       counts.rekom_no_imb +
       counts.tersewa_imb +
       counts.tersewa_no_imb +
+      counts.dipinjam_imb +
+      counts.dipinjam_no_imb +
       counts.unknown;
   }
 
   // ========== BUAT HTML PANEL ==========
   let html = `
-    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #673ab7; color: white;">
+    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #673ab7; color: white; gap: 8px;">
       <h4 style="margin: 0; font-size: 14px;">📊 Statistik Kavling (IMB)</h4>
+      <button id="refreshKavlingStatusBtn"
+        style="margin: 0; padding: 6px 10px; font-size: 11px; border-radius: 999px; border: none; cursor: pointer;
+               background: #ff9800; color: #ffffff; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.25); display: inline-flex; align-items: center; gap: 4px;">
+        <span>🔄</span><span>Refresh Status Kavling</span>
+      </button>
     </div>
 
     <div class="status-content" style="padding: 12px;">
@@ -660,6 +675,9 @@ function updateStatusPanel(data) {
     // TERSEWA (IMB / tanpa IMB)
     { id: 'tersewa_imb', title: 'Tersewa dengan IMB/PBG/SLF' },
     { id: 'tersewa_no_imb', title: 'Tersewa tanpa IMB/PBG/SLF' },
+    // DIPINJAM (IMB / belum IMB)
+    { id: 'dipinjam_imb', title: 'Dipinjam dengan IMB/PBG/SLF' },
+    { id: 'dipinjam_no_imb', title: 'Dipinjam belum ada IMB/PBG/SLF' },
     // TERJUAL / SOLD (IMB / tanpa IMB)
     { id: 'terjual_imb', title: 'Terjual dengan IMB/PBG/SLF' },
     { id: 'terjual_no_imb', title: 'Terjual tanpa IMB/PBG/SLF' },
@@ -691,12 +709,14 @@ function updateStatusPanel(data) {
       darkerBg = '#a6c012ff'; 
     }
     else if (cat.id === 'rekom_imb') { btnBg = '#9c27b0'; darkerBg = '#7b1fa2'; }
-        else if (cat.id === 'rekom_no_imb') { 
-      btnBg = 'linear-gradient(90deg, #9c27b0 0%, #2196F3 100%)'; 
-      darkerBg = '#2196F3'; 
+    else if (cat.id === 'rekom_no_imb') { 
+      btnBg = 'linear-gradient(90deg, #9c27b0 0%, #ce93d8 100%)'; 
+      darkerBg = '#8e24aa'; 
     }
-    else if (cat.id === 'tersewa_imb') { btnBg = '#00BCD4'; darkerBg = '#008BA3'; }
-    else if (cat.id === 'tersewa_no_imb') { btnBg = '#4DD0E1'; darkerBg = '#00ACC1'; }
+    else if (cat.id === 'dipinjam_imb') { btnBg = '#26a69a'; darkerBg = '#00897b'; }
+    else if (cat.id === 'dipinjam_no_imb') { btnBg = '#4db6ac'; darkerBg = '#00897b'; }
+    else if (cat.id === 'tersewa_imb') { btnBg = '#42A5F5'; darkerBg = '#1E88E5'; }
+    else if (cat.id === 'tersewa_no_imb') { btnBg = '#1E88E5'; darkerBg = '#1565C0'; }
     else if (cat.id === 'unknown') { 
       textColor = '#666666'; 
       textShadow = 'none';
@@ -737,6 +757,32 @@ function updateStatusPanel(data) {
   </div>`;
 
   panelBody.innerHTML = html;
+
+  const refreshBtn = document.getElementById('refreshKavlingStatusBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      try {
+        const originalHtml = refreshBtn.innerHTML;
+        refreshBtn.disabled = true;
+        refreshBtn.style.opacity = '0.7';
+        refreshBtn.innerHTML = '<span>⏳</span><span>Merefresh...</span>';
+
+        localStorage.removeItem('kavlingStatusData');
+        statusData = null;
+
+        await fetchKavlingStatus();
+
+        refreshBtn.innerHTML = originalHtml;
+        refreshBtn.style.opacity = '1';
+        refreshBtn.disabled = false;
+      } catch (err) {
+        console.error('Error saat refresh status kavling:', err);
+        alert('Gagal refresh status kavling. Silakan coba lagi.');
+        refreshBtn.disabled = false;
+        refreshBtn.style.opacity = '1';
+      }
+    });
+  }
 
   // Re-attach event listeners - Seluruh kotak sekarang menjadi tombol
   const currentAccess = accessLevel || sessionStorage.getItem('access_level') || null;
@@ -800,8 +846,30 @@ function colorizeKavling(kavlingData) {
 
     const kode = item.kode.trim().toUpperCase();
     const hasImb = Object.prototype.hasOwnProperty.call(item, 'hasImb') ? item.hasImb : null;
-    const kategori = (item.kategori || 'unknown').toLowerCase();
-    let className = 'kavling-status-unknown';
+    let kategori = (item.kategori || 'unknown').toLowerCase();
+    const skemaText = (item.skema || '').toString().toUpperCase();
+
+    if (kategori === 'unknown' && skemaText) {
+      if (skemaText.includes('DISEWAKAN') || skemaText.includes('SEWA') || skemaText.includes('DIPINJAM')) {
+        kategori = 'disewakan';
+      } else if (skemaText.includes('REKOM') || skemaText.includes('REKOMENDASI')) {
+        kategori = 'rekom';
+      } else if (
+        skemaText.includes('KPR') ||
+        skemaText.includes('TUNAI') ||
+        skemaText.includes('SOLD') ||
+        skemaText.includes('TERJUAL') ||
+        skemaText.includes('LUNAS') ||
+        skemaText.includes('DP') ||
+        skemaText.includes('DIHUNI')
+      ) {
+        kategori = 'kpr';
+      } else if (skemaText.includes('STOK')) {
+        kategori = 'stok';
+      }
+    }
+
+    let className = null;
 
     if (kategori === 'kpr') {
       className = hasImb === false ? 'kavling-status-kpr-no-imb' : 'kavling-status-kpr';
@@ -811,8 +879,8 @@ function colorizeKavling(kavlingData) {
       className = hasImb === false ? 'kavling-status-rekom-no-imb' : 'kavling-status-rekom';
     } else if (kategori === 'disewakan') {
       className = hasImb === false ? 'kavling-status-disewakan-no-imb' : 'kavling-status-disewakan';
-    } else {
-      className = 'kavling-status-unknown';
+    } else if (kategori === 'dipinjam') {
+      className = hasImb === false ? 'kavling-status-dipinjam-no-imb' : 'kavling-status-dipinjam';
     }
 
     // Coba cari elemen dengan ID persis
@@ -844,11 +912,14 @@ function colorizeKavling(kavlingData) {
         'kavling-status-rekom-no-imb',
         'kavling-status-disewakan',
         'kavling-status-disewakan-no-imb',
+        'kavling-status-dipinjam',
+        'kavling-status-dipinjam-no-imb',
         'kavling-status-unknown'
       );
 
-      // Hapus kelas baru
-      element.classList.add(className);
+      if (className) {
+        element.classList.add(className);
+      }
 
       // Pastikan warna teks tetap hitam saat grup diwarnai
       const textEls = element.querySelectorAll('text');
@@ -872,9 +943,13 @@ function colorizeKavling(kavlingData) {
             'kavling-status-rekom-no-imb',
             'kavling-status-disewakan',
             'kavling-status-disewakan-no-imb',
+            'kavling-status-dipinjam',
+            'kavling-status-dipinjam-no-imb',
             'kavling-status-unknown'
           );
-          child.classList.add(className);
+          if (className) {
+            child.classList.add(className);
+          }
         });
       }
 
@@ -893,7 +968,7 @@ function colorizeKavling(kavlingData) {
     }
   });
 
-  // WARNAI KAVLING TANPA STATUS DENGAN PUTIH
+  // Hitung kavling tanpa status (tidak diwarnai, dibiarkan sesuai gambar awal)
   const allBlocksWithId = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
   let unknownCount = 0;
 
@@ -906,43 +981,15 @@ function colorizeKavling(kavlingData) {
         !el.classList.contains('kavling-status-rekom') &&
         !el.classList.contains('kavling-status-rekom-no-imb') &&
         !el.classList.contains('kavling-status-disewakan') &&
-        !el.classList.contains('kavling-status-disewakan-no-imb')) {
-
-      // Hapus inline styles
-      el.style.fill = '';
-      el.style.stroke = '';
-
-      // Hapus kelas status sebelumnya
-      el.classList.remove('kavling-status-unknown');
-
-      // Tambahkan kelas unknown
-      el.classList.add('kavling-status-unknown');
-
-      // Pastikan warna teks tetap hitam
-      const textEls = el.querySelectorAll('text');
-      textEls.forEach(t => {
-        t.style.fill = '#000000';
-        t.style.stroke = 'white';
-        t.style.strokeWidth = '1px';
-        t.style.filter = 'none';
-        t.style.transform = 'none';
-      });
-
-      // Jika element adalah group, tambahkan ke child elements
-      if (el.tagName.toLowerCase() === 'g') {
-        el.querySelectorAll('rect, path, polygon, circle').forEach(child => {
-          child.style.fill = '';
-          child.style.stroke = '';
-          child.classList.remove('kavling-status-unknown');
-          child.classList.add('kavling-status-unknown');
-        });
-      }
+        !el.classList.contains('kavling-status-disewakan-no-imb') &&
+        !el.classList.contains('kavling-status-dipinjam') &&
+        !el.classList.contains('kavling-status-dipinjam-no-imb')) {
 
       unknownCount++;
     }
   });
 
-  console.log(`✅ Selesai: ${coloredCount} kavling berwarna, ${unknownCount} putih, ${notFoundCount} tidak ditemukan`);
+  console.log(`✅ Selesai: ${coloredCount} kavling berwarna, ${unknownCount} tanpa status (dibiarkan putih), ${notFoundCount} tidak ditemukan`);
 
   // LOG hasil akhir
   const finalCategoryCount = {};
@@ -951,7 +998,6 @@ function colorizeKavling(kavlingData) {
     if (el.classList.contains('kavling-status-stok')) finalCategoryCount.stok = (finalCategoryCount.stok || 0) + 1;
     if (el.classList.contains('kavling-status-rekom')) finalCategoryCount.rekom = (finalCategoryCount.rekom || 0) + 1;
     if (el.classList.contains('kavling-status-disewakan')) finalCategoryCount.disewakan = (finalCategoryCount.disewakan || 0) + 1;
-    if (el.classList.contains('kavling-status-unknown')) finalCategoryCount.unknown = (finalCategoryCount.unknown || 0) + 1;
   });
 
   console.log('🎯 Hasil akhir pewarnaan:', finalCategoryCount);
@@ -1349,6 +1395,7 @@ function getStatusDisplayName(type) {
     'stok': 'Kavling Stok',
     'rekom': 'REKOM',
     'disewakan': 'Disewakan',
+    'dipinjam': 'Dipinjam',
     'unknown': 'Status Belum ada data'
   };
   return statusMap[type] || type.toUpperCase();
@@ -1433,6 +1480,8 @@ function showImbStatsPopup(type) {
     'rekom_no_imb': 'Rekom belum ada IMB/PBG/SLF',
     'tersewa_imb': 'Tersewa dengan IMB/PBG/SLF',
     'tersewa_no_imb': 'Tersewa tanpa IMB/PBG/SLF',
+    'dipinjam_imb': 'Dipinjam dengan IMB/PBG/SLF',
+    'dipinjam_no_imb': 'Dipinjam belum ada IMB/PBG/SLF',
     'unknown': 'Tidak diketahui'
   };
 
@@ -1451,15 +1500,17 @@ function showImbStatsPopup(type) {
   } else {
     rowsHtml = filtered.map((item, index) => {
       const raw = item.rawData || [];
+      const nomorSertifikat = raw.length > 12 ? (raw[12] || '') : '';
       const nomorImb = raw.length > 31 ? (raw[31] || '') : '';
       const namaKavling = item.kode || '';
       const skema = item.skema || '';
       return `
         <tr>
-          <td style="text-align:center;">${index + 1}</td>
-          <td>${namaKavling}</td>
-          <td>${nomorImb}</td>
-          <td>${skema}</td>
+          <td style="text-align:center; padding:6px 8px; border:1px solid #ddd;">${index + 1}</td>
+          <td style="padding:6px 8px; border:1px solid #ddd;">${namaKavling}</td>
+          <td style="padding:6px 8px; border:1px solid #ddd;">${nomorSertifikat}</td>
+          <td style="padding:6px 8px; border:1px solid #ddd;">${nomorImb}</td>
+          <td style="padding:6px 8px; border:1px solid #ddd;">${skema}</td>
         </tr>
       `;
     }).join('');
@@ -1479,10 +1530,11 @@ function showImbStatsPopup(type) {
           <table style="width:100%; border-collapse:collapse; font-size:13px;">
             <thead>
               <tr style="background:#f5f5f5;">
-                <th style="padding:8px; border-bottom:1px solid #ddd; width:50px; text-align:center;">No</th>
-                <th style="padding:8px; border-bottom:1px solid #ddd;">Nama Kavling</th>
-                <th style="padding:8px; border-bottom:1px solid #ddd;">No. IMB/PBG/SLF</th>
-                <th style="padding:8px; border-bottom:1px solid #ddd;">Skema Penjualan</th>
+                <th style="padding:8px; border:1px solid #ddd; width:50px; text-align:center;">No</th>
+                <th style="padding:8px; border:1px solid #ddd;">Nama Kavling</th>
+                <th style="padding:8px; border:1px solid #ddd;">No. Sertifikat</th>
+                <th style="padding:8px; border:1px solid #ddd;">No. IMB/PBG/SLF</th>
+                <th style="padding:8px; border:1px solid #ddd;">Skema Penjualan</th>
               </tr>
             </thead>
             <tbody>
