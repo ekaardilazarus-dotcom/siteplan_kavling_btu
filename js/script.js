@@ -691,7 +691,10 @@ function updateStatusPanel(data) {
       darkerBg = '#a6c012ff'; 
     }
     else if (cat.id === 'rekom_imb') { btnBg = '#9c27b0'; darkerBg = '#7b1fa2'; }
-    else if (cat.id === 'rekom_no_imb') { btnBg = '#673ab7'; darkerBg = '#512da8'; }
+        else if (cat.id === 'rekom_no_imb') { 
+      btnBg = 'linear-gradient(90deg, #9c27b0 0%, #2196F3 100%)'; 
+      darkerBg = '#2196F3'; 
+    }
     else if (cat.id === 'tersewa_imb') { btnBg = '#2196F3'; darkerBg = '#1976D2'; }
     else if (cat.id === 'tersewa_no_imb') { btnBg = '#03A9F4'; darkerBg = '#0288D1'; }
     else if (cat.id === 'unknown') { 
