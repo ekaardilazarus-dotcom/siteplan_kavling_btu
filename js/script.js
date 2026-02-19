@@ -192,7 +192,7 @@ updateDateTime();
 // Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwwJNPD_385F6dXLY_R6hOPz2ZqHNHhWH8zf_MEbvnsREcWIJE5SEBq5jMInblF90g/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzM1dH1By3Vwj6tZ8GeXtpgKYpRl9zZp5ChM014Flx515cnHZN63OOt7WC4NbBSl5uR/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
@@ -554,80 +554,124 @@ function updateStatusPanel(data) {
     return;
   }
 
-  // ========== HITUNG DARI DATA API (KONSISTEN) ==========
-  console.log('🎯 Menghitung kavling berdasarkan data API...');
-
-  const countByAPI = {
-    kpr: 0,
-    stok: 0,
-    rekom: 0,
-    disewakan: 0,
-    unknown: 0, 
+  const counts = {
+    terjual_imb: 0,
+    terjual_no_imb: 0,
+    stok_imb: 0,
+    stok_no_imb: 0,
+    rekom_imb: 0,
+    rekom_no_imb: 0,
+    tersewa_imb: 0,
+    tersewa_no_imb: 0,
+    unknown: 0,
     total: 0
   };
 
-  if (data && data.data) {
+  if (data && data.summaryImb) {
+    const summaryImb = data.summaryImb;
+    counts.terjual_imb = summaryImb.terjual_imb || 0;
+    counts.terjual_no_imb = summaryImb.terjual_no_imb || 0;
+    counts.stok_imb = summaryImb.stok_imb || 0;
+    counts.stok_no_imb = summaryImb.stok_no_imb || 0;
+    counts.rekom_imb = summaryImb.rekom_imb || 0;
+    counts.rekom_no_imb = summaryImb.rekom_no_imb || 0;
+    counts.tersewa_imb = summaryImb.tersewa_imb || 0;
+    counts.tersewa_no_imb = summaryImb.tersewa_no_imb || 0;
+    counts.unknown = summaryImb.unknown || 0;
+    counts.total = summaryImb.total || (
+      counts.terjual_imb +
+      counts.terjual_no_imb +
+      counts.stok_imb +
+      counts.stok_no_imb +
+      counts.rekom_imb +
+      counts.rekom_no_imb +
+      counts.tersewa_imb +
+      counts.tersewa_no_imb +
+      counts.unknown
+    );
+  } else if (data && Array.isArray(data.data)) {
     data.data.forEach(item => {
-      const kategori = item.kategori || 'unknown';
-      if (countByAPI.hasOwnProperty(kategori)) {
-        countByAPI[kategori]++;
+      const raw = item.rawData || [];
+      let hasImb = typeof item.hasImb === 'boolean' ? item.hasImb : null;
+
+      if (hasImb === null && raw.length > 31) {
+        const noImbStr = String(raw[31] || '').trim();
+        const lower = noImbStr.toLowerCase();
+        hasImb = noImbStr !== '' && noImbStr !== '-' && !lower.includes('belum') && !lower.includes('[belum memiliki]');
+      }
+
+      const skema = (item.skema || '').toUpperCase();
+      let imbCategory = item.imbCategory || 'unknown';
+
+      if (!item.imbCategory) {
+        if (skema.includes('DISEWAKAN') || skema.includes('SEWA') || skema.includes('DIPINJAM')) {
+          imbCategory = hasImb ? 'tersewa_imb' : 'tersewa_no_imb';
+        } else if (skema.includes('REKOM') || skema.includes('REKOMENDASI')) {
+          imbCategory = hasImb ? 'rekom_imb' : 'rekom_no_imb';
+        } else if (
+          skema.includes('KPR') ||
+          skema.includes('TUNAI') ||
+          skema.includes('SOLD') ||
+          skema.includes('TERJUAL') ||
+          skema.includes('LUNAS') ||
+          skema.includes('DP') ||
+          skema.includes('DIHUNI')
+        ) {
+          imbCategory = hasImb ? 'terjual_imb' : 'terjual_no_imb';
+        } else if (skema.includes('STOK')) {
+          imbCategory = hasImb ? 'stok_imb' : 'stok_no_imb';
+        } else {
+          imbCategory = 'unknown';
+        }
+      }
+
+      if (Object.prototype.hasOwnProperty.call(counts, imbCategory)) {
+        counts[imbCategory]++;
       } else {
-        countByAPI.unknown++;
+        counts.unknown++;
       }
     });
+
+    counts.total =
+      counts.terjual_imb +
+      counts.terjual_no_imb +
+      counts.stok_imb +
+      counts.stok_no_imb +
+      counts.rekom_imb +
+      counts.rekom_no_imb +
+      counts.tersewa_imb +
+      counts.tersewa_no_imb +
+      counts.unknown;
   }
-
-  // Hitung elemen di peta yang tidak ada di API sebagai unknown
-  const allFrameElements = document.querySelectorAll('[id^="GA"], [id^="UJ"], [id^="KR"], [id^="M"], [id^="Blok"]');
-  const apiKodes = new Set((data.data || []).map(item => item.kode ? item.kode.trim().toUpperCase() : ''));
-  
-  let mapOnlyCount = 0;
-  allFrameElements.forEach(el => {
-    if (el.id && el.id.trim() !== '') {
-      const id = el.id.trim().toUpperCase();
-      if (!apiKodes.has(id)) {
-        mapOnlyCount++;
-      }
-    }
-  });
-  
-  countByAPI.unknown += mapOnlyCount;
-  countByAPI.total = countByAPI.kpr + countByAPI.stok + countByAPI.rekom + countByAPI.disewakan + countByAPI.unknown;
-
-  console.log('📊 Hasil hitung API:', countByAPI);
-
-  // Update UI
-  const safeUpdate = (elementId, value) => {
-    const element = document.getElementById(elementId);
-    if (element) element.textContent = value !== undefined ? value : 0;
-  };
-
-  safeUpdate('countKPR', countByAPI.kpr);
-  safeUpdate('countSTOK', countByAPI.stok);
-  safeUpdate('countREKOM', countByAPI.rekom);
-  safeUpdate('countDISEWAKAN', countByAPI.disewakan);
-  safeUpdate('countUNKNOWN', countByAPI.unknown);  
-  safeUpdate('totalAll', countByAPI.total);
 
   // ========== BUAT HTML PANEL ==========
   let html = `
     <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #673ab7; color: white;">
-      <h4 style="margin: 0; font-size: 14px;">📊 Statistik Kavling</h4>
+      <h4 style="margin: 0; font-size: 14px;">📊 Statistik Kavling (IMB)</h4>
     </div>
 
     <div class="status-content" style="padding: 12px;">
   `;
 
   const categories = [
-    { id: 'kpr', title: 'KPR,TUNAI (SOLD)', color: '#ff4444' },
-    { id: 'stok', title: 'STOK', color: '#2ecc71' },
-    { id: 'rekom', title: 'REKOM', color: '#ff44ff' },
-    { id: 'disewakan', title: 'DISEWAKAN', color: '#007FFF' },
-    { id: 'unknown', title: 'TIDAK DIKETAHUI (PUTIH)', color: '#ffffff' }
+    // STOK (IMB / belum IMB)
+    { id: 'stok_imb', title: 'Stok dengan IMB/PBG/SLF' },
+    { id: 'stok_no_imb', title: 'Stok belum ada IMB/PBG/SLF' },
+    // TERSEWA (IMB / tanpa IMB)
+    { id: 'tersewa_imb', title: 'Tersewa dengan IMB/PBG/SLF' },
+    { id: 'tersewa_no_imb', title: 'Tersewa tanpa IMB/PBG/SLF' },
+    // TERJUAL / SOLD (IMB / tanpa IMB)
+    { id: 'terjual_imb', title: 'Terjual dengan IMB/PBG/SLF' },
+    { id: 'terjual_no_imb', title: 'Terjual tanpa IMB/PBG/SLF' },
+    // REKOM (IMB / belum IMB)
+    { id: 'rekom_imb', title: 'Rekom dengan IMB/PBG/SLF' },
+    { id: 'rekom_no_imb', title: 'Rekom belum ada IMB/PBG/SLF' },
+    // LAINNYA
+    { id: 'unknown', title: 'Tidak diketahui' }
   ];
 
-    categories.forEach(cat => {
-    const count = countByAPI[cat.id] || 0;
+  categories.forEach(cat => {
+    const count = counts[cat.id] || 0;
     const borderStyle = cat.id === 'unknown' ? 'border: 1px solid #ddd;' : '';
     
     // Background solid dan Darker untuk area "ID" (ikon sebelah kiri)
@@ -639,10 +683,17 @@ function updateStatusPanel(data) {
     let countColor = 'white';
     let countBorder = 'rgba(255,255,255,0.3)';
 
-    if (cat.id === 'kpr') { btnBg = '#ff4444'; darkerBg = '#cc0000'; }
-    else if (cat.id === 'stok') { btnBg = '#2ecc71'; darkerBg = '#27ae60'; }
-    else if (cat.id === 'rekom') { btnBg = '#ff44ff'; darkerBg = '#990099'; }
-    else if (cat.id === 'disewakan') { btnBg = '#007FFF'; darkerBg = '#005BB5'; }
+    if (cat.id === 'terjual_imb') { btnBg = '#ff4444'; darkerBg = '#cc0000'; }
+    else if (cat.id === 'terjual_no_imb') { btnBg = '#ef5350'; darkerBg = '#c62828'; }
+    else if (cat.id === 'stok_imb') { btnBg = '#2ecc71'; darkerBg = '#27ae60'; }
+    else if (cat.id === 'stok_no_imb') { 
+      btnBg = 'linear-gradient(90deg, #2ecc71 0%, #d8ff4dff 100%)'; 
+      darkerBg = '#a6c012ff'; 
+    }
+    else if (cat.id === 'rekom_imb') { btnBg = '#9c27b0'; darkerBg = '#7b1fa2'; }
+    else if (cat.id === 'rekom_no_imb') { btnBg = '#673ab7'; darkerBg = '#512da8'; }
+    else if (cat.id === 'tersewa_imb') { btnBg = '#2196F3'; darkerBg = '#1976D2'; }
+    else if (cat.id === 'tersewa_no_imb') { btnBg = '#03A9F4'; darkerBg = '#0288D1'; }
     else if (cat.id === 'unknown') { 
       textColor = '#666666'; 
       textShadow = 'none';
@@ -672,7 +723,7 @@ function updateStatusPanel(data) {
 
   html += `
     <div class="status-total" style="text-align: center; padding: 12px; margin-top: 10px; background: #e8f5e9; border-radius: 8px; font-size: 15px; border: 1px solid #c8e6c9; width: 100%; box-sizing: border-box;">
-      <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${countByAPI.total}</span></strong>
+      <strong>Total Kavling: <span id="totalAll" style="color: #2E7D32;">${counts.total}</span></strong>
     </div>
 
     <div class="status-debug-info" style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 6px; font-size: 11px; color: #666; width: 100%; box-sizing: border-box; overflow: hidden;">
@@ -685,11 +736,26 @@ function updateStatusPanel(data) {
   panelBody.innerHTML = html;
 
   // Re-attach event listeners - Seluruh kotak sekarang menjadi tombol
+  const currentAccess = accessLevel || sessionStorage.getItem('access_level') || null;
+
   document.querySelectorAll('.clickable-status-item').forEach(item => {
-    item.addEventListener('click', function() {
-      const type = this.getAttribute('data-type');
-      showKavlingListByCategory(type);
-    });
+    const type = item.getAttribute('data-type');
+
+    if (currentAccess === 'limited' && type !== 'stok_imb' && type !== 'stok_no_imb') {
+      item.style.pointerEvents = 'none';
+      item.style.filter = 'grayscale(0.2)';
+      item.title = 'Akses terbatas. Gunakan kode F888 untuk fitur penuh.';
+    } else {
+      item.style.pointerEvents = 'auto';
+      item.style.opacity = '';
+      item.style.filter = '';
+      item.title = '';
+
+      item.addEventListener('click', function() {
+        const t = this.getAttribute('data-type');
+        showImbStatsPopup(t);
+      });
+    }
   });
 
   const closeBtn = panelBody.querySelector('.close-status-btn');
@@ -730,7 +796,21 @@ function colorizeKavling(kavlingData) {
     if (!item.kode) return;
 
     const kode = item.kode.trim().toUpperCase();
-    const kategori = item.kategori || 'unknown';
+    const hasImb = Object.prototype.hasOwnProperty.call(item, 'hasImb') ? item.hasImb : null;
+    const kategori = (item.kategori || 'unknown').toLowerCase();
+    let className = 'kavling-status-unknown';
+
+    if (kategori === 'kpr') {
+      className = hasImb === false ? 'kavling-status-kpr-no-imb' : 'kavling-status-kpr';
+    } else if (kategori === 'stok') {
+      className = hasImb === false ? 'kavling-status-stok-no-imb' : 'kavling-status-stok';
+    } else if (kategori === 'rekom') {
+      className = hasImb === false ? 'kavling-status-rekom-no-imb' : 'kavling-status-rekom';
+    } else if (kategori === 'disewakan') {
+      className = hasImb === false ? 'kavling-status-disewakan-no-imb' : 'kavling-status-disewakan';
+    } else {
+      className = 'kavling-status-unknown';
+    }
 
     // Coba cari elemen dengan ID persis
     let element = document.getElementById(kode);
@@ -751,14 +831,16 @@ function colorizeKavling(kavlingData) {
     if (element) {
       if (element.id) processedIds.add(element.id);
 
-      const className = `kavling-status-${kategori}`;
-
       // Hapus semua kelas status sebelumnya
       element.classList.remove(
         'kavling-status-kpr',
+        'kavling-status-kpr-no-imb',
         'kavling-status-stok', 
+        'kavling-status-stok-no-imb',
         'kavling-status-rekom',
+        'kavling-status-rekom-no-imb',
         'kavling-status-disewakan',
+        'kavling-status-disewakan-no-imb',
         'kavling-status-unknown'
       );
 
@@ -780,9 +862,13 @@ function colorizeKavling(kavlingData) {
         element.querySelectorAll('rect, path, polygon, circle').forEach(child => {
           child.classList.remove(
             'kavling-status-kpr',
+            'kavling-status-kpr-no-imb',
             'kavling-status-stok', 
+            'kavling-status-stok-no-imb',
             'kavling-status-rekom',
+            'kavling-status-rekom-no-imb',
             'kavling-status-disewakan',
+            'kavling-status-disewakan-no-imb',
             'kavling-status-unknown'
           );
           child.classList.add(className);
@@ -811,9 +897,13 @@ function colorizeKavling(kavlingData) {
   allBlocksWithId.forEach(el => {
     if (el.id && !processedIds.has(el.id) && 
         !el.classList.contains('kavling-status-kpr') && 
+        !el.classList.contains('kavling-status-kpr-no-imb') && 
         !el.classList.contains('kavling-status-stok') && 
+        !el.classList.contains('kavling-status-stok-no-imb') && 
         !el.classList.contains('kavling-status-rekom') &&
-        !el.classList.contains('kavling-status-disewakan')) {
+        !el.classList.contains('kavling-status-rekom-no-imb') &&
+        !el.classList.contains('kavling-status-disewakan') &&
+        !el.classList.contains('kavling-status-disewakan-no-imb')) {
 
       // Hapus inline styles
       el.style.fill = '';
@@ -1068,8 +1158,15 @@ function showKavlingListByCategory(type) {
     </div>
   `;
   
-  const data = (statusData && statusData.data) ? 
-    statusData.data.filter(item => (item.kategori || '').toLowerCase() === statusType) : [];
+  const baseData = (statusData && statusData.data) ? statusData.data : [];
+  const legacyStatuses = ['kpr', 'stok', 'rekom', 'disewakan', 'unknown'];
+
+  const data = baseData.filter(item => {
+    if (legacyStatuses.includes(statusType)) {
+      return (item.kategori || '').toLowerCase() === statusType;
+    }
+    return (item.imbCategory || '').toLowerCase() === statusType;
+  });
 
   setTimeout(() => {
     if (!data || data.length === 0) {
@@ -1302,6 +1399,122 @@ function copyToClipboard() {
       alert('Gagal menyalin. Coba secara manual.');
     });
   }
+}
+
+function showImbStatsPopup(type) {
+  const statusType = (type || '').toLowerCase();
+  const baseData = (statusData && statusData.data) ? statusData.data : [];
+  const legacyStatuses = ['kpr', 'stok', 'rekom', 'disewakan', 'unknown'];
+
+  const filtered = baseData.filter(item => {
+    if (legacyStatuses.includes(statusType)) {
+      return (item.kategori || '').toLowerCase() === statusType;
+    }
+    return (item.imbCategory || '').toLowerCase() === statusType;
+  });
+
+  const oldPopup = document.querySelector('.kavling-popup');
+  if (oldPopup) {
+    document.body.removeChild(oldPopup);
+  }
+
+  const popup = document.createElement('div');
+  popup.className = 'kavling-popup';
+
+  const titleMap = {
+    'terjual_imb': 'Terjual dengan IMB/PBG/SLF',
+    'terjual_no_imb': 'Terjual tanpa IMB/PBG/SLF',
+    'stok_imb': 'Stok dengan IMB/PBG/SLF',
+    'stok_no_imb': 'Stok belum ada IMB/PBG/SLF',
+    'rekom_imb': 'Rekom dengan IMB/PBG/SLF',
+    'rekom_no_imb': 'Rekom belum ada IMB/PBG/SLF',
+    'tersewa_imb': 'Tersewa dengan IMB/PBG/SLF',
+    'tersewa_no_imb': 'Tersewa tanpa IMB/PBG/SLF',
+    'unknown': 'Tidak diketahui'
+  };
+
+  const displayTitle = titleMap[statusType] || statusType.toUpperCase();
+
+  let rowsHtml = '';
+
+  if (filtered.length === 0) {
+    rowsHtml = `
+      <tr>
+        <td colspan="4" style="text-align:center; padding:12px; color:#666;">
+          Tidak ada data kavling untuk kategori ini.
+        </td>
+      </tr>
+    `;
+  } else {
+    rowsHtml = filtered.map((item, index) => {
+      const raw = item.rawData || [];
+      const nomorImb = raw.length > 31 ? (raw[31] || '') : '';
+      const namaKavling = item.kode || '';
+      const skema = item.skema || '';
+      return `
+        <tr>
+          <td style="text-align:center;">${index + 1}</td>
+          <td>${namaKavling}</td>
+          <td>${nomorImb}</td>
+          <td>${skema}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  popup.innerHTML = `
+    <div class="kavling-popup-content" style="max-width:720px;">
+      <div class="kavling-popup-header">
+        <h3>📊 Detail Statistik IMB: ${displayTitle}</h3>
+        <button class="close-kavling-popup">&times;</button>
+      </div>
+      <div class="kavling-popup-body" style="padding:15px;">
+        <div style="margin-bottom:10px; font-size:13px; color:#555;">
+          Total: <strong>${filtered.length}</strong> kavling
+        </div>
+        <div style="max-height:400px; overflow-y:auto; border:1px solid #e0e0e0; border-radius:8px;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="background:#f5f5f5;">
+                <th style="padding:8px; border-bottom:1px solid #ddd; width:50px; text-align:center;">No</th>
+                <th style="padding:8px; border-bottom:1px solid #ddd;">Nama Kavling</th>
+                <th style="padding:8px; border-bottom:1px solid #ddd;">No. IMB/PBG/SLF</th>
+                <th style="padding:8px; border-bottom:1px solid #ddd;">Skema Penjualan</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="kavling-popup-footer">
+        <button class="kavling-close-btn">Tutup</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  const closePopup = () => {
+    if (popup && popup.parentNode) {
+      document.body.removeChild(popup);
+    }
+  };
+
+  const closeBtn = popup.querySelector('.close-kavling-popup');
+  const closeBtn2 = popup.querySelector('.kavling-close-btn');
+
+  if (closeBtn) closeBtn.addEventListener('click', closePopup);
+  if (closeBtn2) closeBtn2.addEventListener('click', closePopup);
+
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      closePopup();
+    }
+  });
+
+  popup.style.display = 'flex';
 }
 
 // Popup untuk menampilkan data download
@@ -1969,13 +2182,14 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
 
 // Tombol bersihkan hasil kavling
 document.getElementById('clearKavlingResults')?.addEventListener('click', () => {
-  document.getElementById('kavlingNamaUser').value = '';
-  document.getElementById('kavlingStatus').value = '';
+  const namaUserInput = document.getElementById('kavlingNamaUser');
+  if (namaUserInput) namaUserInput.value = '';
   document.getElementById('kavlingResults').innerHTML = 
     '<p class="placeholder" style="font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 40px 20px; color: #757575; font-style: italic;">Hasil pencarian kavling akan ditampilkan di sini...</p>';
   
   // Sembunyikan tombol Excel
-  document.getElementById('downloadExcelKavling').style.display = 'none';
+  const excelBtn = document.getElementById('downloadExcelKavling');
+  if (excelBtn) excelBtn.style.display = 'none';
   currentKavlingResults = [];
 });
   searchInput.disabled = true;
@@ -2159,46 +2373,6 @@ document.getElementById('clearKavlingResults')?.addEventListener('click', () => 
     }
     await searchKavling(namaUser, 'kolom_h', 'Nama USER');
   });
-
-  // 🆕 Pencarian Status Kavling
-  document.getElementById('searchStatus')?.addEventListener('click', async () => {
-    const status = document.getElementById('kavlingStatus').value;
-    if (!status) {
-      alert('Mohon pilih status kavling');
-      return;
-    }
- // Disable tombol selama proses
-  const statusBtn = document.getElementById('searchStatus');
-  const originalText = statusBtn.innerHTML;
-  statusBtn.disabled = true;
-  statusBtn.innerHTML = '<span>⏳</span> Memproses...';
-  
-  try {
-    // Get data dari statusData yang sudah diambil sebelumnya
-    if (statusData && statusData.data) {
-      const filteredData = statusData.data.filter(item => item.kategori === status);
-      displayKavlingResults(filteredData, status);
-    } else {
-      // Fetch data status dulu
-      const data = await fetchKavlingStatus();
-      if (data && data.data) {
-        const filteredData = data.data.filter(item => item.kategori === status);
-        displayKavlingResults(filteredData, status);
-      }
-    }
-  } catch (error) {
-    console.error('Error pencarian status:', error);
-    document.getElementById('kavlingResults').innerHTML = `
-      <div style="padding:20px;text-align:center;color:#c62828;">
-        <div style="font-size:16px;margin-bottom:10px;">❌ Gagal memproses data</div>
-      </div>
-    `;
-  } finally {
-    // Enable tombol kembali
-    statusBtn.disabled = false;
-    statusBtn.innerHTML = originalText;
-  }
-});
 
   // 🆕 ENTER KEY SUPPORT untuk Nama USER
   document.getElementById('kavlingNamaUser')?.addEventListener('keydown', (e) => {
