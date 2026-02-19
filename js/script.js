@@ -695,8 +695,8 @@ function updateStatusPanel(data) {
       btnBg = 'linear-gradient(90deg, #9c27b0 0%, #2196F3 100%)'; 
       darkerBg = '#2196F3'; 
     }
-    else if (cat.id === 'tersewa_imb') { btnBg = '#2196F3'; darkerBg = '#1976D2'; }
-    else if (cat.id === 'tersewa_no_imb') { btnBg = '#03A9F4'; darkerBg = '#0288D1'; }
+    else if (cat.id === 'tersewa_imb') { btnBg = '#00BCD4'; darkerBg = '#008BA3'; }
+    else if (cat.id === 'tersewa_no_imb') { btnBg = '#4DD0E1'; darkerBg = '#00ACC1'; }
     else if (cat.id === 'unknown') { 
       textColor = '#666666'; 
       textShadow = 'none';
