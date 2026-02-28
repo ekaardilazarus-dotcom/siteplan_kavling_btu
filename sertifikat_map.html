@@ -31,35 +31,31 @@
       <div class="smap-right-inner">
         <h3>Pencarian & Status</h3>
 
-        <div class="smap-print-toolbar">
-          <button id="smapPrintFull" class="smap-print-btn">Cetak Keseluruhan</button>
-          <button id="smapPrintView" class="smap-print-btn">Cetak Tampilan Saat Ini</button>
+        <div class="smap-toolbar">
+          <button class="smap-btn" data-bank="UMM" style="background: rgba(128,0,0,0.9);">UMM</button>
+          <button class="smap-btn" data-bank="UNISMA" style="background: rgba(0,100,0,0.9);">UNISMA</button>
+          <button class="smap-btn" data-bank="ABC" style="background: rgba(128,0,128,0.9);">ABC</button>
+          <button class="smap-btn" data-bank="BTN" style="background: rgba(33,150,243,0.9);">BTN</button>
+          <button class="smap-btn" data-bank="BUKOPIN" style="background: rgba(255,235,59,0.9); color:#333; text-shadow:none;">BUKOPIN</button>
+          <button class="smap-btn" data-bank="MANDIRI" style="background: rgba(13,71,161,0.9);">MANDIRI</button>
+          <button class="smap-btn" data-bank="LAINNYA" style="background: rgba(255,255,255,0.9); color:#333; text-shadow:none;">LAINNYA</button>
         </div>
 
+        <div class="smap-actions" style="margin-bottom:8px;">
+          <a href="pencarian_sertifikat.html" class="back-home-btn" style="background:#673ab7;">
+            <span>🔍</span> Cari Berdasarkan Sertifikat
+          </a>
+        </div>
         <div class="smap-search">
-          <div class="smap-row">
-            <input id="smap-shgb" placeholder="MILIK MALANG" disabled>
-          </div>
-          <div class="smap-row">
-            <input id="smap-shm" placeholder="MILIK SURABAYA" disabled>
-          </div>
-          <div class="smap-row">
-            <input id="smap-nama-shm" placeholder="MILIK KOTA LAIN" disabled>
-          </div>
-          <div class="smap-row">
-            <input id="smap-induk" placeholder="MILIK UMM" disabled>
-          </div>
-          <div class="smap-row">
-            <input id="smap-exowner" placeholder="MILIK UNISMA" disabled>
-          </div>
-          <div class="smap-row">
-            <input id="smap-lainnya" placeholder="MILIK LAINNYA" disabled>
+          <div class="smap-print-toolbar">
+            <button id="smapPrintFull" class="smap-print-btn">Cetak Keseluruhan</button>
+            <button id="smapPrintView" class="smap-print-btn">Cetak Tampilan Saat Ini</button>
           </div>
         </div>
 
         <div id="smap-status-panel" class="smap-status-panel">
           <div class="smap-status-body">
-            <div class="smap-status-placeholder">Panel status sertifikat akan muncul di sini.</div>
+          
           </div>
         </div>
       </div>
