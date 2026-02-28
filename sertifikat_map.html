@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SITE MAP SERTIFIKAT BTU KNC</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/sertifikat_map.css">
+</head>
+<body>
+
+  <header class="main-header">
+    <h1><span class="futuristic-text">SITE MAP SERTIFIKAT BTU KNC</span></h1>
+    <div class="header-actions" style="margin-top:10px; display:flex; gap:10px;">
+      <a href="index.html" class="back-home-btn"><span>🏠</span> Kembali ke Utama</a>
+      <a href="pencarian_sertifikat.html" class="back-home-btn" style="background:#673ab7;"><span>🔍</span> Pencarian Sertifikat</a>
+    </div>
+  </header>
+
+  <div class="cert-map-layout">
+    <aside class="smap-left">
+      <div id="cert-map">
+        <div class="smap-loading">
+          <div class="smap-spinner"></div>
+          <div>Memuat peta sertifikat...</div>
+        </div>
+      </div>
+    </aside>
+
+    <aside class="smap-right">
+      <div class="smap-right-inner">
+        <h3>Pencarian & Status</h3>
+
+        <div class="smap-search">
+          <div class="smap-row">
+            <input id="smap-shgb" placeholder="MILIK MALANG" disabled>
+          </div>
+          <div class="smap-row">
+            <input id="smap-shm" placeholder="MILIK SURABAYA" disabled>
+          </div>
+          <div class="smap-row">
+            <input id="smap-nama-shm" placeholder="MILIK KOTA LAIN" disabled>
+          </div>
+          <div class="smap-row">
+            <input id="smap-induk" placeholder="MILIK UMM" disabled>
+          </div>
+          <div class="smap-row">
+            <input id="smap-exowner" placeholder="MILIK UNISMA" disabled>
+          </div>
+                <div class="smap-row">
+            <input id="smap-exowner" placeholder="MILIK LAINNYA" disabled>
+          </div>
+        </div>
+
+        <div id="smap-status-panel" class="smap-status-panel">
+          <div class="smap-status-body">
+            <div class="smap-status-placeholder">Panel status sertifikat akan muncul di sini.</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="futuristic-footer">
+    <span class="futuristic-text" style="font-weight: normal; font-size: 8px;">web by @ekalazarus</span>
+  </footer>
+
+  <script src="js/sertifikat_map.js" defer></script>
+</body>
+</html>
