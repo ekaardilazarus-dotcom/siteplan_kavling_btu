@@ -2,12 +2,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
   const mapEl = document.getElementById('cert-map');
   const loader = mapEl.querySelector('.smap-loading');
+  const BANK_CACHE_KEY = 'certMapBankCache';
+  const BANK_CACHE_DURATION = 10 * 60 * 1000;
   let svgCache = null;
   let originalViewBox = null;
   let viewBoxState = { x: 0, y: 0, w: 1000, h: 1000 };
   let isPanning = false;
   let isDragging = false;
   let panStart = { x: 0, y: 0 };
+  let certBankRows = [];
+  let certShapes = [];
+  let activeBankFilter = null;
+  let certIndexByKey = new Map();
+  let groupIndexByKey = new Map();
 
   const parseViewBox = (vb) => {
     const p = vb.split(/\s+/).map(Number);
@@ -32,9 +39,202 @@ document.addEventListener('DOMContentLoaded', () => {
     viewBoxState = parseViewBox(originalViewBox);
   };
 
+  const normalizeCertId = (raw) => {
+    if (!raw) return '';
+    return String(raw)
+      .toUpperCase()
+      .replace(/\s+/g, '')
+      .replace(/[-_.]/g, '')
+      .replace(/\//g, '')
+      .trim();
+  };
+
+  const normalizeBank = (raw) => {
+    if (!raw) return 'LAINNYA';
+    const text = String(raw).toUpperCase();
+    if (text.includes('UMM')) return 'UMM';
+    if (text.includes('UNISMA')) return 'UNISMA';
+    if (text.includes('ABC')) return 'ABC';
+    if (text.includes('BTN')) return 'BTN';
+    if (text.includes('BUKOPIN')) return 'BUKOPIN';
+    if (text.includes('MANDIRI')) return 'MANDIRI';
+    return 'LAINNYA';
+  };
+
+  const getBankColor = (bankKey) => {
+    switch (bankKey) {
+      case 'UMM':
+        return 'rgba(128,0,0,0.6)';
+      case 'UNISMA':
+        return 'rgba(0,100,0,0.6)';
+      case 'ABC':
+        return 'rgba(128,0,128,0.6)';
+      case 'BTN':
+        return 'rgba(33,150,243,0.6)';
+      case 'BUKOPIN':
+        return 'rgba(255,235,59,0.6)';
+      case 'MANDIRI':
+        return 'rgba(13,71,161,0.6)';
+      case 'LAINNYA':
+      default:
+        return 'rgba(255,255,255,0.6)';
+    }
+  };
+
+  const buildCertIndex = () => {
+    certIndexByKey = new Map();
+    certBankRows.forEach(item => {
+      const fullData = Array.isArray(item.fullData) ? item.fullData : [];
+      const nomor = String(item.nomor || fullData[0] || '').trim();
+      const key = normalizeCertId(nomor);
+      if (key) {
+        certIndexByKey.set(key, item);
+      }
+    });
+  };
+
+  const loadCertBankData = async () => {
+    if (certBankRows.length) return certBankRows;
+    try {
+      const cachedRaw = localStorage.getItem(BANK_CACHE_KEY);
+      if (cachedRaw) {
+        const cached = JSON.parse(cachedRaw);
+        if (cached && Array.isArray(cached.results) && cached.timestamp && Date.now() - cached.timestamp < BANK_CACHE_DURATION) {
+          certBankRows = cached.results;
+          buildCertIndex();
+          return certBankRows;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load cert map cache', e);
+    }
+
+    const res = await fetch(`${CERT_API_URL}?action=get_all&_t=${Date.now()}`);
+    const json = await res.json();
+    if (json && json.status === 'success' && Array.isArray(json.results)) {
+      certBankRows = json.results;
+      buildCertIndex();
+      try {
+        localStorage.setItem(BANK_CACHE_KEY, JSON.stringify({
+          timestamp: Date.now(),
+          results: certBankRows
+        }));
+      } catch (e) {
+        console.warn('Failed to save cert map cache', e);
+      }
+      return certBankRows;
+    }
+
+    certBankRows = [];
+    return certBankRows;
+  };
+
+  const applyBankFilter = () => {
+    if (!certShapes.length) return;
+    certShapes.forEach(el => {
+      const bankKey = el.dataset.bank || 'LAINNYA';
+      if (!activeBankFilter || bankKey === activeBankFilter) {
+        el.style.opacity = '1';
+      } else {
+        el.style.opacity = '0.15';
+      }
+    });
+  };
+
+  const setupBankFilterButtons = () => {
+    const buttons = Array.from(document.querySelectorAll('.smap-btn[data-bank]'));
+    if (!buttons.length) return;
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const bankKey = btn.dataset.bank;
+        if (!bankKey) return;
+
+        if (activeBankFilter === bankKey) {
+          activeBankFilter = null;
+          buttons.forEach(b => b.classList.remove('active'));
+        } else {
+          activeBankFilter = bankKey;
+          buttons.forEach(b => b.classList.toggle('active', b === btn));
+        }
+
+        applyBankFilter();
+      });
+    });
+  };
+
+  const colorizeSertifikatMap = () => {
+    const svg = mapEl.querySelector('svg');
+    if (!svg || !certBankRows.length || !certIndexByKey.size) return;
+
+    const rootGroup = svg.querySelector('#sertifikatbtu') || svg;
+    const groups = Array.from(rootGroup.querySelectorAll('g[id]')).filter(g => g.id && g.id !== 'sertifikatbtu');
+
+    groupIndexByKey = new Map();
+    certShapes = [];
+
+    groups.forEach(group => {
+      const key = normalizeCertId(group.id);
+      if (!key) return;
+      const shapes = Array.from(group.querySelectorAll('path, polygon, rect, circle'));
+      if (!shapes.length) return;
+      groupIndexByKey.set(key, { group, shapes });
+      certShapes.push(...shapes);
+    });
+
+    certIndexByKey.forEach((item, key) => {
+      const mapping = groupIndexByKey.get(key);
+      if (!mapping) return;
+      const shapes = mapping.shapes;
+      const fullData = Array.isArray(item.fullData) ? item.fullData : [];
+      const rawBank = fullData[16] || '';
+      const aiValue = fullData[34] || '';
+      const bankKey = normalizeBank(rawBank);
+      const color = getBankColor(bankKey);
+      const nomor = String(item.nomor || fullData[0] || '').trim();
+
+      shapes.forEach(el => {
+        el.dataset.bank = bankKey;
+        el.dataset.ai = String(aiValue || '');
+        el.dataset.nomor = nomor;
+        el.style.fill = color;
+        el.style.stroke = 'rgba(0,0,0,0.4)';
+        el.style.strokeWidth = '0.2';
+      });
+    });
+
+    applyBankFilter();
+  };
+
+  const initCertMapColors = async () => {
+    const svg = mapEl.querySelector('svg');
+    if (!svg) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'smap-loading';
+    overlay.style.position = 'absolute';
+    overlay.style.inset = '0';
+    overlay.style.background = 'rgba(255,255,255,0.85)';
+    overlay.innerHTML = `
+      <div class="smap-spinner"></div>
+      <div>Mewarnai peta sertifikat...</div>
+    `;
+    mapEl.appendChild(overlay);
+
+    try {
+      await loadCertBankData();
+      colorizeSertifikatMap();
+      setupBankFilterButtons();
+    } catch (e) {
+      console.error('Gagal mewarnai peta sertifikat', e);
+    } finally {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+  };
+
   const loadSVG = async () => {
     try {
-      loader.style.display = 'flex';
+      if (loader) loader.style.display = 'flex';
       const res = await fetch('sertifikatbtu.svg', { cache: 'default' });
       const text = await res.text();
       svgCache = text;
@@ -45,9 +245,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const showCertPopup = (id) => {
+  const showCertPopup = (element) => {
     const oldPopup = document.querySelector('.kavling-popup');
     if (oldPopup) document.body.removeChild(oldPopup);
+
+    const aiText = element && element.dataset ? element.dataset.ai || '' : '';
+    const bankKey = element && element.dataset ? element.dataset.bank || '' : '';
+    const nomor = element && element.dataset ? element.dataset.nomor || '' : '';
 
     const popup = document.createElement('div');
     popup.className = 'kavling-popup';
@@ -59,12 +263,28 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="close-kavling-popup">&times;</button>
         </div>
         <div class="kavling-popup-body">
-          <div class="kavling-data-content">${id}</div>
+          <div class="kavling-data-content">
+            <div class="kavling-ai-title">Kolom AI</div>
+            <div class="kavling-ai-text"></div>
+            <div class="kavling-ai-meta"></div>
+          </div>
         </div>
       </div>
     `;
 
     document.body.appendChild(popup);
+
+    const aiTextEl = popup.querySelector('.kavling-ai-text');
+    const aiMetaEl = popup.querySelector('.kavling-ai-meta');
+    if (aiTextEl) {
+      aiTextEl.textContent = aiText || 'Tidak ada data di kolom AI.';
+    }
+    if (aiMetaEl) {
+      const parts = [];
+      if (nomor) parts.push(`No: ${nomor}`);
+      if (bankKey) parts.push(`Kategori: ${bankKey}`);
+      aiMetaEl.textContent = parts.join(' • ');
+    }
 
     const closePopup = () => {
       if (popup.parentNode) popup.parentNode.removeChild(popup);
@@ -83,16 +303,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const handleClick = (e) => {
     if (isDragging) return;
     const svg = mapEl.querySelector('svg');
-    if (!svg) return;
+    if (!svg || !groupIndexByKey.size) return;
 
     let t = e.target;
     while (t && t !== mapEl && t !== svg) {
       const frameGroup = t.closest && t.closest('g[id]');
-      if (frameGroup) {
-        const frameId = frameGroup.id ? frameGroup.id.trim() : '';
-        if (!frameId || frameId === 'sertifikatbtu') return;
+      if (frameGroup && frameGroup.id && frameGroup.id !== 'sertifikatbtu') {
+        const key = normalizeCertId(frameGroup.id);
+        const mapping = groupIndexByKey.get(key);
+        const shapes = mapping ? mapping.shapes : Array.from(frameGroup.querySelectorAll('path, polygon, rect, circle'));
+        const targetEl = shapes.find(el => el.dataset && el.dataset.ai !== undefined) || shapes[0] || frameGroup;
         e.stopPropagation();
-        showCertPopup(frameId);
+        showCertPopup(targetEl);
         return;
       }
       t = t.parentElement;
@@ -214,10 +436,17 @@ document.addEventListener('DOMContentLoaded', () => {
     openPrintWindowFromElement(clone);
   };
 
-  loadSVG().finally(() => {
-    if (loader) loader.style.display = 'none';
-    console.log('CERT_API_URL', CERT_API_URL);
-  });
+  const initCertMap = async () => {
+    try {
+      await loadSVG();
+      await initCertMapColors();
+    } finally {
+      if (loader) loader.style.display = 'none';
+      console.log('CERT_API_URL', CERT_API_URL);
+    }
+  };
+
+  initCertMap();
 
   mapEl.addEventListener('click', handleClick);
   mapEl.addEventListener('mousedown', handleMouseDown);
