@@ -710,8 +710,8 @@ function updateStatusPanel(data) {
     }
     else if (cat.id === 'rekom_imb') { btnBg = '#9c27b0'; darkerBg = '#7b1fa2'; }
     else if (cat.id === 'rekom_no_imb') { 
-      btnBg = 'linear-gradient(90deg, #9c27b0 0%, #ce93d8 100%)'; 
-      darkerBg = '#8e24aa'; 
+      btnBg = '#9c27b0'; 
+      darkerBg = '#7b1fa2'; 
     }
     else if (cat.id === 'dipinjam_imb') { btnBg = '#26a69a'; darkerBg = '#00897b'; }
     else if (cat.id === 'dipinjam_no_imb') { btnBg = '#4db6ac'; darkerBg = '#00897b'; }
@@ -2384,6 +2384,9 @@ document.getElementById('clearKavlingResults')?.addEventListener('click', () => 
   // Buka modal (DIUBAH KE HALAMAN SENDIRI SESUAI REQUEST)
   document.getElementById('searchByCertificate')?.addEventListener('click', () => {
     window.location.href = 'pencarian_sertifikat.html';
+  });
+  document.getElementById('openCertMap')?.addEventListener('click', () => {
+    window.location.href = 'sertifikat_map.html';
   });
 
   // Tutup modal
