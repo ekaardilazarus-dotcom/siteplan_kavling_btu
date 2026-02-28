@@ -146,6 +146,74 @@ document.addEventListener('DOMContentLoaded', () => {
     applyViewBox(svg);
   };
 
+  const openPrintWindowFromElement = (svgEl) => {
+    if (!svgEl) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Cetak Peta Sertifikat</title>
+          <style>
+            @page { size: A4; margin: 10mm; }
+            html, body { margin: 0; padding: 0; }
+            body {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #ffffff;
+            }
+            svg { width: 100%; height: auto; }
+          </style>
+        </head>
+        <body></body>
+      </html>
+    `;
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+
+    win.addEventListener('load', () => {
+      try {
+        const imported = win.document.importNode(svgEl, true);
+        imported.removeAttribute('width');
+        imported.removeAttribute('height');
+        imported.style.width = 'auto';
+        imported.style.height = 'auto';
+        win.document.body.appendChild(imported);
+        win.focus();
+        setTimeout(() => win.print(), 300);
+      } catch (err) {
+        console.error('Print error:', err);
+      }
+    });
+  };
+
+  const handlePrintFull = () => {
+    const svg = mapEl.querySelector('svg');
+    if (!svg || !originalViewBox) return;
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('viewBox', originalViewBox);
+    clone.removeAttribute('width');
+    clone.removeAttribute('height');
+    openPrintWindowFromElement(clone);
+  };
+
+  const handlePrintView = () => {
+    const svg = mapEl.querySelector('svg');
+    if (!svg || !viewBoxState) return;
+    const clone = svg.cloneNode(true);
+    const vb = `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`;
+    clone.setAttribute('viewBox', vb);
+    clone.removeAttribute('width');
+    clone.removeAttribute('height');
+    openPrintWindowFromElement(clone);
+  };
+
   loadSVG().finally(() => {
     if (loader) loader.style.display = 'none';
     console.log('CERT_API_URL', CERT_API_URL);
@@ -157,4 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
   mapEl.addEventListener('mouseup', endPan);
   mapEl.addEventListener('mouseleave', endPan);
   mapEl.addEventListener('wheel', handleWheel, { passive: false });
+
+  document.getElementById('smapPrintFull')?.addEventListener('click', handlePrintFull);
+  document.getElementById('smapPrintView')?.addEventListener('click', handlePrintView);
 });
