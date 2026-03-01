@@ -7,7 +7,7 @@
 }
 
 .smap-left {
-  flex: 5;
+  flex: 4;
   background: white;
   border-radius: 12px;
   border: 1px solid #ddd;
@@ -16,12 +16,28 @@
   display: flex;
 }
 
+.smap-middle {
+  flex: 2;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  box-shadow: var(--shadow);
+  padding: 12px;
+  display: flex;
+  min-width: 0;
+}
+
 #cert-map {
   flex: 1;
   background: #fafafa;
   overflow: hidden;
   position: relative;
   cursor: grab;
+}
+
+#cert-map text {
+  fill: #000 !important;
+  stroke: none !important;
 }
 
 #cert-map svg {
@@ -44,10 +60,11 @@
   pointer-events: bounding-box;
 }
 
-#cert-map svg g[id]:not(#sertifikatbtu):hover > *:not(text) {
-  stroke: #250d0d !important;
-  stroke-width: 0.4px !important;
-  transition: stroke 0.15s ease;
+#cert-map svg g[id]:not(#sertifikatbtu):hover > [data-fill-target="1"] {
+  stroke: #000000 !important;
+  stroke-width: 0.1px !important;
+  filter: brightness(1.12) saturate(1.12);
+  transition: filter 0.12s ease, stroke 0.12s ease, stroke-width 0.12s ease;
 }
 
 .smap-loading {
