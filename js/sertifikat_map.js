@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let certBankRows = [];
   let certShapes = [];
   let activeBankFilter = null;
+  let selectedBanks = new Set();
+  let selectedGZ = new Set();
   let certIndexByKey = new Map();
   let groupIndexByKey = new Map();
 
@@ -78,6 +80,24 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'LAINNYA':
       default:
         return 'rgba(255,255,255,0.6)';
+    }
+  };
+
+  const getGZTag = (aiText) => {
+    if (!aiText) return '';
+    const t = String(aiText).toUpperCase();
+    if (t.includes('GZ#1') || t.includes('GZ1')) return 'GZ1';
+    if (t.includes('GZ#2') || t.includes('GZ2')) return 'GZ2';
+    if (t.includes('GZ#3') || t.includes('GZ3')) return 'GZ3';
+    return '';
+  };
+
+  const getGZColor = (tag) => {
+    switch (tag) {
+      case 'GZ1': return 'rgba(255,165,0,0.8)';      // Orange
+      case 'GZ2': return 'rgba(255,185,60,0.8)';     // Orange lebih terang
+      case 'GZ3': return 'rgba(255,205,110,0.8)';    // Orange sangat terang
+      default: return null;
     }
   };
 
@@ -176,7 +196,36 @@ document.addEventListener('DOMContentLoaded', () => {
     groups.forEach(group => {
       const key = normalizeCertId(group.id);
       if (!key) return;
-      const shapes = Array.from(group.querySelectorAll('path, polygon, rect, circle'));
+      const allShapes = Array.from(group.querySelectorAll('path, polygon, rect, circle'));
+      if (!allShapes.length) return;
+      // Pilih hanya shape kavling utama (bukan outline teks/path tulisan)
+      let gbb;
+      try { gbb = group.getBBox(); } catch (_) { gbb = null; }
+      const gArea = gbb ? Math.max(1, gbb.width * gbb.height) : 1;
+
+      // Hitung area tiap shape
+      const shapeAreas = allShapes.map(el => {
+        try {
+          const bb = el.getBBox();
+          const area = Math.max(0, bb.width * bb.height);
+          return { el, area, ratio: area / gArea };
+        } catch (_) {
+          return { el, area: 0, ratio: 0 };
+        }
+      });
+
+      // Ambil area terbesar sebagai kandidat utama
+      const maxArea = shapeAreas.reduce((m, s) => Math.max(m, s.area), 0);
+      // Kriteria: shape dianggap bidang kavling bila cukup besar terhadap grup
+      // atau termasuk klaster terbesar (>= 60% dari max area)
+      const shapes = shapeAreas
+        .filter(s => s.area > 0 && (s.ratio >= 0.12 || s.area >= maxArea * 0.6))
+        .map(s => s.el);
+
+      // Tandai target pewarnaan
+      allShapes.forEach(s => s.removeAttribute('data-fill-target'));
+      shapes.forEach(s => s.setAttribute('data-fill-target', '1'));
+
       if (!shapes.length) return;
       groupIndexByKey.set(key, { group, shapes });
       certShapes.push(...shapes);
@@ -192,18 +241,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const bankKey = normalizeBank(rawBank);
       const color = getBankColor(bankKey);
       const nomor = String(item.nomor || fullData[0] || '').trim();
+      const gzTag = getGZTag(aiValue);
 
       shapes.forEach(el => {
         el.dataset.bank = bankKey;
         el.dataset.ai = String(aiValue || '');
         el.dataset.nomor = nomor;
+        el.dataset.key = key;
+        if (gzTag) el.dataset.gz = gzTag; else delete el.dataset.gz;
+        // Hanya ubah fill, jangan ubah garis (stroke)
         el.style.fill = color;
-        el.style.stroke = 'rgba(0,0,0,0.4)';
-        el.style.strokeWidth = '0.2';
+        el.style.removeProperty('stroke');
+        el.style.removeProperty('stroke-width');
+      });
+      // Pastikan teks di dalam grup tetap hitam dan tidak memiliki stroke
+      const texts = mapping.group.querySelectorAll('text');
+      texts.forEach(t => {
+        t.style.fill = '#000';
+        t.style.stroke = 'none';
       });
     });
 
-    applyBankFilter();
+    applyFilters();
   };
 
   const initCertMapColors = async () => {
@@ -224,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await loadCertBankData();
       colorizeSertifikatMap();
-      setupBankFilterButtons();
+      setupFilterCheckboxes();
     } catch (e) {
       console.error('Gagal mewarnai peta sertifikat', e);
     } finally {
@@ -264,7 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="kavling-popup-body">
           <div class="kavling-data-content">
-            <div class="kavling-ai-title">Kolom AI</div>
             <div class="kavling-ai-text"></div>
             <div class="kavling-ai-meta"></div>
           </div>
@@ -434,6 +492,138 @@ document.addEventListener('DOMContentLoaded', () => {
     clone.removeAttribute('width');
     clone.removeAttribute('height');
     openPrintWindowFromElement(clone);
+  };
+
+  const applyFilters = () => {
+    if (!certShapes.length) return;
+    const hasBank = selectedBanks.size > 0;
+    const hasGZ = selectedGZ.size > 0;
+    const anyFilter = hasBank || hasGZ;
+    const selectedKeys = new Set();
+    // Jika belum ada filter dipilih, tampilkan warna default (berdasarkan kolom Q)
+    if (!anyFilter) {
+      certShapes.forEach(el => {
+        const bankKey = el.dataset.bank || '';
+        el.style.opacity = '1';
+        el.style.fill = getBankColor(bankKey);
+      });
+      updateAreaPanel([]);
+      return;
+    }
+    certShapes.forEach(el => {
+      const bankKey = el.dataset.bank || '';
+      const gzTag = el.dataset.gz || '';
+      const matchBank = hasBank ? selectedBanks.has(bankKey) : false;
+      const matchGZ = hasGZ ? selectedGZ.has(gzTag) : false;
+      const show = anyFilter ? (matchBank || matchGZ) : false;
+
+      if (!show) {
+        el.style.opacity = '1';
+        el.style.fill = 'rgba(255,255,255,0.6)'; // tidak terpilih → putih
+      } else {
+        el.style.opacity = '1';
+        // Prioritas GZ jika dipilih
+        if (hasGZ && matchGZ) {
+          const gzColor = getGZColor(gzTag);
+          el.style.fill = gzColor || getBankColor(bankKey);
+        } else {
+          el.style.fill = getBankColor(bankKey);
+        }
+        if (el.dataset && (el.dataset.key || el.dataset.nomor)) {
+          const k = el.dataset.key || normalizeCertId(el.dataset.nomor);
+          if (k) selectedKeys.add(k);
+        }
+      }
+    });
+    updateAreaPanel(Array.from(selectedKeys));
+  };
+
+  const setupFilterCheckboxes = () => {
+    selectedBanks = new Set();
+    selectedGZ = new Set();
+
+    const bankCbs = Array.from(document.querySelectorAll('.bank-filter'));
+    const gzCbs = Array.from(document.querySelectorAll('.gz-filter'));
+
+    const onChange = () => applyFilters();
+
+    bankCbs.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const val = cb.value;
+        if (cb.checked) selectedBanks.add(val);
+        else selectedBanks.delete(val);
+        onChange();
+      });
+    });
+
+    gzCbs.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const val = cb.value;
+        if (cb.checked) selectedGZ.add(val);
+        else selectedGZ.delete(val);
+        onChange();
+      });
+    });
+    // Terapkan kondisi awal: tanpa pilihan → semua putih
+    applyFilters();
+  };
+
+  const parseNumber = (val) => {
+    if (val == null) return 0;
+    const s = String(val).trim();
+    if (!s) return 0;
+    // Hilangkan karakter non-digit selain koma/titik lalu coba parsing cerdas
+    const normalized = s
+      .replace(/[^0-9.,-]/g, '')
+      .replace(/\./g, '')
+      .replace(',', '.');
+    const n = parseFloat(normalized);
+    return isNaN(n) ? 0 : n;
+  };
+
+  const updateAreaPanel = (selectedKeys = []) => {
+    const totalCertEl = document.getElementById('smapAreaTotalCert');
+    const totalInAreaEl = document.getElementById('smapAreaTotalInArea');
+    const tbody = document.getElementById('smapAreaTableBody');
+    if (!totalCertEl || !totalInAreaEl || !tbody) return;
+
+    let sumL = 0;
+    let sumAA = 0;
+    let rows = [];
+    let seen = new Set();
+
+    selectedKeys.forEach(key => {
+      const item = certIndexByKey.get(key) || certIndexByKey.get(normalizeCertId(key));
+      if (!item) return;
+      const fullData = Array.isArray(item.fullData) ? item.fullData : [];
+      const nomor = String(item.nomor || fullData[0] || '').trim();
+      const warp = normalizeCertId(nomor);
+      const luasL = parseNumber(fullData[11]); // L
+      const luasAA = parseNumber(fullData[26]); // AA
+
+      if (seen.has(warp)) return;
+      seen.add(warp);
+
+      sumL += luasL;
+      sumAA += luasAA;
+      rows.push({ nomor, warp, luasL, luasAA });
+    });
+
+    totalCertEl.textContent = sumL.toLocaleString('id-ID');
+    totalInAreaEl.textContent = sumAA.toLocaleString('id-ID');
+
+    // Render table
+    tbody.innerHTML = '';
+    rows.forEach((r, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:6px;border-bottom:1px solid #eee;">${idx + 1}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;">${r.nomor}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">${r.luasL.toLocaleString('id-ID')}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">${r.luasAA.toLocaleString('id-ID')}</td>
+      `;
+      tbody.appendChild(tr);
+    });
   };
 
   const initCertMap = async () => {
