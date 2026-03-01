@@ -27,18 +27,91 @@
       </div>
     </aside>
 
+    <aside class="smap-middle">
+      <div class="smap-right-inner">
+        <h3>Data dan Luas Area</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
+          <div style="background:#f5f5f5;border:1px solid #eee;border-radius:10px;padding:8px;">
+            <div style="font-size:11px;color:#666;">Jumlah Luas Sertifikat Terpilih</div>
+            <div id="smapAreaTotalCert" style="font-size:16px;font-weight:800;color:#333;">0</div>
+          </div>
+          <div style="background:#f5f5f5;border:1px solid #eee;border-radius:10px;padding:8px;">
+            <div style="font-size:11px;color:#666;">Jumlah Luas Dalam Area Terpilih</div>
+            <div id="smapAreaTotalInArea" style="font-size:16px;font-weight:800;color:#333;">0</div>
+          </div>
+        </div>
+        <div style="overflow:auto;border:1px solid #eee;border-radius:10px;">
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead style="background:#fafafa;">
+              <tr>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #eee;">No</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #eee;">Nomor Sertifikat</th>
+                <th style="text-align:right;padding:6px;border-bottom:1px solid #eee;">Luas Sertifikat</th>
+                <th style="text-align:right;padding:6px;border-bottom:1px solid #eee;">Luas Dalam Area</th>
+              </tr>
+            </thead>
+            <tbody id="smapAreaTableBody">
+              <!-- rows injected -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+
     <aside class="smap-right">
       <div class="smap-right-inner">
         <h3>Pencarian & Status</h3>
 
-        <div class="smap-toolbar">
-          <button class="smap-btn" data-bank="UMM" style="background: rgba(128,0,0,0.9);">UMM</button>
-          <button class="smap-btn" data-bank="UNISMA" style="background: rgba(0,100,0,0.9);">UNISMA</button>
-          <button class="smap-btn" data-bank="ABC" style="background: rgba(128,0,128,0.9);">ABC</button>
-          <button class="smap-btn" data-bank="BTN" style="background: rgba(33,150,243,0.9);">BTN</button>
-          <button class="smap-btn" data-bank="BUKOPIN" style="background: rgba(255,235,59,0.9); color:#333; text-shadow:none;">BUKOPIN</button>
-          <button class="smap-btn" data-bank="MANDIRI" style="background: rgba(13,71,161,0.9);">MANDIRI</button>
-          <button class="smap-btn" data-bank="LAINNYA" style="background: rgba(255,255,255,0.9); color:#333; text-shadow:none;">LAINNYA</button>
+        <div class="smap-filters" style="margin-bottom:10px; border:1px solid #eee; border-radius:10px; padding:10px;">
+          <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Filter</div>
+          <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+            <div>
+              <div style="font-weight:600; margin-bottom:4px;">Kategori Bank (Kolom Q)</div>
+              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <input type="checkbox" class="bank-filter" value="UMM">
+                <span style="display:inline-block;width:12px;height:12px;background:#800000;border-radius:3px;"></span> UMM
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <input type="checkbox" class="bank-filter" value="UNISMA">
+                <span style="display:inline-block;width:12px;height:12px;background:#006400;border-radius:3px;"></span> UNISMA
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <input type="checkbox" class="bank-filter" value="ABC">
+                <span style="display:inline-block;width:12px;height:12px;background:#800080;border-radius:3px;"></span> ABC
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <input type="checkbox" class="bank-filter" value="BTN">
+                <span style="display:inline-block;width:12px;height:12px;background:#2196f3;border-radius:3px;"></span> BTN
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <input type="checkbox" class="bank-filter" value="BUKOPIN">
+                <span style="display:inline-block;width:12px;height:12px;background:#ffeb3b;border:1px solid #999;border-radius:3px;"></span> BUKOPIN
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <input type="checkbox" class="bank-filter" value="MANDIRI">
+                <span style="display:inline-block;width:12px;height:12px;background:#0d47a1;border-radius:3px;"></span> MANDIRI
+              </label>
+              <label style="display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" class="bank-filter" value="LAINNYA">
+                <span style="display:inline-block;width:12px;height:12px;background:#ffffff;border:1px solid #999;border-radius:3px;"></span> LAINNYA
+              </label>
+            </div>
+            <div>
+              <div style="font-weight:600; margin-bottom:4px;">Zona GZ</div>
+              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <input type="checkbox" class="gz-filter" value="GZ1">
+                <span style="display:inline-block;width:12px;height:12px;background:#ffa500;border-radius:3px;"></span> GZ#1
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                <input type="checkbox" class="gz-filter" value="GZ2">
+                <span style="display:inline-block;width:12px;height:12px;background:#ffb93c;border-radius:3px;"></span> GZ#2 
+              </label>
+              <label style="display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" class="gz-filter" value="GZ3">
+                <span style="display:inline-block;width:12px;height:12px;background:#ffcd6e;border-radius:3px;"></span> GZ#3
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="smap-actions" style="margin-bottom:8px;">
