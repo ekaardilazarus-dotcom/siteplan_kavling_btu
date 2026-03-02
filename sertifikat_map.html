@@ -15,7 +15,7 @@
       <a href="index.html" class="back-home-btn"><span>🏠</span> Kembali ke Utama</a>
       <a href="pencarian_sertifikat.html" class="back-home-btn" style="background:#673ab7;"><span>🔍</span> Pencarian Sertifikat</a>
       <div class="header-quick" style="position:relative; min-width:220px; flex:1; max-width:360px;">
-        <input id="smapQuickSearch" type="text" placeholder="Cari Nomor Sertifikat..." 
+        <input id="smapQuickSearch" type="text" placeholder="Cari DATA..." 
                style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:12px; box-sizing:border-box;">
         <div id="smapQuickSuggestions" 
              style="position:absolute; top:42px; left:0; right:0; background:#fff; border:1px solid #ddd; border-radius:8px; 
@@ -37,7 +37,7 @@
 
     <aside class="smap-middle">
       <div class="smap-right-inner">
-        <h3>Data dan Luas Area</h3>
+        <h3>Data, Luas Area & Penerima Sertifikat</h3>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px;">
           <div style="background:#f5f5f5;border:1px solid #eee;border-radius:10px;padding:8px;">
             <div style="font-size:11px;color:#666;">Jumlah Luas Sertifikat Terpilih</div>
@@ -52,10 +52,11 @@
           <table style="width:100%; border-collapse:collapse; font-size:12px;">
             <thead style="background:#fafafa;">
               <tr>
-                <th style="text-align:left;padding:6px;border-bottom:1px solid #eee;">No</th>
-                <th style="text-align:left;padding:6px;border-bottom:1px solid #eee;">Nomor Sertifikat</th>
-                <th style="text-align:right;padding:6px;border-bottom:1px solid #eee;">Luas Sertifikat</th>
-                <th style="text-align:right;padding:6px;border-bottom:1px solid #eee;">Luas Dalam Area</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #eee;white-space:normal;width:30px;">No</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #eee;white-space:normal;">Nomor Sertifikat</th>
+                <th style="text-align:right;padding:6px;border-bottom:1px solid #eee;white-space:normal;">Luas Sertifikat</th>
+                <th style="text-align:right;padding:6px;border-bottom:1px solid #eee;white-space:normal;">Luas Dalam Area</th>
+                <th style="text-align:left;padding:6px;border-bottom:1px solid #eee;white-space:normal;">Penerima Sertifikat</th>
               </tr>
             </thead>
             <tbody id="smapAreaTableBody">
@@ -71,53 +72,105 @@
         <h3>Pencarian & Status</h3>
 
         <div class="smap-filters" style="margin-bottom:10px; border:1px solid #eee; border-radius:10px; padding:10px;">
-          <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Filter</div>
-          <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
-            <div>
-              <div style="font-weight:600; margin-bottom:4px;">Kategori Bank (Kolom Q)</div>
-              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <input type="checkbox" class="bank-filter" value="UMM">
-                <span style="display:inline-block;width:12px;height:12px;background:#800000;border-radius:3px;"></span> UMM
-              </label>
-              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <input type="checkbox" class="bank-filter" value="UNISMA">
-                <span style="display:inline-block;width:12px;height:12px;background:#006400;border-radius:3px;"></span> UNISMA
-              </label>
-              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <input type="checkbox" class="bank-filter" value="ABC">
-                <span style="display:inline-block;width:12px;height:12px;background:#800080;border-radius:3px;"></span> ABC
-              </label>
-              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <input type="checkbox" class="bank-filter" value="BTN">
-                <span style="display:inline-block;width:12px;height:12px;background:#2196f3;border-radius:3px;"></span> BTN
-              </label>
-              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <input type="checkbox" class="bank-filter" value="BUKOPIN">
-                <span style="display:inline-block;width:12px;height:12px;background:#ffeb3b;border:1px solid #999;border-radius:3px;"></span> BUKOPIN
-              </label>
-              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <input type="checkbox" class="bank-filter" value="MANDIRI">
-                <span style="display:inline-block;width:12px;height:12px;background:#0d47a1;border-radius:3px;"></span> MANDIRI
-              </label>
-              <label style="display:flex; align-items:center; gap:6px;">
-                <input type="checkbox" class="bank-filter" value="LAINNYA">
-                <span style="display:inline-block;width:12px;height:12px;background:#ffffff;border:1px solid #999;border-radius:3px;"></span> LAINNYA
-              </label>
+          <div style="display:flex; gap:10px; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+            <button class="category-tab" data-category="bank">PEMBIAYAAN</button>
+            <button class="category-tab" data-category="recipient">PENERIMA</button>
+          </div>
+
+          <div id="filter-bank-group" class="filter-group" style="display:none;">
+            <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Kategori Bank (Kolom Q)</div>
+            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+              <div>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="bank-filter" value="UMM">
+                  <span style="display:inline-block;width:12px;height:12px;background:#800000;border-radius:3px;"></span> UMM
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="bank-filter" value="UNISMA">
+                  <span style="display:inline-block;width:12px;height:12px;background:#006400;border-radius:3px;"></span> UNISMA
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="bank-filter" value="ABC">
+                  <span style="display:inline-block;width:12px;height:12px;background:#800080;border-radius:3px;"></span> ABC
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="bank-filter" value="BTN">
+                  <span style="display:inline-block;width:12px;height:12px;background:#2196f3;border-radius:3px;"></span> BTN
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="bank-filter" value="BUKOPIN">
+                  <span style="display:inline-block;width:12px;height:12px;background:#ffeb3b;border:1px solid #999;border-radius:3px;"></span> BUKOPIN
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="bank-filter" value="MANDIRI">
+                  <span style="display:inline-block;width:12px;height:12px;background:#0d47a1;border-radius:3px;"></span> MANDIRI
+                </label>
+                <label style="display:flex; align-items:center; gap:6px;">
+                  <input type="checkbox" class="bank-filter" value="LAINNYA">
+                  <span style="display:inline-block;width:12px;height:12px;background:#ffffff;border:1px solid #999;border-radius:3px;"></span> LAINNYA
+                </label>
+              </div>
+              <div>
+                <div style="font-weight:600; margin-bottom:4px;">Zona GZ</div>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="gz-filter" value="GZ1">
+                  <span style="display:inline-block;width:12px;height:12px;background:#ffa500;border-radius:3px;"></span> GZ#1
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="gz-filter" value="GZ2">
+                  <span style="display:inline-block;width:12px;height:12px;background:#ffb93c;border-radius:3px;"></span> GZ#2 
+                </label>
+                <label style="display:flex; align-items:center; gap:6px;">
+                  <input type="checkbox" class="gz-filter" value="GZ3">
+                  <span style="display:inline-block;width:12px;height:12px;background:#ffcd6e;border-radius:3px;"></span> GZ#3
+                </label>
+              </div>
             </div>
-            <div>
-              <div style="font-weight:600; margin-bottom:4px;">Zona GZ</div>
-              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <input type="checkbox" class="gz-filter" value="GZ1">
-                <span style="display:inline-block;width:12px;height:12px;background:#ffa500;border-radius:3px;"></span> GZ#1
-              </label>
-              <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <input type="checkbox" class="gz-filter" value="GZ2">
-                <span style="display:inline-block;width:12px;height:12px;background:#ffb93c;border-radius:3px;"></span> GZ#2 
-              </label>
-              <label style="display:flex; align-items:center; gap:6px;">
-                <input type="checkbox" class="gz-filter" value="GZ3">
-                <span style="display:inline-block;width:12px;height:12px;background:#ffcd6e;border-radius:3px;"></span> GZ#3
-              </label>
+          </div>
+
+          <div id="filter-recipient-group" class="filter-group" style="display:none;">
+            <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Penerima (Kolom V)</div>
+            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
+              <div>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="recipient-filter" value="NOTARIS">
+                  <span style="display:inline-block;width:12px;height:12px;background:#e91e63;border-radius:3px;"></span> NOTARIS
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="recipient-filter" value="BTN">
+                  <span style="display:inline-block;width:12px;height:12px;background:#2196f3;border-radius:3px;"></span> BTN
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="recipient-filter" value="ASABRI">
+                  <span style="display:inline-block;width:12px;height:12px;background:#4caf50;border-radius:3px;"></span> ASABRI
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="recipient-filter" value="BUKOPIN">
+                  <span style="display:inline-block;width:12px;height:12px;background:#ffeb3b;border:1px solid #999;border-radius:3px;"></span> BUKOPIN
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="recipient-filter" value="USER">
+                  <span style="display:inline-block;width:12px;height:12px;background:#ff9800;border-radius:3px;"></span> USER
+                </label>
+                <label style="display:flex; align-items:center; gap:6px;">
+                  <input type="checkbox" class="recipient-filter" value="MANDIRI">
+                  <span style="display:inline-block;width:12px;height:12px;background:#0d47a1;border-radius:3px;"></span> MANDIRI
+                </label>
+              </div>
+              <div>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="recipient-filter" value="PT GA">
+                  <span style="display:inline-block;width:12px;height:12px;background:#9c27b0;border-radius:3px;"></span> PT GA
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="recipient-filter" value="BPN">
+                  <span style="display:inline-block;width:12px;height:12px;background:#795548;border-radius:3px;"></span> BPN
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <input type="checkbox" class="recipient-filter" value="KOSONG">
+                  <span style="display:inline-block;width:12px;height:12px;background:#90ee90;border-radius:3px;"></span> KOSONG
+                </label>
+              </div>
             </div>
           </div>
         </div>
