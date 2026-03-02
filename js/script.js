@@ -902,7 +902,7 @@ function colorizeKavling(kavlingData) {
     if (element) {
       if (element.id) processedIds.add(element.id);
 
-      // Hapus semua kelas status sebelumnya
+      // Hapus semua kelas status sebelumnya pada group (sekadar bersih-bersih)
       element.classList.remove(
         'kavling-status-kpr',
         'kavling-status-kpr-no-imb',
@@ -917,18 +917,20 @@ function colorizeKavling(kavlingData) {
         'kavling-status-unknown'
       );
 
-      if (className) {
-        element.classList.add(className);
-      }
+      // JANGAN menambahkan class ke group: hanya ke vektor anak (rect/path/polygon/circle)
 
       // Pastikan warna teks tetap hitam saat grup diwarnai
       const textEls = element.querySelectorAll('text');
       textEls.forEach(t => {
         t.style.fill = '#000000';
-        t.style.stroke = 'white';
-        t.style.strokeWidth = '1px';
+        t.style.stroke = 'none';
+        t.style.strokeWidth = '';
         t.style.filter = 'none';
         t.style.transform = 'none';
+        try {
+          // Pastikan teks berada di atas bidang
+          element.appendChild(t);
+        } catch (_) {}
       });
 
       // Jika element adalah group, tambahkan ke child elements juga
