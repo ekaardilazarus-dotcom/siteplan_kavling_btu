@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (text.includes('BTN')) return 'BTN';
     if (text.includes('BUKOPIN')) return 'BUKOPIN';
     if (text.includes('MANDIRI')) return 'MANDIRI';
+    if (text.includes('PSU')) return 'PSU';
     return 'LAINNYA';
   };
 
@@ -79,6 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return 'rgba(255,235,59,0.6)';
       case 'MANDIRI':
         return 'rgba(13,71,161,0.6)';
+      case 'PSU':
+        return 'url(#psuHatch)';
       case 'LAINNYA':
         // Kategori LAINNYA tidak diwarnai (biarkan warna default SVG)
         return null;
@@ -133,6 +136,47 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'GZ2': return 'rgba(255,185,60,0.8)';     // Orange lebih terang
       case 'GZ3': return 'rgba(255,205,110,0.8)';    // Orange sangat terang
       default: return null;
+    }
+  };
+
+  const ensurePatterns = (svg) => {
+    if (!svg) return;
+    let defs = svg.querySelector('defs');
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      svg.insertBefore(defs, svg.firstChild);
+    }
+    if (!svg.querySelector('#psuHatch')) {
+      const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
+      pattern.setAttribute('id', 'psuHatch');
+      pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+      pattern.setAttribute('width', '8');
+      pattern.setAttribute('height', '8');
+
+      const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      bg.setAttribute('x', '0');
+      bg.setAttribute('y', '0');
+      bg.setAttribute('width', '8');
+      bg.setAttribute('height', '8');
+      bg.setAttribute('fill', '#ffffff');
+      bg.setAttribute('opacity', '1');
+
+      const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      line1.setAttribute('d', 'M0,8 L8,0');
+      line1.setAttribute('stroke', '#b71c1c');
+      line1.setAttribute('stroke-width', '1');
+      line1.setAttribute('opacity', '0.7');
+
+      const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      line2.setAttribute('d', 'M-2,6 L2,10');
+      line2.setAttribute('stroke', '#b71c1c');
+      line2.setAttribute('stroke-width', '1');
+      line2.setAttribute('opacity', '0.7');
+
+      pattern.appendChild(bg);
+      pattern.appendChild(line1);
+      pattern.appendChild(line2);
+      defs.appendChild(pattern);
     }
   };
 
@@ -221,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const colorizeSertifikatMap = () => {
     const svg = mapEl.querySelector('svg');
     if (!svg || !certBankRows.length || !certIndexByKey.size) return;
+    ensurePatterns(svg);
 
     const rootGroup = svg.querySelector('#sertifikatbtu') || svg;
     const groups = Array.from(rootGroup.querySelectorAll('g[id]')).filter(g => g.id && g.id !== 'sertifikatbtu');
@@ -281,9 +326,11 @@ document.addEventListener('DOMContentLoaded', () => {
       certShapes.push(...shapes);
     });
 
+    const coloredKeys = new Set();
     certIndexByKey.forEach((item, key) => {
       const mapping = groupIndexByKey.get(key);
       if (!mapping) return;
+      coloredKeys.add(key);
       const shapes = mapping.shapes;
       const fullData = Array.isArray(item.fullData) ? item.fullData : [];
       const rawBank = fullData[16] || '';
@@ -298,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         el.dataset.bank = bankKey;
         el.dataset.recipient = recipientKey;
         el.dataset.recipientFull = rawRecipient;
+        el.dataset.groupId = (mapping.group && mapping.group.id) ? mapping.group.id : '';
         el.dataset.ai = String(aiValue || '');
         el.dataset.nomor = nomor;
         el.dataset.key = key;
@@ -326,6 +374,26 @@ document.addEventListener('DOMContentLoaded', () => {
           // Pastikan teks berada di atas bidang (DOM order terakhir)
           mapping.group.appendChild(t);
         } catch (_) {}
+      });
+    });
+
+    // Warnai hitam untuk ID yang ada di SVG tapi tidak ada di database
+    groupIndexByKey.forEach((mapping, key) => {
+      if (coloredKeys.has(key)) return;
+      const shapes = mapping.shapes || [];
+      shapes.forEach(el => {
+        el.dataset.missing = '1';
+        el.dataset.key = key;
+        el.dataset.nomor = mapping.group && mapping.group.id ? mapping.group.id : key;
+        el.style.fill = '#000000';
+        el.style.removeProperty('stroke');
+        el.style.removeProperty('stroke-width');
+      });
+      const texts = mapping.group.querySelectorAll('text');
+      texts.forEach(t => {
+        t.style.fill = '#000';
+        t.style.stroke = 'none';
+        try { mapping.group.appendChild(t); } catch (_) {}
       });
     });
 
@@ -379,6 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiText = element && element.dataset ? element.dataset.ai || '' : '';
     const bankKey = element && element.dataset ? element.dataset.bank || '' : '';
     const recipientFull = element && element.dataset ? element.dataset.recipientFull || '' : '';
+    const groupId = element && element.dataset ? element.dataset.groupId || '' : '';
     const nomor = element && element.dataset ? element.dataset.nomor || '' : '';
 
     const popup = document.createElement('div');
@@ -386,8 +455,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     popup.innerHTML = `
       <div class="kavling-popup-content">
-        <div class="kavling-popup-header">
-          <h3 id="kavlingPopupTitle" style="margin:0;font-size:16px;">DATA SERTIFIKAT</h3>
+        <div class="kavling-popup-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <h3 id="kavlingPopupTitle" style="margin:0;font-size:16px;">DATA SERTIFIKAT</h3>
+            <span id="kavlingGroupIdChip" style="font-size:8px;color:#555;background:#f0f2f7;border:1px dashed #bbb;padding:2px 6px;border-radius:6px;">ID</span>
+            <span id="kavlingMissingChip" style="display:none;font-size:9px;color:#b71c1c;background:#ffebee;border:1px solid #ffcdd2;padding:2px 6px;border-radius:6px;">PERIKSA DATA</span>
+          </div>
           <button class="close-kavling-popup">&times;</button>
         </div>
         <div class="kavling-popup-body" style="padding:8px;">
@@ -405,6 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const titleEl = popup.querySelector('#kavlingPopupTitle');
     const aiTextEl = popup.querySelector('.kavling-ai-text');
     const aiMetaEl = popup.querySelector('.kavling-ai-meta');
+    const idChip = popup.querySelector('#kavlingGroupIdChip');
+    const missingChip = popup.querySelector('#kavlingMissingChip');
     const recipientEl = popup.querySelector('.kavling-recipient-info');
 
     if (aiTextEl) {
@@ -420,6 +495,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (bankKey) parts.push(`Pembiayaan: ${bankKey}`);
       if (recipientFull) parts.push(`Penerima: ${recipientFull}`);
       aiMetaEl.textContent = parts.join(' • ');
+    }
+    if (idChip) {
+      let gid = groupId;
+      if (!gid && element) {
+        let n = element;
+        while (n && n.tagName && n.tagName.toLowerCase() !== 'svg') {
+          if (n.tagName.toLowerCase() === 'g' && n.id) { gid = n.id; break; }
+          n = n.parentNode;
+        }
+      }
+      if (gid) {
+        idChip.textContent = `ID: ${gid}`;
+      } else {
+        idChip.style.display = 'none';
+      }
+    }
+    if (missingChip) {
+      const isMissing = element && element.dataset && element.dataset.missing === '1';
+      missingChip.style.display = isMissing ? 'inline-block' : 'none';
     }
     if (recipientEl) {
       recipientEl.style.display = 'none'; // Sembunyikan karena sudah masuk ke aiMetaEl
@@ -582,6 +676,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!anyFilter) {
       certShapes.forEach(el => {
         el.style.opacity = '1';
+        if (el.dataset && el.dataset.missing === '1') {
+          el.style.fill = '#000000';
+          return;
+        }
         if (activeCategory === 'bank') {
           const bankKey = el.dataset.bank || '';
           const c = getBankColor(bankKey);
@@ -599,6 +697,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     certShapes.forEach(el => {
+      if (el.dataset && el.dataset.missing === '1') {
+        el.style.opacity = '1';
+        el.style.fill = '#000000';
+        return;
+      }
       let show = false;
       let targetColor = null;
 
