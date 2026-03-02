@@ -3,8 +3,8 @@
 // ===============================
 
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
-const CERT_CACHE_KEY = 'certSearchAllCache';
-const CERT_CACHE_DURATION = 10 * 60 * 1000;
+const DB_CACHE_KEY = 'fullCertDatabaseCache';
+const DB_CACHE_DURATION = 15 * 60 * 1000; // 15 menit
 
 console.log('🔗 Certificate Database Connection Initialized');
 
@@ -44,11 +44,11 @@ function formatDate(dateString) {
 
 function loadCachedCertData() {
   try {
-    const raw = localStorage.getItem(CERT_CACHE_KEY);
+    const raw = localStorage.getItem(DB_CACHE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!parsed.timestamp || !parsed.results) return null;
-    if (Date.now() - parsed.timestamp > CERT_CACHE_DURATION) return null;
+    if (!parsed.timestamp || !parsed.data) return null;
+    if (Date.now() - parsed.timestamp > DB_CACHE_DURATION) return null;
     return parsed;
   } catch (e) {
     console.warn('Gagal memuat cache sertifikat', e);
@@ -59,16 +59,12 @@ function loadCachedCertData() {
 function saveCachedCertData(result) {
   try {
     if (!result || !Array.isArray(result.results)) return;
-    if (result.results.length > 2000) {
-      console.log('Lewati cache sertifikat, data terlalu besar:', result.results.length);
-      return;
-    }
     const payload = {
       timestamp: Date.now(),
       totalRecords: result.totalRecords,
-      results: result.results
+      data: result.results // Gunakan properti 'data' agar konsisten dengan script.js
     };
-    localStorage.setItem(CERT_CACHE_KEY, JSON.stringify(payload));
+    localStorage.setItem(DB_CACHE_KEY, JSON.stringify(payload));
   } catch (e) {
     console.warn('Gagal menyimpan cache sertifikat', e);
   }
@@ -86,12 +82,12 @@ async function initData() {
   table.style.display = 'none';
 
   const cached = loadCachedCertData();
-  if (cached && Array.isArray(cached.results) && cached.results.length > 0) {
-    console.log('♻️ Memuat database sertifikat dari cache lokal');
-    globalCertData = cached.results;
+  if (cached && Array.isArray(cached.data) && cached.data.length > 0) {
+    console.log('♻️ Memuat database sertifikat dari cache bersama (Shared Cache)');
+    globalCertData = cached.data;
     filteredResults = [...globalCertData];
     renderTable();
-    info.innerHTML = `Menampilkan seluruh data database (cache lokal): <strong>${cached.totalRecords || cached.results.length} records</strong>`;
+    info.innerHTML = `Menampilkan seluruh data database (Shared Cache): <strong>${cached.totalRecords || cached.data.length} records</strong>`;
     loading.style.display = 'none';
     table.style.display = 'table';
     return;
@@ -303,12 +299,12 @@ function showAIPopup(aiText, nomor) {
   popup.innerHTML = `
     <div class="kavling-popup-content">
       <div class="kavling-popup-header">
-        <h3>DATA AI – ${nomor || ''}</h3>
+        <h3>DATA – ${nomor || ''}</h3>
         <button class="close-kavling-popup">&times;</button>
       </div>
       <div class="kavling-popup-body">
         <div class="kavling-status-success">
-          ✅ Data AI ditemukan
+          ✅ Data ditemukan
         </div>
         <div class="kavling-data-content">${norm}</div>
       </div>
