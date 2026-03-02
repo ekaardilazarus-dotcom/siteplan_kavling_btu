@@ -14,6 +14,14 @@
     <div class="header-actions" style="margin-top:10px; display:flex; gap:10px;">
       <a href="index.html" class="back-home-btn"><span>🏠</span> Kembali ke Utama</a>
       <a href="pencarian_sertifikat.html" class="back-home-btn" style="background:#673ab7;"><span>🔍</span> Pencarian Sertifikat</a>
+      <div class="header-quick" style="position:relative; min-width:220px; flex:1; max-width:360px;">
+        <input id="smapQuickSearch" type="text" placeholder="Cari Nomor Sertifikat..." 
+               style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:12px; box-sizing:border-box;">
+        <div id="smapQuickSuggestions" 
+             style="position:absolute; top:42px; left:0; right:0; background:#fff; border:1px solid #ddd; border-radius:8px; 
+                    box-shadow:0 10px 20px rgba(0,0,0,0.15); z-index:200; display:none; max-height:220px; overflow:auto;">
+        </div>
+      </div>
     </div>
   </header>
 
@@ -114,11 +122,6 @@
           </div>
         </div>
 
-        <div class="smap-actions" style="margin-bottom:8px;">
-          <a href="pencarian_sertifikat.html" class="back-home-btn" style="background:#673ab7;">
-            <span>🔍</span> Cari Berdasarkan Sertifikat
-          </a>
-        </div>
         <div class="smap-search">
           <div class="smap-print-toolbar">
             <button id="smapPrintFull" class="smap-print-btn">Cetak Keseluruhan</button>
