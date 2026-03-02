@@ -228,7 +228,36 @@
   text-decoration: none;
   background: #2196f3;
 }
-.back-home-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.1);
+/* Category Tabs */
+.category-tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s ease;
 }
+
+.category-tab:hover {
+  background: #eeeeee;
+}
+
+.category-tab.active {
+  background: #2196f3;
+  color: #fff;
+  border-color: #2196f3;
+  box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
+}
+
+.filter-group {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
