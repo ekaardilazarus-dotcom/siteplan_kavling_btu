@@ -285,37 +285,72 @@ function renderTable() {
 }
 
 function showAIPopup(aiText, nomor) {
-  const old = document.getElementById('aiPopup');
-  if (old && old.parentNode) old.parentNode.removeChild(old);
-  const overlay = document.createElement('div');
-  overlay.id = 'aiPopup';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:10000;';
-  const card = document.createElement('div');
-  card.style.cssText = 'background:#fff;max-width:720px;width:92%;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.25);overflow:hidden;';
-  const header = document.createElement('div');
-  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #eee;';
-  const title = document.createElement('div');
-  title.textContent = nomor ? `DATA AI – ${nomor}` : 'DATA AI';
-  title.style.cssText = 'font-weight:700;color:#333;';
-  const btn = document.createElement('button');
-  btn.textContent = '×';
-  btn.style.cssText = 'border:none;background:#f5f5f5;color:#333;width:28px;height:28px;border-radius:6px;font-size:18px;cursor:pointer;';
-  const body = document.createElement('div');
-  body.style.cssText = 'padding:12px 14px;max-height:70vh;overflow:auto;white-space:pre-line;color:#444;font-size:13px;line-height:1.3;';
-  const content = document.createElement('div');
-  const norm = String(aiText || 'Tidak ada data di kolom AI.').replace(/\r?\n{2,}/g, '\n').replace(/[ \t]+\n/g, '\n').trim();
-  content.textContent = norm;
-  body.appendChild(content);
-  header.appendChild(title);
-  header.appendChild(btn);
-  card.appendChild(header);
-  card.appendChild(body);
-  overlay.appendChild(card);
-  document.body.appendChild(overlay);
-  const close = () => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); };
-  btn.addEventListener('click', close);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-  document.addEventListener('keydown', function onKey(e) { if (e.key === 'Escape') { document.removeEventListener('keydown', onKey); close(); } });
+  // Hapus popup lama jika ada
+  const oldPopup = document.querySelector('.kavling-popup');
+  if (oldPopup) {
+    document.body.removeChild(oldPopup);
+  }
+
+  // Buat popup baru
+  const popup = document.createElement('div');
+  popup.className = 'kavling-popup';
+
+  const norm = String(aiText || 'Tidak ada data di kolom AI.')
+    .replace(/\r?\n{2,}/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .trim();
+
+  popup.innerHTML = `
+    <div class="kavling-popup-content">
+      <div class="kavling-popup-header">
+        <h3>DATA AI – ${nomor || ''}</h3>
+        <button class="close-kavling-popup">&times;</button>
+      </div>
+      <div class="kavling-popup-body">
+        <div class="kavling-status-success">
+          ✅ Data AI ditemukan
+        </div>
+        <div class="kavling-data-content">${norm}</div>
+      </div>
+      <div class="kavling-popup-footer">
+        <button class="kavling-close-btn">Tutup</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  const closePopup = () => {
+    if (popup && popup.parentNode) {
+      document.body.removeChild(popup);
+    }
+  };
+
+  const closeBtn = popup.querySelector('.close-kavling-popup');
+  const closeBtn2 = popup.querySelector('.kavling-close-btn');
+
+  if (closeBtn) closeBtn.addEventListener('click', closePopup);
+  if (closeBtn2) closeBtn2.addEventListener('click', closePopup);
+
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup) {
+      closePopup();
+    }
+  });
+
+  // Tampilkan popup
+  setTimeout(() => {
+    popup.style.display = 'flex';
+  }, 10);
+
+  // Support ESC key
+  const onEsc = (e) => {
+    if (e.key === 'Escape') {
+      closePopup();
+      document.removeEventListener('keydown', onEsc);
+    }
+  };
+  document.addEventListener('keydown', onEsc);
 }
 
 function setupRowClickForAI() {
