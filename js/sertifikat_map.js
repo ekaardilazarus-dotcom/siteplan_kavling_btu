@@ -309,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await loadCertBankData();
       colorizeSertifikatMap();
       setupFilterCheckboxes();
+      setupQuickSearch();
     } catch (e) {
       console.error('Gagal mewarnai peta sertifikat', e);
     } finally {
@@ -732,4 +733,68 @@ document.addEventListener('DOMContentLoaded', () => {
       focusToCertByKey(key);
     }
   });
+
+  // ============ Quick Search Nomor Sertifikat (dropdown max 5) ============
+  const setupQuickSearch = () => {
+    const input = document.getElementById('smapQuickSearch');
+    const box = document.getElementById('smapQuickSuggestions');
+    if (!input || !box) return;
+
+    const render = (items) => {
+      box.innerHTML = '';
+      items.slice(0, 5).forEach(({ key, nomor }) => {
+        const row = document.createElement('div');
+        row.className = 'smap-suggestion';
+        row.dataset.key = key;
+        row.textContent = nomor;
+        row.style.cssText = 'padding:8px 10px; font-size:12px; cursor:pointer; border-bottom:1px solid #f0f0f0; color:#222;';
+        row.addEventListener('mouseenter', () => row.style.background = '#f9fafb');
+        row.addEventListener('mouseleave', () => row.style.background = '#fff');
+        row.addEventListener('click', () => {
+          focusToCertByKey(key);
+          input.value = '';
+          box.style.display = 'none';
+        });
+        box.appendChild(row);
+      });
+      box.style.display = items.length ? 'block' : 'none';
+      box.style.color = '#222';
+    };
+
+    const search = (q) => {
+      const term = String(q || '').trim().toUpperCase();
+      if (!term) return [];
+      const norm = term.replace(/[\s._-]/g, '');
+      const results = [];
+      certIndexByKey.forEach((item, key) => {
+        const nomor = String(item.nomor || item.fullData?.[0] || '').trim();
+        const hay = nomor.toUpperCase();
+        const hayNorm = hay.replace(/[\s._-]/g, '');
+        if (hay.includes(term) || hayNorm.includes(norm) || key.includes(norm)) {
+          results.push({ key, nomor });
+        }
+      });
+      // Prioritaskan prefix match
+      results.sort((a, b) => {
+        const ap = a.nomor.toUpperCase().startsWith(term) ? 0 : 1;
+        const bp = b.nomor.toUpperCase().startsWith(term) ? 0 : 1;
+        return ap - bp || a.nomor.localeCompare(b.nomor);
+      });
+      return results;
+    };
+
+    input.addEventListener('input', () => {
+      const val = input.value;
+      const items = search(val);
+      render(items);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        box.style.display = 'none';
+      }
+    });
+    input.addEventListener('blur', () => {
+      setTimeout(() => (box.style.display = 'none'), 120);
+    });
+  };
 });
