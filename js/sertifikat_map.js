@@ -782,6 +782,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const gzCbs = Array.from(document.querySelectorAll('.gz-filter'));
     const recipientCbs = Array.from(document.querySelectorAll('.recipient-filter'));
     const categoryTabs = Array.from(document.querySelectorAll('.category-tab'));
+    const bankAll = document.getElementById('bankSelectAll');
+    const recipientAll = document.getElementById('recipientSelectAll');
 
     const onChange = () => applyFilters();
 
@@ -789,6 +791,12 @@ document.addEventListener('DOMContentLoaded', () => {
       cb.addEventListener('change', () => {
         if (cb.checked) selectedBanks.add(cb.value);
         else selectedBanks.delete(cb.value);
+        if (bankAll) {
+          const total = bankCbs.length;
+          const checked = bankCbs.filter(x => x.checked).length;
+          bankAll.checked = checked === total;
+          bankAll.indeterminate = checked > 0 && checked < total;
+        }
         onChange();
       });
     });
@@ -805,9 +813,41 @@ document.addEventListener('DOMContentLoaded', () => {
       cb.addEventListener('change', () => {
         if (cb.checked) selectedRecipients.add(cb.value);
         else selectedRecipients.delete(cb.value);
+        if (recipientAll) {
+          const total = recipientCbs.length;
+          const checked = recipientCbs.filter(x => x.checked).length;
+          recipientAll.checked = checked === total;
+          recipientAll.indeterminate = checked > 0 && checked < total;
+        }
         onChange();
       });
     });
+
+    if (bankAll) {
+      bankAll.addEventListener('change', () => {
+        const check = bankAll.checked;
+        bankAll.indeterminate = false;
+        selectedBanks.clear();
+        bankCbs.forEach(cb => {
+          cb.checked = check;
+          if (check) selectedBanks.add(cb.value);
+        });
+        onChange();
+      });
+    }
+
+    if (recipientAll) {
+      recipientAll.addEventListener('change', () => {
+        const check = recipientAll.checked;
+        recipientAll.indeterminate = false;
+        selectedRecipients.clear();
+        recipientCbs.forEach(cb => {
+          cb.checked = check;
+          if (check) selectedRecipients.add(cb.value);
+        });
+        onChange();
+      });
+    }
 
     categoryTabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -833,6 +873,8 @@ document.addEventListener('DOMContentLoaded', () => {
         bankCbs.forEach(cb => cb.checked = false);
         gzCbs.forEach(cb => cb.checked = false);
         recipientCbs.forEach(cb => cb.checked = false);
+        if (bankAll) { bankAll.checked = false; bankAll.indeterminate = false; }
+        if (recipientAll) { recipientAll.checked = false; recipientAll.indeterminate = false; }
         
         selectedBanks.clear();
         selectedGZ.clear();
