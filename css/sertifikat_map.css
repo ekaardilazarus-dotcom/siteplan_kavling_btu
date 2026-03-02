@@ -29,7 +29,7 @@
 
 #cert-map {
   flex: 1;
-  background: #fafafa;
+  background: #eef6ff;
   overflow: hidden;
   position: relative;
   cursor: grab;
@@ -56,8 +56,12 @@
 }
 
 #cert-map svg g[id]:not(#sertifikatbtu) {
+  pointer-events: none;
+}
+
+#cert-map [data-fill-target="1"] {
   cursor: pointer;
-  pointer-events: bounding-box;
+  pointer-events: auto;
 }
 
 #cert-map svg g[id]:not(#sertifikatbtu):hover > [data-fill-target="1"] {
