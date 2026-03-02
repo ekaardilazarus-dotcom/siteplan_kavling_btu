@@ -66,8 +66,8 @@
 
 #cert-map svg g[id]:not(#sertifikatbtu):hover > [data-fill-target="1"] {
   stroke: #000000 !important;
-  stroke-width: 0.1px !important;
-  filter: brightness(1.12) saturate(1.12);
+  stroke-width: 0.5px !important;
+  filter: brightness(1.2) saturate(1.2);
   transition: filter 0.12s ease, stroke 0.12s ease, stroke-width 0.12s ease;
 }
 
