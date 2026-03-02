@@ -3,6 +3,8 @@
 // ===============================
 
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
+const CERT_CACHE_KEY = 'certSearchAllCache';
+const CERT_CACHE_DURATION = 10 * 60 * 1000;
 
 console.log('🔗 Certificate Database Connection Initialized');
 
@@ -40,6 +42,38 @@ function formatDate(dateString) {
   }
 }
 
+function loadCachedCertData() {
+  try {
+    const raw = localStorage.getItem(CERT_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed.timestamp || !parsed.results) return null;
+    if (Date.now() - parsed.timestamp > CERT_CACHE_DURATION) return null;
+    return parsed;
+  } catch (e) {
+    console.warn('Gagal memuat cache sertifikat', e);
+    return null;
+  }
+}
+
+function saveCachedCertData(result) {
+  try {
+    if (!result || !Array.isArray(result.results)) return;
+    if (result.results.length > 2000) {
+      console.log('Lewati cache sertifikat, data terlalu besar:', result.results.length);
+      return;
+    }
+    const payload = {
+      timestamp: Date.now(),
+      totalRecords: result.totalRecords,
+      results: result.results
+    };
+    localStorage.setItem(CERT_CACHE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Gagal menyimpan cache sertifikat', e);
+  }
+}
+
 // Fetch Semua Data Sertifikat saat Inisialisasi
 async function initData() {
   const loading = document.getElementById('loadingState');
@@ -50,6 +84,18 @@ async function initData() {
   loading.style.display = 'flex';
   empty.style.display = 'none';
   table.style.display = 'none';
+
+  const cached = loadCachedCertData();
+  if (cached && Array.isArray(cached.results) && cached.results.length > 0) {
+    console.log('♻️ Memuat database sertifikat dari cache lokal');
+    globalCertData = cached.results;
+    filteredResults = [...globalCertData];
+    renderTable();
+    info.innerHTML = `Menampilkan seluruh data database (cache lokal): <strong>${cached.totalRecords || cached.results.length} records</strong>`;
+    loading.style.display = 'none';
+    table.style.display = 'table';
+    return;
+  }
 
   try {
     console.log('⏳ Memuat seluruh database sertifikat...');
@@ -62,6 +108,7 @@ async function initData() {
       filteredResults = [...globalCertData];
       renderTable();
       info.innerHTML = `Menampilkan seluruh data database: <strong>${result.totalRecords} records</strong>`;
+      saveCachedCertData(result);
     } else {
       console.error('❌ Gagal memuat data:', result.message);
       info.innerHTML = `<span style="color: red;">Gagal memuat data: ${result.message}</span>`;
@@ -207,6 +254,8 @@ function renderTable() {
 
   filteredResults.forEach((item, index) => {
     const tr = document.createElement('tr');
+    tr.className = 'result-row';
+    tr.dataset.idx = String(index);
     const d = item.fullData || [];
     
     // Column 0: No
@@ -233,6 +282,56 @@ function renderTable() {
   });
 
   tbody.appendChild(fragment);
+}
+
+function showAIPopup(aiText, nomor) {
+  const old = document.getElementById('aiPopup');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+  const overlay = document.createElement('div');
+  overlay.id = 'aiPopup';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:10000;';
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#fff;max-width:720px;width:92%;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.25);overflow:hidden;';
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #eee;';
+  const title = document.createElement('div');
+  title.textContent = nomor ? `DATA AI – ${nomor}` : 'DATA AI';
+  title.style.cssText = 'font-weight:700;color:#333;';
+  const btn = document.createElement('button');
+  btn.textContent = '×';
+  btn.style.cssText = 'border:none;background:#f5f5f5;color:#333;width:28px;height:28px;border-radius:6px;font-size:18px;cursor:pointer;';
+  const body = document.createElement('div');
+  body.style.cssText = 'padding:12px 14px;max-height:70vh;overflow:auto;white-space:pre-line;color:#444;font-size:13px;line-height:1.3;';
+  const content = document.createElement('div');
+  const norm = String(aiText || 'Tidak ada data di kolom AI.').replace(/\r?\n{2,}/g, '\n').replace(/[ \t]+\n/g, '\n').trim();
+  content.textContent = norm;
+  body.appendChild(content);
+  header.appendChild(title);
+  header.appendChild(btn);
+  card.appendChild(header);
+  card.appendChild(body);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+  const close = () => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); };
+  btn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', function onKey(e) { if (e.key === 'Escape') { document.removeEventListener('keydown', onKey); close(); } });
+}
+
+function setupRowClickForAI() {
+  const tbody = document.getElementById('tableBody');
+  if (!tbody) return;
+  tbody.addEventListener('click', (e) => {
+    const tr = e.target.closest && e.target.closest('tr.result-row');
+    if (!tr) return;
+    const idx = parseInt(tr.dataset.idx || '-1', 10);
+    if (isNaN(idx) || idx < 0 || idx >= filteredResults.length) return;
+    const item = filteredResults[idx] || {};
+    const d = item.fullData || [];
+    const ai = d[34] || '';
+    const nomor = String(item.nomor || d[0] || '').trim();
+    showAIPopup(ai, nomor);
+  });
 }
 
 // Event Listeners
@@ -380,4 +479,5 @@ window.onload = () => {
   setupEventListeners();
   initData(); 
   initTableGrabScroll();
+  setupRowClickForAI();
 };
