@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedRecipients = new Set();
   let certIndexByKey = new Map();
   let groupIndexByKey = new Map();
+  let duplicateDBKeys = new Set();
 
   const parseViewBox = (vb) => {
     const p = vb.split(/\s+/).map(Number);
@@ -150,28 +151,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern');
       pattern.setAttribute('id', 'psuHatch');
       pattern.setAttribute('patternUnits', 'userSpaceOnUse');
-      pattern.setAttribute('width', '8');
-      pattern.setAttribute('height', '8');
+      pattern.setAttribute('width', '4');
+      pattern.setAttribute('height', '4');
 
       const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
       bg.setAttribute('x', '0');
       bg.setAttribute('y', '0');
-      bg.setAttribute('width', '8');
-      bg.setAttribute('height', '8');
+      bg.setAttribute('width', '4');
+      bg.setAttribute('height', '4');
       bg.setAttribute('fill', '#ffffff');
       bg.setAttribute('opacity', '1');
 
       const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      line1.setAttribute('d', 'M0,8 L8,0');
+      line1.setAttribute('d', 'M0,4 L4,0');
       line1.setAttribute('stroke', '#b71c1c');
-      line1.setAttribute('stroke-width', '1');
-      line1.setAttribute('opacity', '0.7');
+      line1.setAttribute('stroke-width', '0.9');
+      line1.setAttribute('opacity', '0.75');
 
       const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      line2.setAttribute('d', 'M-2,6 L2,10');
+      line2.setAttribute('d', 'M-2,4 L2,0');
       line2.setAttribute('stroke', '#b71c1c');
-      line2.setAttribute('stroke-width', '1');
-      line2.setAttribute('opacity', '0.7');
+      line2.setAttribute('stroke-width', '0.9');
+      line2.setAttribute('opacity', '0.75');
 
       pattern.appendChild(bg);
       pattern.appendChild(line1);
@@ -182,13 +183,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const buildCertIndex = () => {
     certIndexByKey = new Map();
+    duplicateDBKeys = new Set();
+    const counts = new Map();
     certBankRows.forEach(item => {
       const fullData = Array.isArray(item.fullData) ? item.fullData : [];
       const nomor = String(item.nomor || fullData[0] || '').trim();
       const key = normalizeCertId(nomor);
       if (key) {
         certIndexByKey.set(key, item);
+        counts.set(key, (counts.get(key) || 0) + 1);
       }
+    });
+    counts.forEach((cnt, k) => {
+      if (cnt > 1) duplicateDBKeys.add(k);
     });
   };
 
@@ -364,6 +371,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         el.style.removeProperty('stroke');
         el.style.removeProperty('stroke-width');
+        // Tandai duplikasi database dengan garis hijau kecil
+        if (duplicateDBKeys && duplicateDBKeys.has(key)) {
+          el.dataset.duplicate = '1';
+          el.style.stroke = '#2e7d32';
+          el.style.strokeWidth = '0.6';
+          el.style.strokeDasharray = '2 2';
+        }
       });
       // Pastikan teks di dalam grup tetap hitam dan tidak memiliki stroke
       const texts = mapping.group.querySelectorAll('text');
@@ -513,7 +527,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (missingChip) {
       const isMissing = element && element.dataset && element.dataset.missing === '1';
-      missingChip.style.display = isMissing ? 'inline-block' : 'none';
+      const isDup = element && element.dataset && element.dataset.duplicate === '1';
+      if (isDup) {
+        missingChip.style.display = 'inline-block';
+        missingChip.textContent = 'PERIKSA DATA - DATA DOUBLE ID';
+      } else if (isMissing) {
+        missingChip.style.display = 'inline-block';
+        missingChip.textContent = 'PERIKSA DATA';
+      } else {
+        missingChip.style.display = 'none';
+      }
     }
     if (recipientEl) {
       recipientEl.style.display = 'none'; // Sembunyikan karena sudah masuk ke aiMetaEl
