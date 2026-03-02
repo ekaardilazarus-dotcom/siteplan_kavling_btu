@@ -198,6 +198,10 @@ const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
 //------------------- pembeda saja -----------------------
 //----
+const DB_CACHE_KEY = 'fullCertDatabaseCache';
+const DB_CACHE_DURATION = 15 * 60 * 1000; // 15 menit
+let certificateDB = new Map();
+//----
 let kavlingIndex = [];
 let currentKavlingResults = [];
 let originalViewBox = null;
@@ -361,6 +365,82 @@ function clearHighlight() {
         el.style.stroke = '';
       }
     });
+}
+
+// ===============================
+// CERTIFICATE DATABASE CACHE (FULL LOAD)
+// ===============================
+const normalizeCertId = (raw) => {
+  if (!raw) return '';
+  return String(raw)
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/[-_.]/g, '')
+    .replace(/\//g, '')
+    .trim();
+};
+
+async function loadFullCertificateDatabase() {
+  console.log('📦 Memulai pemuatan database sertifikat...');
+  
+  // 1. Cek LocalStorage
+  const cached = localStorage.getItem(DB_CACHE_KEY);
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      const age = Date.now() - parsed.timestamp;
+      
+      if (age < DB_CACHE_DURATION && Array.isArray(parsed.data)) {
+        console.log(`⚡ Menggunakan cache database sertifikat (${Math.round(age/1000/60)} menit yang lalu)`);
+        buildCertificateDB(parsed.data);
+        return;
+      }
+    } catch (e) {
+      console.warn('⚠️ Gagal parse cache database:', e);
+      localStorage.removeItem(DB_CACHE_KEY);
+    }
+  }
+
+  // 2. Jika tidak ada cache, ambil dari API
+  try {
+    const url = `${CERT_API_URL}?action=get_all&_t=${Date.now()}`;
+    console.log('🌐 Mengambil database sertifikat dari API...');
+    
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    if (data.status === 'success' && Array.isArray(data.data)) {
+      console.log(`✅ Database sertifikat dimuat: ${data.data.length} baris`);
+      
+      // Simpan ke cache
+      localStorage.setItem(DB_CACHE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        data: data.data
+      }));
+      
+      buildCertificateDB(data.data);
+    }
+  } catch (err) {
+    console.error('❌ Gagal memuat database sertifikat:', err);
+  }
+}
+
+function buildCertificateDB(rows) {
+  certificateDB.clear();
+  rows.forEach(row => {
+    // Gunakan kolom pertama (indeks 0) sebagai kunci (Nomor Sertifikat/Kavling)
+    const rawKey = row[0] || '';
+    if (!rawKey) return;
+    
+    const key = normalizeCertId(rawKey);
+    // Simpan data lengkapnya
+    certificateDB.set(key, {
+      nomor: rawKey,
+      data: row[34] || '', // Kolom AI (indeks 34)
+      fullData: row
+    });
+  });
+  console.log(`🚀 Index database sertifikat siap: ${certificateDB.size} entri`);
 }
 
 // ===============================
@@ -2100,13 +2180,26 @@ async function fetchDataForAddress(address) {
   const cleanAddress = address.trim().toUpperCase();
   console.log('🔍 Mencari data kavling untuk:', cleanAddress);
 
+  // 1. CEK DATABASE LOKAL (Full Load) - BARU & TERCEPAT
+  const dbKey = normalizeCertId(cleanAddress);
+  const dbResult = certificateDB.get(dbKey);
+  if (dbResult) {
+    console.log('⚡ HIT DATABASE LOKAL:', cleanAddress);
+    showKavlingPopup(cleanAddress, {
+      status: dbResult.data ? 'success' : 'empty',
+      data: dbResult.data || '',
+      message: 'Data ditemukan (Local DB)'
+    });
+    return;
+  }
+
   // Tampilkan loading di popup (status: 'loading')
   showKavlingPopup(cleanAddress, { 
     status: 'loading',
     message: 'Sedang mencari data...'
   });
 
-  // CEK CACHE PERTAMA
+  // 2. CEK CACHE PENCARIAN (Per Query)
   const cached = searchCache.get(cleanAddress);
   if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
     console.log('⚡ HIT CACHE KAVLING:', cleanAddress);
@@ -2229,6 +2322,9 @@ async function fetchDataForAddress(address) {
 // DOM READY
 // ===============================
 document.addEventListener('DOMContentLoaded', () => {
+  // Load full certificate database background
+  loadFullCertificateDatabase();
+
   const map = document.getElementById('map');
   const searchInput = document.getElementById('search');
   const resultsBox = document.getElementById('search-results');
