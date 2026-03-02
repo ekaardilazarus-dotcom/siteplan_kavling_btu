@@ -343,13 +343,13 @@ document.addEventListener('DOMContentLoaded', () => {
     popup.innerHTML = `
       <div class="kavling-popup-content">
         <div class="kavling-popup-header">
-          <h3>DATA SERTIFIKAT</h3>
+          <h3 id="kavlingPopupTitle" style="margin:0;font-size:16px;">DATA SERTIFIKAT</h3>
           <button class="close-kavling-popup">&times;</button>
         </div>
-        <div class="kavling-popup-body">
-          <div class="kavling-data-content">
-            <div class="kavling-ai-text"></div>
-            <div class="kavling-ai-meta"></div>
+        <div class="kavling-popup-body" style="padding:8px;">
+          <div class="kavling-data-content" style="line-height:1.1;">
+            <div class="kavling-ai-meta" style="margin-bottom:4px;font-size:14px;color:#333;font-weight:700;"></div>
+            <div class="kavling-ai-text" style="font-size:14px;color:#444;white-space:pre-line;"></div>
           </div>
         </div>
       </div>
@@ -357,16 +357,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.body.appendChild(popup);
 
+    const titleEl = popup.querySelector('#kavlingPopupTitle');
     const aiTextEl = popup.querySelector('.kavling-ai-text');
     const aiMetaEl = popup.querySelector('.kavling-ai-meta');
     if (aiTextEl) {
-      aiTextEl.textContent = aiText || 'Tidak ada data di kolom AI.';
+      const norm = (aiText || 'Tidak ada data di kolom AI.')
+        .replace(/\r?\n{2,}/g, '\n')   // gabungkan blank line ganda
+        .replace(/[ \t]+\n/g, '\n')    // hapus spasi di akhir baris
+        .trim();
+      aiTextEl.textContent = norm;
     }
     if (aiMetaEl) {
       const parts = [];
       if (nomor) parts.push(`No: ${nomor}`);
       if (bankKey) parts.push(`Kategori: ${bankKey}`);
       aiMetaEl.textContent = parts.join(' • ');
+    }
+    if (titleEl && nomor) {
+      titleEl.textContent = `DATA SERTIFIKAT – ${nomor}`;
     }
 
     const closePopup = () => {
