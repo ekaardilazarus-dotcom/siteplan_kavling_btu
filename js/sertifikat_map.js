@@ -13,8 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let certBankRows = [];
   let certShapes = [];
   let activeBankFilter = null;
+  let activeCategory = null; // null, 'bank', atau 'recipient'
   let selectedBanks = new Set();
   let selectedGZ = new Set();
+  let selectedRecipients = new Set();
   let certIndexByKey = new Map();
   let groupIndexByKey = new Map();
 
@@ -84,6 +86,37 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
   };
+
+  const getRecipientColor = (recipientKey) => {
+    switch (recipientKey) {
+      case 'NOTARIS': return 'rgba(233,30,99,0.6)';
+      case 'BTN': return 'rgba(33,150,243,0.6)';
+      case 'ASABRI': return 'rgba(32, 104, 34, 0.6)';
+      case 'BUKOPIN': return 'rgba(255,235,59,0.6)';
+      case 'USER': return 'rgba(255, 0, 0, 0.6)';
+      case 'MANDIRI': return 'rgba(13,71,161,0.6)';
+      case 'PT GA': return 'rgba(156,39,176,0.6)';
+      case 'BPN': return 'rgba(161, 110, 92, 0.6)';
+      case 'KOSONG': return 'rgba(144,238,144,0.6)'; // Hijau muda
+      default: return null;
+    }
+  };
+
+  const normalizeRecipient = (raw) => {
+    if (!raw) return 'KOSONG';
+    const text = String(raw).toUpperCase().trim();
+    if (text === '' || text === '-') return 'KOSONG';
+    if (text.includes('NOTARIS')) return 'NOTARIS';
+    if (text.includes('BTN')) return 'BTN';
+    if (text.includes('ASABRI')) return 'ASABRI';
+    if (text.includes('BUKOPIN')) return 'BUKOPIN';
+    if (text.includes('USER')) return 'USER';
+    if (text.includes('MANDIRI')) return 'MANDIRI';
+    if (text.includes('PT GA')) return 'PT GA';
+    if (text.includes('BPN')) return 'BPN';
+    return text;
+  };
+
 
   const getGZTag = (aiText) => {
     if (!aiText) return '';
@@ -254,24 +287,33 @@ document.addEventListener('DOMContentLoaded', () => {
       const shapes = mapping.shapes;
       const fullData = Array.isArray(item.fullData) ? item.fullData : [];
       const rawBank = fullData[16] || '';
+      const rawRecipient = fullData[21] || ''; // Kolom V (index 21)
       const aiValue = fullData[34] || '';
       const bankKey = normalizeBank(rawBank);
-      const color = getBankColor(bankKey);
-      const nomor = String(item.nomor || fullData[0] || '').trim();
+      const recipientKey = normalizeRecipient(rawRecipient);
       const gzTag = getGZTag(aiValue);
+      const nomor = String(item.nomor || fullData[0] || '').trim();
 
       shapes.forEach(el => {
         el.dataset.bank = bankKey;
+        el.dataset.recipient = recipientKey;
+        el.dataset.recipientFull = rawRecipient;
         el.dataset.ai = String(aiValue || '');
         el.dataset.nomor = nomor;
         el.dataset.key = key;
         if (gzTag) el.dataset.gz = gzTag; else delete el.dataset.gz;
-        // Hanya ubah fill, jangan ubah garis (stroke)
-        if (color) {
-          el.style.fill = color;
+
+        // Default coloring based on active category
+        if (activeCategory === 'bank') {
+          const color = getBankColor(bankKey);
+          if (color) el.style.fill = color; else el.style.removeProperty('fill');
+        } else if (activeCategory === 'recipient') {
+          const color = getRecipientColor(recipientKey);
+          if (color) el.style.fill = color; else el.style.removeProperty('fill');
         } else {
-          el.style.removeProperty('fill'); // biarkan default SVG (LAINNYA)
+          el.style.removeProperty('fill');
         }
+        
         el.style.removeProperty('stroke');
         el.style.removeProperty('stroke-width');
       });
@@ -336,6 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const aiText = element && element.dataset ? element.dataset.ai || '' : '';
     const bankKey = element && element.dataset ? element.dataset.bank || '' : '';
+    const recipientFull = element && element.dataset ? element.dataset.recipientFull || '' : '';
     const nomor = element && element.dataset ? element.dataset.nomor || '' : '';
 
     const popup = document.createElement('div');
@@ -350,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="kavling-popup-body" style="padding:8px;">
           <div class="kavling-data-content" style="line-height:1.1;">
             <div class="kavling-ai-meta" style="margin-bottom:4px;font-size:14px;color:#333;font-weight:700;"></div>
+            <div class="kavling-recipient-info" style="margin-bottom:8px;font-size:12px;color:#666;"></div>
             <div class="kavling-ai-text" style="font-size:14px;color:#444;white-space:pre-line;"></div>
           </div>
         </div>
@@ -361,6 +405,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const titleEl = popup.querySelector('#kavlingPopupTitle');
     const aiTextEl = popup.querySelector('.kavling-ai-text');
     const aiMetaEl = popup.querySelector('.kavling-ai-meta');
+    const recipientEl = popup.querySelector('.kavling-recipient-info');
+
     if (aiTextEl) {
       const norm = (aiText || 'Tidak ada data di kolom AI.')
         .replace(/\r?\n{2,}/g, '\n')   // gabungkan blank line ganda
@@ -371,8 +417,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (aiMetaEl) {
       const parts = [];
       if (nomor) parts.push(`No: ${nomor}`);
-      if (bankKey) parts.push(`Kategori: ${bankKey}`);
+      if (bankKey) parts.push(`Pembiayaan: ${bankKey}`);
+      if (recipientFull) parts.push(`Penerima: ${recipientFull}`);
       aiMetaEl.textContent = parts.join(' • ');
+    }
+    if (recipientEl) {
+      recipientEl.style.display = 'none'; // Sembunyikan karena sudah masuk ke aiMetaEl
     }
     if (titleEl && nomor) {
       titleEl.textContent = `DATA SERTIFIKAT – ${nomor}`;
@@ -520,18 +570,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const applyFilters = () => {
     if (!certShapes.length) return;
+    
     const hasBank = selectedBanks.size > 0;
     const hasGZ = selectedGZ.size > 0;
-    const anyFilter = hasBank || hasGZ;
+    const hasRecipient = selectedRecipients.size > 0;
+    
+    const anyFilter = (activeCategory === 'bank') ? (hasBank || hasGZ) : hasRecipient;
     const selectedKeys = new Set();
-    // Jika belum ada filter dipilih, tampilkan warna default (berdasarkan kolom Q)
+
+    // Jika belum ada filter dipilih, tampilkan warna default berdasarkan kategori aktif
     if (!anyFilter) {
       certShapes.forEach(el => {
-        const bankKey = el.dataset.bank || '';
         el.style.opacity = '1';
-        const c = getBankColor(bankKey);
-        if (c) {
-          el.style.fill = c;
+        if (activeCategory === 'bank') {
+          const bankKey = el.dataset.bank || '';
+          const c = getBankColor(bankKey);
+          if (c) el.style.fill = c; else el.style.removeProperty('fill');
+        } else if (activeCategory === 'recipient') {
+          const recipientKey = el.dataset.recipient || '';
+          const c = getRecipientColor(recipientKey);
+          if (c) el.style.fill = c; else el.style.removeProperty('fill');
         } else {
           el.style.removeProperty('fill');
         }
@@ -539,35 +597,45 @@ document.addEventListener('DOMContentLoaded', () => {
       updateAreaPanel([]);
       return;
     }
+
     certShapes.forEach(el => {
-      const bankKey = el.dataset.bank || '';
-      const gzTag = el.dataset.gz || '';
-      const matchBank = hasBank ? selectedBanks.has(bankKey) : false;
-      const matchGZ = hasGZ ? selectedGZ.has(gzTag) : false;
-      const show = anyFilter ? (matchBank || matchGZ) : false;
+      let show = false;
+      let targetColor = null;
+
+      if (activeCategory === 'bank') {
+        const bankKey = el.dataset.bank || '';
+        const gzTag = el.dataset.gz || '';
+        const matchBank = hasBank ? selectedBanks.has(bankKey) : false;
+        const matchGZ = hasGZ ? selectedGZ.has(gzTag) : false;
+        show = matchBank || matchGZ;
+
+        if (show) {
+          if (hasGZ && matchGZ) {
+            targetColor = getGZColor(gzTag);
+          }
+          if (!targetColor) {
+            targetColor = getBankColor(bankKey);
+          }
+        }
+      } else {
+        const recipientKey = el.dataset.recipient || '';
+        show = hasRecipient ? selectedRecipients.has(recipientKey) : false;
+        if (show) {
+          targetColor = getRecipientColor(recipientKey);
+        }
+      }
 
       if (!show) {
         el.style.opacity = '1';
         el.style.fill = 'rgba(255,255,255,0.6)'; // tidak terpilih → putih
       } else {
         el.style.opacity = '1';
-        // Prioritas GZ jika dipilih
-        if (hasGZ && matchGZ) {
-          const gzColor = getGZColor(gzTag);
-          if (gzColor) {
-            el.style.fill = gzColor;
-          } else {
-            const c = getBankColor(bankKey);
-            if (c) el.style.fill = c; else el.style.removeProperty('fill');
-          }
+        if (targetColor) {
+          el.style.fill = targetColor;
         } else {
-          const c = getBankColor(bankKey);
-          if (c) {
-            el.style.fill = c;
-          } else {
-            el.style.removeProperty('fill'); // LAINNYA: biarkan default
-          }
+          el.style.removeProperty('fill');
         }
+        
         if (el.dataset && (el.dataset.key || el.dataset.nomor)) {
           const k = el.dataset.key || normalizeCertId(el.dataset.nomor);
           if (k) selectedKeys.add(k);
@@ -580,32 +648,76 @@ document.addEventListener('DOMContentLoaded', () => {
   const setupFilterCheckboxes = () => {
     selectedBanks = new Set();
     selectedGZ = new Set();
+    selectedRecipients = new Set();
 
     const bankCbs = Array.from(document.querySelectorAll('.bank-filter'));
     const gzCbs = Array.from(document.querySelectorAll('.gz-filter'));
+    const recipientCbs = Array.from(document.querySelectorAll('.recipient-filter'));
+    const categoryTabs = Array.from(document.querySelectorAll('.category-tab'));
 
     const onChange = () => applyFilters();
 
     bankCbs.forEach(cb => {
       cb.addEventListener('change', () => {
-        const val = cb.value;
-        if (cb.checked) selectedBanks.add(val);
-        else selectedBanks.delete(val);
+        if (cb.checked) selectedBanks.add(cb.value);
+        else selectedBanks.delete(cb.value);
         onChange();
       });
     });
 
     gzCbs.forEach(cb => {
       cb.addEventListener('change', () => {
-        const val = cb.value;
-        if (cb.checked) selectedGZ.add(val);
-        else selectedGZ.delete(val);
+        if (cb.checked) selectedGZ.add(cb.value);
+        else selectedGZ.delete(cb.value);
         onChange();
       });
     });
-    // Terapkan kondisi awal: tanpa pilihan → semua putih
+
+    recipientCbs.forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) selectedRecipients.add(cb.value);
+        else selectedRecipients.delete(cb.value);
+        onChange();
+      });
+    });
+
+    categoryTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const cat = tab.dataset.category;
+        
+        if (activeCategory === cat) {
+          // Toggle off if clicking the same tab
+          activeCategory = null;
+          tab.classList.remove('active');
+          document.getElementById('filter-bank-group').style.display = 'none';
+          document.getElementById('filter-recipient-group').style.display = 'none';
+        } else {
+          // Switch to new category
+          activeCategory = cat;
+          categoryTabs.forEach(t => t.classList.toggle('active', t === tab));
+
+          // Toggle filter group visibility
+          document.getElementById('filter-bank-group').style.display = (cat === 'bank') ? 'block' : 'none';
+          document.getElementById('filter-recipient-group').style.display = (cat === 'recipient') ? 'block' : 'none';
+        }
+
+        // Reset all checkboxes always when switching or toggling off
+        bankCbs.forEach(cb => cb.checked = false);
+        gzCbs.forEach(cb => cb.checked = false);
+        recipientCbs.forEach(cb => cb.checked = false);
+        
+        selectedBanks.clear();
+        selectedGZ.clear();
+        selectedRecipients.clear();
+
+        onChange();
+      });
+    });
+
+    // Terapkan kondisi awal
     applyFilters();
   };
+
 
   const parseNumber = (val) => {
     if (val == null) return 0;
@@ -639,13 +751,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const warp = normalizeCertId(nomor);
       const luasL = parseNumber(fullData[11]); // L
       const luasAA = parseNumber(fullData[26]); // AA
+      const rawRecipient = String(fullData[21] || '').trim();
+      const recipient = rawRecipient || ' '; // Tampilkan raw data atau KOSONG jika kosong
 
       if (seen.has(warp)) return;
       seen.add(warp);
 
       sumL += luasL;
       sumAA += luasAA;
-      rows.push({ nomor, warp, luasL, luasAA });
+      rows.push({ nomor, warp, luasL, luasAA, recipient });
     });
 
     totalCertEl.textContent = sumL.toLocaleString('id-ID');
@@ -662,6 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
         <td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">${r.luasL.toLocaleString('id-ID')}</td>
         <td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">${r.luasAA.toLocaleString('id-ID')}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;">${r.recipient}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -767,6 +882,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const norm = term.replace(/[\s._-]/g, '');
       const results = [];
       certIndexByKey.forEach((item, key) => {
+        // Hanya masukkan jika berhasil diwarnai (ada di SVG)
+        if (!groupIndexByKey.has(key)) return;
+
         const nomor = String(item.nomor || item.fullData?.[0] || '').trim();
         const hay = nomor.toUpperCase();
         const hayNorm = hay.replace(/[\s._-]/g, '');
