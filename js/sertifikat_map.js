@@ -78,8 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'MANDIRI':
         return 'rgba(13,71,161,0.6)';
       case 'LAINNYA':
+        // Kategori LAINNYA tidak diwarnai (biarkan warna default SVG)
+        return null;
       default:
-        return 'rgba(255,255,255,0.6)';
+        return null;
     }
   };
 
@@ -250,7 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
         el.dataset.key = key;
         if (gzTag) el.dataset.gz = gzTag; else delete el.dataset.gz;
         // Hanya ubah fill, jangan ubah garis (stroke)
-        el.style.fill = color;
+        if (color) {
+          el.style.fill = color;
+        } else {
+          el.style.removeProperty('fill'); // biarkan default SVG (LAINNYA)
+        }
         el.style.removeProperty('stroke');
         el.style.removeProperty('stroke-width');
       });
@@ -259,6 +265,10 @@ document.addEventListener('DOMContentLoaded', () => {
       texts.forEach(t => {
         t.style.fill = '#000';
         t.style.stroke = 'none';
+        try {
+          // Pastikan teks berada di atas bidang (DOM order terakhir)
+          mapping.group.appendChild(t);
+        } catch (_) {}
       });
     });
 
@@ -363,20 +373,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const svg = mapEl.querySelector('svg');
     if (!svg || !groupIndexByKey.size) return;
 
-    let t = e.target;
-    while (t && t !== mapEl && t !== svg) {
-      const frameGroup = t.closest && t.closest('g[id]');
-      if (frameGroup && frameGroup.id && frameGroup.id !== 'sertifikatbtu') {
-        const key = normalizeCertId(frameGroup.id);
-        const mapping = groupIndexByKey.get(key);
-        const shapes = mapping ? mapping.shapes : Array.from(frameGroup.querySelectorAll('path, polygon, rect, circle'));
-        const targetEl = shapes.find(el => el.dataset && el.dataset.ai !== undefined) || shapes[0] || frameGroup;
-        e.stopPropagation();
-        showCertPopup(targetEl);
-        return;
-      }
-      t = t.parentElement;
-    }
+    const shape = e.target.closest && e.target.closest('[data-fill-target="1"]');
+    if (!shape) return;
+    e.stopPropagation();
+    showCertPopup(shape);
   };
 
   const handleMouseDown = (e) => {
@@ -505,7 +505,12 @@ document.addEventListener('DOMContentLoaded', () => {
       certShapes.forEach(el => {
         const bankKey = el.dataset.bank || '';
         el.style.opacity = '1';
-        el.style.fill = getBankColor(bankKey);
+        const c = getBankColor(bankKey);
+        if (c) {
+          el.style.fill = c;
+        } else {
+          el.style.removeProperty('fill');
+        }
       });
       updateAreaPanel([]);
       return;
@@ -525,9 +530,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Prioritas GZ jika dipilih
         if (hasGZ && matchGZ) {
           const gzColor = getGZColor(gzTag);
-          el.style.fill = gzColor || getBankColor(bankKey);
+          if (gzColor) {
+            el.style.fill = gzColor;
+          } else {
+            const c = getBankColor(bankKey);
+            if (c) el.style.fill = c; else el.style.removeProperty('fill');
+          }
         } else {
-          el.style.fill = getBankColor(bankKey);
+          const c = getBankColor(bankKey);
+          if (c) {
+            el.style.fill = c;
+          } else {
+            el.style.removeProperty('fill'); // LAINNYA: biarkan default
+          }
         }
         if (el.dataset && (el.dataset.key || el.dataset.nomor)) {
           const k = el.dataset.key || normalizeCertId(el.dataset.nomor);
@@ -618,7 +633,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="padding:6px;border-bottom:1px solid #eee;">${idx + 1}</td>
-        <td style="padding:6px;border-bottom:1px solid #eee;">${r.nomor}</td>
+        <td style="padding:6px;border-bottom:1px solid #eee;">
+          <a href="#" class="smapAreaLink" data-key="${r.warp}" style="color:#1565c0;text-decoration:underline;">${r.nomor}</a>
+        </td>
         <td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">${r.luasL.toLocaleString('id-ID')}</td>
         <td style="padding:6px;border-bottom:1px solid #eee;text-align:right;">${r.luasAA.toLocaleString('id-ID')}</td>
       `;
@@ -647,4 +664,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('smapPrintFull')?.addEventListener('click', handlePrintFull);
   document.getElementById('smapPrintView')?.addEventListener('click', handlePrintView);
+
+  // ============ Fokus ke sertifikat pada SVG dari tabel ============
+  const focusToCertByKey = (key) => {
+    if (!key) return;
+    const svg = mapEl.querySelector('svg');
+    if (!svg || !groupIndexByKey || groupIndexByKey.size === 0) return;
+    const norm = normalizeCertId(key);
+    const mapping = groupIndexByKey.get(norm);
+    if (!mapping) return;
+    let bb;
+    try { bb = mapping.group.getBBox(); } catch (e) { return; }
+    if (!bb || bb.width === 0 || bb.height === 0) return;
+
+    // Padding dan penyesuaian aspect ratio viewport
+    const viewportRatio = mapEl.clientWidth / Math.max(1, mapEl.clientHeight);
+    let pad = Math.max(bb.width, bb.height) * 0.15;
+    let x = bb.x - pad;
+    let y = bb.y - pad;
+    let w = bb.width + pad * 2;
+    let h = bb.height + pad * 2;
+    const boxRatio = w / Math.max(1, h);
+    if (boxRatio > viewportRatio) {
+      const targetH = w / viewportRatio;
+      const add = (targetH - h) / 2;
+      y -= add;
+      h = targetH;
+    } else if (boxRatio < viewportRatio) {
+      const targetW = h * viewportRatio;
+      const add = (targetW - w) / 2;
+      x -= add;
+      w = targetW;
+    }
+
+    viewBoxState = { x, y, w, h };
+    applyViewBox(svg);
+  };
+
+  document.getElementById('smapAreaTableBody')?.addEventListener('click', (e) => {
+    const link = e.target.closest && e.target.closest('.smapAreaLink');
+    if (link) {
+      e.preventDefault();
+      const key = link.getAttribute('data-key');
+      focusToCertByKey(key);
+    }
+  });
 });
