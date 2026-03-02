@@ -195,6 +195,19 @@ document.addEventListener('DOMContentLoaded', () => {
     groupIndexByKey = new Map();
     certShapes = [];
 
+    const isTextOutline = (el) => {
+      try {
+        const rawFill = (el.getAttribute('fill') || el.style.fill || window.getComputedStyle(el).fill || '').toLowerCase();
+        const rawStroke = (el.getAttribute('stroke') || el.style.stroke || window.getComputedStyle(el).stroke || '').toLowerCase();
+        const sw = parseFloat(el.getAttribute('stroke-width') || el.style.strokeWidth || window.getComputedStyle(el).strokeWidth || '0') || 0;
+        const isBlack = rawFill === 'black' || rawFill === '#000' || rawFill === '#000000' || rawFill.startsWith('rgb(0, 0, 0)');
+        const hasStroke = rawStroke && rawStroke !== 'none' && sw > 0.05;
+        return isBlack && !hasStroke;
+      } catch (_) {
+        return false;
+      }
+    };
+
     groups.forEach(group => {
       const key = normalizeCertId(group.id);
       if (!key) return;
@@ -222,7 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // atau termasuk klaster terbesar (>= 60% dari max area)
       const shapes = shapeAreas
         .filter(s => s.area > 0 && (s.ratio >= 0.12 || s.area >= maxArea * 0.6))
-        .map(s => s.el);
+        .map(s => s.el)
+        // Buang path outline tulisan (fill hitam, tanpa stroke)
+        .filter(el => !isTextOutline(el));
 
       // Tandai target pewarnaan
       allShapes.forEach(s => s.removeAttribute('data-fill-target'));
