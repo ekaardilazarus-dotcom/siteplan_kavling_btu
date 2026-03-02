@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
   const mapEl = document.getElementById('cert-map');
   const loader = mapEl.querySelector('.smap-loading');
-  const BANK_CACHE_KEY = 'certMapBankCache';
-  const BANK_CACHE_DURATION = 10 * 60 * 1000;
+  const DB_CACHE_KEY = 'fullCertDatabaseCache';
+  const DB_CACHE_DURATION = 15 * 60 * 1000; // 15 menit
   let svgCache = null;
   let originalViewBox = null;
   let viewBoxState = { x: 0, y: 0, w: 1000, h: 1000 };
@@ -202,11 +202,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadCertBankData = async () => {
     if (certBankRows.length) return certBankRows;
     try {
-      const cachedRaw = localStorage.getItem(BANK_CACHE_KEY);
+      const cachedRaw = localStorage.getItem(DB_CACHE_KEY);
       if (cachedRaw) {
         const cached = JSON.parse(cachedRaw);
-        if (cached && Array.isArray(cached.results) && cached.timestamp && Date.now() - cached.timestamp < BANK_CACHE_DURATION) {
-          certBankRows = cached.results;
+        if (cached && Array.isArray(cached.data) && cached.timestamp && Date.now() - cached.timestamp < DB_CACHE_DURATION) {
+          console.log('♻️ Memuat database sertifikat dari cache bersama (Shared Cache)');
+          certBankRows = cached.data;
           buildCertIndex();
           return certBankRows;
         }
@@ -215,15 +216,16 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('Failed to load cert map cache', e);
     }
 
+    console.log('⏳ Memuat seluruh database sertifikat...');
     const res = await fetch(`${CERT_API_URL}?action=get_all&_t=${Date.now()}`);
     const json = await res.json();
     if (json && json.status === 'success' && Array.isArray(json.results)) {
       certBankRows = json.results;
       buildCertIndex();
       try {
-        localStorage.setItem(BANK_CACHE_KEY, JSON.stringify({
+        localStorage.setItem(DB_CACHE_KEY, JSON.stringify({
           timestamp: Date.now(),
-          results: certBankRows
+          data: certBankRows
         }));
       } catch (e) {
         console.warn('Failed to save cert map cache', e);
