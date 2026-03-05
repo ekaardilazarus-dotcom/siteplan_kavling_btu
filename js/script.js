@@ -196,7 +196,7 @@ updateDateTime();
 // Search blok & kavling, zoom, pan, click sync + STATUS KAVLING
 // ===============================
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyg-AUBateyyWJpfVBBacMb32xnB0puC4dAdYhVni6MmwZKDbfcO_5lh0cird2Kecyk/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwH8txRUzzpGc_2Y8rjvkNuxqaL_omv29xsiW0nGaNDPLNbE3auB3zx9ZndopWzBLwv/exec';
 const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ-d_HHYa4Ut9z-nHj8MVUGx4-_Qo7W5mwSLHEKStifg4MRD5Nofg/exec';
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
@@ -221,6 +221,62 @@ let svgCache = null;
 let isSvgLoaded = false;
 let isStatusMode = false;
 let statusData = null;
+let kavlingStatusIndex = new Map();
+
+async function preloadKavlingStatusData() {
+  try {
+    const CACHE_KEY = 'kavlingStatusData';
+    const CACHE_EXPIRY = 10 * 60 * 1000;
+    const cachedString = localStorage.getItem(CACHE_KEY);
+    if (cachedString) {
+      try {
+        const cachedObj = JSON.parse(cachedString);
+        const age = Date.now() - cachedObj.timestamp;
+        if (age < CACHE_EXPIRY && cachedObj.data) {
+          statusData = cachedObj.data;
+          if (cachedObj.index && typeof cachedObj.index === 'object') {
+            kavlingStatusIndex.clear();
+            Object.keys(cachedObj.index).forEach(k => {
+              const upperKey = k.toUpperCase();
+              kavlingStatusIndex.set(upperKey, cachedObj.index[k]);
+            });
+          } else {
+            buildKavlingStatusIndex(statusData);
+          }
+          console.log('⚡ Preload status kavling dari cache browser');
+          return;
+        }
+      } catch (e) {
+        console.warn('Error preload cache status kavling:', e);
+        localStorage.removeItem(CACHE_KEY);
+      }
+    }
+    const url = `${API_URL}?action=status&_t=${Date.now()}`;
+    const res = await fetch(url, { method: 'GET', mode: 'cors' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data || !data.data) return;
+    statusData = data;
+    buildKavlingStatusIndex(statusData);
+    const indexObj = {};
+    kavlingStatusIndex.forEach((v, k) => {
+      indexObj[k] = v;
+    });
+    try {
+      localStorage.setItem('kavlingStatusData', JSON.stringify({
+        timestamp: Date.now(),
+        data: data,
+        index: indexObj
+      }));
+      console.log('✅ Preload status kavling dari API selesai (cached)');
+    } catch (err) {
+      console.warn('⚠️ Preload status kavling: gagal menyimpan ke localStorage (kemungkinan quota penuh)', err);
+      console.log('✅ Preload status kavling dari API selesai (tanpa cache persistent)');
+    }
+  } catch (e) {
+    console.warn('Preload status kavling gagal:', e);
+  }
+}
 
 // ===============================
 // CACHE SYSTEM
@@ -451,6 +507,26 @@ function buildCertificateDB(rows) {
 // FUNGSI STATUS KAVLING (DIPERBAIKI)
 // ===============================
 
+function buildKavlingStatusIndex(data) {
+  kavlingStatusIndex.clear();
+  if (!data || !Array.isArray(data.data)) return;
+  const list = data.data;
+  for (let i = 0; i < list.length; i++) {
+    const item = list[i];
+    const kode = (item.kode || '').toString().trim().toUpperCase();
+    if (!kode) continue;
+    const raw = Array.isArray(item.rawData) ? item.rawData : [];
+    const aiValue = raw.length > 34 && raw[34] != null ? String(raw[34]).trim() : '';
+    const status = {
+      kategori: (item.kategori || 'unknown').toLowerCase(),
+      imbCategory: item.imbCategory || '',
+      hasImb: Object.prototype.hasOwnProperty.call(item, 'hasImb') ? item.hasImb : null,
+      ai: aiValue
+    };
+    kavlingStatusIndex.set(kode, status);
+  }
+}
+
 async function fetchKavlingStatus() {
   try {
     console.log('🔍 Mengambil data status kavling...');
@@ -505,7 +581,7 @@ async function fetchKavlingStatus() {
     // ⚡ CACHE STRATEGY (LOCALSTORAGE)
     // ==========================================
     const CACHE_KEY = 'kavlingStatusData';
-    const CACHE_EXPIRY = 10 * 60 * 1000; // 10 menit
+    const CACHE_EXPIRY = 10 * 60 * 1000;
     const cachedString = localStorage.getItem(CACHE_KEY);
 
     if (cachedString) {
@@ -520,7 +596,16 @@ async function fetchKavlingStatus() {
           await new Promise(resolve => setTimeout(resolve, 500));
 
           // Simpan ke variabel global
-          statusData = cachedObj.data;
+        statusData = cachedObj.data;
+        if (cachedObj.index && typeof cachedObj.index === 'object') {
+          kavlingStatusIndex.clear();
+          Object.keys(cachedObj.index).forEach(k => {
+            const upperKey = k.toUpperCase();
+            kavlingStatusIndex.set(upperKey, cachedObj.index[k]);
+          });
+        } else {
+          buildKavlingStatusIndex(statusData);
+        }
 
           // Beri warna pada kavling di peta DULUAN (Heavy Operation)
           colorizeKavling(statusData.data || []);
@@ -580,13 +665,22 @@ async function fetchKavlingStatus() {
 
     // Simpan data ke variabel global
     statusData = data;
+    buildKavlingStatusIndex(statusData);
 
-    // SIMPAN KE CACHE
     if (data && data.data) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        timestamp: Date.now(),
-        data: data
-      }));
+      const indexObj = {};
+      kavlingStatusIndex.forEach((v, k) => {
+        indexObj[k] = v;
+      });
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+          timestamp: Date.now(),
+          data: data,
+          index: indexObj
+        }));
+      } catch (err) {
+        console.warn('⚠️ Gagal menyimpan kavlingStatusData ke localStorage (kemungkinan quota penuh)', err);
+      }
     }
 
     // Tampilkan data di panel
@@ -1785,6 +1879,44 @@ function showKavlingPopup(address, result) {
   let statusClass = '';
   let statusText = '';
   let dataContent = '';
+  let statusInfoContent = '';
+
+  const key = (address || '').toString().trim().toUpperCase();
+  const statusEntry = kavlingStatusIndex.get(key);
+  if (statusEntry) {
+    const kategori = (statusEntry.kategori || 'unknown').toLowerCase();
+    const imbCategory = (statusEntry.imbCategory || '').toLowerCase();
+    let kategoriLabel = '';
+    if (kategori === 'kpr') kategoriLabel = 'KPR/TUNAI (Sudah terjual)';
+    else if (kategori === 'stok') kategoriLabel = 'STOK (Masih tersedia)';
+    else if (kategori === 'rekom') kategoriLabel = 'REKOM (Kavling rekomendasi)';
+    else if (kategori === 'disewakan') kategoriLabel = 'DISEWAKAN';
+    else if (kategori === 'dipinjam') kategoriLabel = 'DIPINJAM';
+    else kategoriLabel = 'Status belum diketahui';
+    let hasImbEffective = null;
+    if (typeof statusEntry.hasImb === 'boolean') {
+      hasImbEffective = statusEntry.hasImb;
+    } else if (imbCategory.endsWith('_imb')) {
+      hasImbEffective = true;
+    } else if (imbCategory.endsWith('no_imb')) {
+      hasImbEffective = false;
+    }
+    let imbLabel = '';
+    if (hasImbEffective === true) {
+      imbLabel = 'Sudah memiliki IMB/PBG/SLF';
+    } else if (hasImbEffective === false) {
+      imbLabel = 'Belum memiliki IMB/PBG/SLF';
+    } else {
+      imbLabel = 'Status IMB belum diketahui';
+    }
+    statusInfoContent = `
+      <div style="margin-bottom:10px; padding:10px; border-radius:8px; background:#f5f5f5; font-size:13px; color:#333;">
+        <div style="margin-bottom:4px;"><strong>Status Kavling Ini:</strong></div>
+        <div style="margin-bottom:2px;">• Kategori: <strong>${kategoriLabel}</strong></div>
+        <div>• Status IMB: <strong>${imbLabel}</strong></div>
+      </div>
+    `;
+  }
 
   // Set berdasarkan status
   switch (result.status) {
@@ -1868,6 +2000,7 @@ function showKavlingPopup(address, result) {
       </div>
       <div class="kavling-popup-body">
         ${statusText ? `<div class="${statusClass}">${statusText}</div>` : ''}
+        ${statusInfoContent}
         ${dataContent}
       </div>
       ${result.status !== 'loading' ? `
@@ -2208,7 +2341,18 @@ async function fetchDataForAddress(address) {
   const cleanAddress = address.trim().toUpperCase();
   console.log('🔍 Mencari data kavling untuk:', cleanAddress);
 
-  // 1. CEK DATABASE LOKAL (Full Load) - BARU & TERCEPAT
+  const statusEntry = kavlingStatusIndex.get(cleanAddress);
+  if (statusEntry && Object.prototype.hasOwnProperty.call(statusEntry, 'ai')) {
+    const ai = statusEntry.ai || '';
+    console.log('⚡ HIT KAVLNG STATUS CACHE:', cleanAddress);
+    showKavlingPopup(cleanAddress, {
+      status: ai ? 'success' : 'empty',
+      data: ai,
+      message: ai ? 'Data ditemukan (Cache Status Kavling)' : 'Data ditemukan, kolom AI kosong (Cache Status Kavling)'
+    });
+    return;
+  }
+
   const dbKey = normalizeCertId(cleanAddress);
   const dbResult = certificateDB.get(dbKey);
   if (dbResult) {
@@ -2512,6 +2656,7 @@ async function generateExcelFromKavlingList(list, title) {
 document.addEventListener('DOMContentLoaded', () => {
   // Load full certificate database background
   loadFullCertificateDatabase();
+  preloadKavlingStatusData();
 
   const map = document.getElementById('map');
   const searchInput = document.getElementById('search');
