@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let isPanning = false;
   let isDragging = false;
   let panStart = { x: 0, y: 0 };
+  let lastPanTime = 0;
+  let lastWheelTime = 0;
+  const PAN_THROTTLE_MS = 16;
+  const WHEEL_THROTTLE_MS = 30;
   let certBankRows = [];
   let certShapes = [];
   let activeBankFilter = null;
@@ -41,7 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
       originalViewBox = `${b.x} ${b.y} ${b.width} ${b.height}`;
       svg.setAttribute('viewBox', originalViewBox);
     }
-    viewBoxState = parseViewBox(originalViewBox);
+    const base = parseViewBox(originalViewBox);
+    const zoomFactor = 0.1;
+    const newW = base.w * zoomFactor;
+    const newH = base.h * zoomFactor;
+    const newX = base.x + (base.w - newW) / 2;
+    const newY = base.y + (base.h - newH) / 2;
+    viewBoxState = { x: newX, y: newY, w: newW, h: newH };
+    applyViewBox(svg);
   };
 
   const normalizeCertId = (raw) => {
@@ -283,16 +294,13 @@ document.addEventListener('DOMContentLoaded', () => {
     certShapes = [];
 
     const isTextOutline = (el) => {
-      try {
-        const rawFill = (el.getAttribute('fill') || el.style.fill || window.getComputedStyle(el).fill || '').toLowerCase();
-        const rawStroke = (el.getAttribute('stroke') || el.style.stroke || window.getComputedStyle(el).stroke || '').toLowerCase();
-        const sw = parseFloat(el.getAttribute('stroke-width') || el.style.strokeWidth || window.getComputedStyle(el).strokeWidth || '0') || 0;
-        const isBlack = rawFill === 'black' || rawFill === '#000' || rawFill === '#000000' || rawFill.startsWith('rgb(0, 0, 0)');
-        const hasStroke = rawStroke && rawStroke !== 'none' && sw > 0.05;
-        return isBlack && !hasStroke;
-      } catch (_) {
-        return false;
-      }
+      const rawFill = (el.getAttribute('fill') || el.style.fill || '').toLowerCase();
+      const rawStroke = (el.getAttribute('stroke') || el.style.stroke || '').toLowerCase();
+      const swRaw = el.getAttribute('stroke-width') || el.style.strokeWidth || '0';
+      const sw = parseFloat(swRaw) || 0;
+      const isBlack = rawFill === 'black' || rawFill === '#000' || rawFill === '#000000';
+      const hasStroke = rawStroke && rawStroke !== 'none' && sw > 0.05;
+      return isBlack && !hasStroke;
     };
 
     groups.forEach(group => {
@@ -580,6 +588,9 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const handleMouseMove = (e) => {
     if (!isPanning) return;
+    const now = performance.now();
+    if (now - lastPanTime < PAN_THROTTLE_MS) return;
+    lastPanTime = now;
 
     const dxRaw = e.clientX - panStart.x;
     const dyRaw = e.clientY - panStart.y;
@@ -604,6 +615,9 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const handleWheel = (e) => {
     e.preventDefault();
+    const now = performance.now();
+    if (now - lastWheelTime < WHEEL_THROTTLE_MS) return;
+    lastWheelTime = now;
     const svg = mapEl.querySelector('svg');
     if (!svg) return;
     const rect = mapEl.getBoundingClientRect();
