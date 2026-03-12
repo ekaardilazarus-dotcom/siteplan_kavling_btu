@@ -152,10 +152,16 @@ function finishLoading() {
   
   // Default pilih kategori pertama jika belum ada yang dipilih
   if (!currentCategory) {
-    const firstBtn = document.querySelector('.filter-btn');
-    if (firstBtn) {
-      const category = firstBtn.getAttribute('data-category');
-      filterData(category, firstBtn);
+    // Pilih tombol 'Semua Data' secara default
+    const allDataBtn = document.querySelector('.filter-btn[data-category="all"]');
+    if (allDataBtn) {
+      filterData('all', allDataBtn);
+    } else {
+      const firstBtn = document.querySelector('.filter-btn');
+      if (firstBtn) {
+        const category = firstBtn.getAttribute('data-category');
+        filterData(category, firstBtn);
+      }
     }
   } else {
     // Refresh kategori yang sedang aktif
@@ -200,15 +206,31 @@ function getFilteredData(data, searchTerm, searchUserPemohon) {
 // Update Badges Count
 function updateBadges() {
   const buttons = document.querySelectorAll('.filter-btn');
+  let totalAllData = 0;
+
   buttons.forEach(btn => {
     const category = btn.getAttribute('data-category');
-    if (category && globalData[category]) {
+    let count = 0;
+
+    if (category === 'all') {
+      // Dihitung nanti setelah loop selesai
+    } else if (globalData[category]) {
       const filtered = getFilteredData(globalData[category], currentSearchTerm, currentSearchUserPemohon);
-      const count = filtered.length;
+      count = filtered.length;
+      totalAllData += count; // Akumulasi total
+    }
+
+    if (category !== 'all') {
       const badge = btn.querySelector('.count-badge');
       if (badge) badge.textContent = count;
     }
   });
+
+  // Update badge 'Semua Data' setelah semua kategori lain dihitung
+  const allDataBadge = document.querySelector('.filter-btn[data-category="all"] .count-badge');
+  if (allDataBadge) {
+    allDataBadge.textContent = totalAllData;
+  }
 }
 
 // Filter Function (Kategori)
@@ -244,7 +266,17 @@ function applyFilterAndRender() {
   const tbody = document.getElementById('tableBody');
   
   // Ambil data dari kategori saat ini
-  let data = globalData[currentCategory] || [];
+  let data = [];
+  if (currentCategory === 'all') {
+    // Gabungkan semua data dari globalData (kecuali yang bukan kategori)
+    for (const key in globalData) {
+      if (Array.isArray(globalData[key])) {
+        data = data.concat(globalData[key]);
+      }
+    }
+  } else {
+    data = globalData[currentCategory] || [];
+  }
   
   // Filter berdasarkan Search Term dan User Pemohon
   data = getFilteredData(data, currentSearchTerm, currentSearchUserPemohon);
@@ -300,12 +332,12 @@ function applyFilterAndRender() {
       <td style="text-align: center;">${index + 1}</td>
       <td class="col-wrap-26">${item.no_sertifikat || ''}</td>
       <td class="col-wrap-26">${item.alamat_lokasi_kavling || ''}</td>
+      <td class="col-wrap-26" style="background-color: #f0f8ff;">${item.user_pemohon || ''}</td>
       <td class="col-wrap-30">${item.nomor_imb || ''}</td>
       <td class="col-wrap-30">${item.penerima_imb || ''}</td>
       <td style="background-color: #fff0f5;">${item.update_penerima_imb || ''}</td>
       <td class="col-wrap-30">${formatDate(item.update_tgl_mutasi)}</td>
       <td class="col-wrap-30">${item.register_imb || ''}</td>
-      <td style="background-color: #f0f8ff;">${item.user_pemohon || ''}</td>
       <td>${item.referensi_sertifikat || ''}</td>
       <td>${formatDate(item.tahun_terbit_sertifikat)}</td>
       <td>${formatDate(item.tahun_akhir_sertifikat)}</td>
