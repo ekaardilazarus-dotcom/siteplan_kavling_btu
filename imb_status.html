@@ -7,7 +7,8 @@
   
   <!-- Proteksi Akses -->
   <script>
-    if (sessionStorage.getItem('imb_access') !== 'f888') {
+    const access = sessionStorage.getItem('imb_access');
+    if (access !== 'f888' && access !== 'btu999') {
       alert('Akses ditolak. Silakan masukkan kode akses di halaman utama.');
       window.location.href = 'index.html';
     }
@@ -96,12 +97,16 @@
     <!-- RIGHT CONTENT (4 Parts) -->
     <main class="content-area">
       <div class="content-header">
-        <input type="text" id="searchInput" placeholder="🔍 Cari data Sertif/Nama Kavling..." class="search-input">
-        <button id="downloadBtnFull" class="download-btn" disabled>
-          <span>📊</span> Download data sesuai tabel
-        </button>
-        <button id="downloadBtnEMS" class="download-btn" disabled style="margin-left: 10px;">
-          <span>📥</span> Download data (csv) *support ems
+        <div class="search-input-group">
+          <input type="text" id="searchInput" placeholder="🔍 Cari data Sertif/Nama Kavling..." class="search-input">
+          <div class="input-tooltip">masukan nomor sertifikat atau Alamat kavling minimal 3 karakter</div>
+        </div>
+        <div class="search-input-group">
+          <input type="text" id="searchUserPemohon" placeholder="👤 Cari User Pemohon..." class="search-input">
+          <div class="input-tooltip">masukan nama pemohon minimal 3 karakter</div>
+        </div>
+        <button id="mainDownloadBtn" class="download-btn" disabled>
+          <span>📥</span> Download Data
         </button>
       </div>
       <div class="table-container">
@@ -109,16 +114,20 @@
           <thead>
             <tr>
               <th>No</th>
-              <th>Nomor Sertifikat</th>
-              <th id="sortAlamat" class="sortable">
+              <th class="col-wrap-26">Nomor Sertifikat</th>
+              <th id="sortAlamat" class="sortable col-wrap-26">
                 Alamat Lokasi Kavling
                 <span class="sort-icon">↕️</span>
               </th>
-              <th>Nomor IMB/PBG/SLF</th>
-              <th>Penerima IMB/PBG/SLF</th>
-              <th>Update Penerima IMB/PGB/SLF</th>
-              <th>Update tanggal Mutasi IMB/PBG/SLF</th>
-              <th>Register IMB/PBG/SLF</th>
+              <th class="col-wrap-30">Nomor IMB/PBG/SLF</th>
+              <th class="col-wrap-30">Penerima IMB/PBG/SLF</th>
+              <th style="background-color: #ffc0cb; color: #333;">Update Penerima IMB/PGB/SLF</th>
+              <th class="col-wrap-30">Update tanggal Mutasi IMB/PBG/SLF</th>
+              <th class="col-wrap-30">Register IMB/PBG/SLF</th>
+              <th id="sortUserPemohon" class="sortable" style="background-color: #add8e6; color: #333;">
+                User Pemohon
+                <span class="sort-icon">↕️</span>
+              </th>
               <th>Referensi Sertifikat</th>
               <th>Tahun Terbit Sertifikat</th>
               <th>Tahun Akhir Sertifikat</th>
@@ -130,12 +139,10 @@
               <th>Pemegang Hak Sekarang</th>
               <th>Pemegang Hak Lama</th>
               <th>Kelurahan</th>
-              <th>Petok Letter C</th>
-              <th>Skema Pembiayaan</th>
+              <th style="background-color: #90ee90; color: #333;">Skema Pembiayaan</th>
               <th>Serah Terima Kunci</th>
               <th>Tipe Kavling</th>
               <th>Blok Cluster</th>
-              <th>User Pemohon</th>
               <th id="sortSkema" class="sortable">
                 Skema Penjualan
                 <span class="sort-icon">↕️</span>
@@ -146,6 +153,7 @@
               <th>Nomor PBB</th>
               <th>Nomor Debitur User</th>
               <th>BPUJL</th>
+              <th>Petok Letter C</th>
             </tr>
           </thead>
           <tbody id="tableBody">
@@ -187,15 +195,22 @@
   <div id="csvModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Pilih Jenis Data CSV</h2>
+        <h2>Pilih Format Download</h2>
         <span class="close-btn csv-close">&times;</span>
       </div>
       <div class="modal-body">
         <div class="csv-modal-body">
-          <p>Pilih jenis data yang akan di-download untuk EMS:</p>
-          <div class="csv-button-group">
-            <button type="button" id="btnCsvSertifikat" class="csv-option-btn csv-primary">Data Sertifikat</button>
-            <button type="button" id="btnCsvProperty" class="csv-option-btn">Data Property</button>
+          <p>Silakan pilih format data yang ingin di-download:</p>
+          <div class="csv-button-group" style="display: flex; flex-direction: column; gap: 10px;">
+            <button type="button" id="btnDownloadExcel" class="csv-option-btn csv-primary" style="background: #2e7d32;">
+              <span>📊</span> Download data sesuai tabel (Excel)
+            </button>
+            <button type="button" id="btnCsvSertifikat" class="csv-option-btn">
+              <span>📜</span> Download CSV "Data Sertifikat" (EMS)
+            </button>
+            <button type="button" id="btnCsvProperty" class="csv-option-btn">
+              <span>🏠</span> Download CSV "Data Property" (EMS)
+            </button>
           </div>
         </div>
       </div>
