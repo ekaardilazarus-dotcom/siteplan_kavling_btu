@@ -7,6 +7,8 @@ const CERT_API_URL = 'https://script.google.com/macros/s/AKfycbxuAe7llIpc3SxGAhJ
 
 // 🔗 ALIAS untuk API Kavling (sama dengan API_URL)
 const KAVLING_API_URL = API_URL; // SAMA, karena database kavling
+const IMB_CACHE_KEY = 'imbStatusDataCache';
+const IMB_CACHE_DURATION = 10 * 60 * 1000; // 10 menit
 
 console.log('🔗 Database Connection Initialized');
 
@@ -14,6 +16,7 @@ console.log('🔗 Database Connection Initialized');
 let globalData = {};
 let currentCategory = '';
 let currentSearchTerm = '';
+let currentSearchUserPemohon = '';
 let currentTableData = []; // Data yang sedang ditampilkan di tabel (setelah filter)
 let currentSortOrder = 'asc'; // 'asc' or 'desc'
 let currentSortColumn = 'alamat_lokasi_kavling'; // Default sort column
@@ -63,6 +66,32 @@ function formatLuas(value) {
   return str;
 }
 
+function loadCachedImbData() {
+  try {
+    const raw = localStorage.getItem(IMB_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed.timestamp || !parsed.data) return null;
+    if (Date.now() - parsed.timestamp > IMB_CACHE_DURATION) return null;
+    return parsed.data;
+  } catch (e) {
+    console.warn('Gagal memuat cache IMB', e);
+    return null;
+  }
+}
+
+function saveCachedImbData(data) {
+  try {
+    const payload = {
+      timestamp: Date.now(),
+      data: data
+    };
+    localStorage.setItem(IMB_CACHE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.warn('Gagal menyimpan cache IMB', e);
+  }
+}
+
 // Fetch Data dari API
 async function fetchData() {
   const loading = document.getElementById('loadingState');
@@ -78,6 +107,15 @@ async function fetchData() {
   const buttons = document.querySelectorAll('.filter-btn');
   buttons.forEach(btn => btn.style.pointerEvents = 'none');
 
+  // Cek Cache
+  const cached = loadCachedImbData();
+  if (cached) {
+    console.log('♻️ Memuat data IMB dari cache lokal');
+    globalData = cached;
+    finishLoading();
+    return;
+  }
+
   try {
     console.log('⏳ Mengambil data dari API...');
     const response = await fetch(`${API_URL}?action=imb_status&_t=${Date.now()}`);
@@ -86,51 +124,77 @@ async function fetchData() {
     if (result.status === 'success') {
       console.log('✅ Data berhasil diambil');
       globalData = result; // Simpan seluruh data response
-      
-      // Update Badges
-      updateBadges();
-      
-      // Default pilih kategori pertama jika belum ada yang dipilih
-      if (!currentCategory) {
-        // Cari tombol pertama yang aktif atau default ke 'stok_imb'
-        const firstBtn = document.querySelector('.filter-btn');
-        if (firstBtn) {
-          const category = firstBtn.getAttribute('data-category');
-          filterData(category, firstBtn);
-        }
-      } else {
-        // Refresh tampilan dengan data baru
-        applyFilterAndRender();
-      }
-      
+      saveCachedImbData(result);
+      finishLoading();
     } else {
       console.error('❌ Gagal mengambil data:', result.message);
       alert('Gagal mengambil data: ' + result.message);
+      loading.style.display = 'none';
+      empty.style.display = 'flex';
     }
-    
   } catch (error) {
     console.error('❌ Error Fetching Data:', error);
     alert('Terjadi kesalahan koneksi saat mengambil data.');
-  } finally {
     loading.style.display = 'none';
+    empty.style.display = 'flex';
+  } finally {
     buttons.forEach(btn => btn.style.pointerEvents = 'auto');
   }
 }
 
+function finishLoading() {
+  const loading = document.getElementById('loadingState');
+  const table = document.getElementById('dataTable');
+  const buttons = document.querySelectorAll('.filter-btn');
+
+  // Update Badges
+  updateBadges();
+  
+  // Default pilih kategori pertama jika belum ada yang dipilih
+  if (!currentCategory) {
+    const firstBtn = document.querySelector('.filter-btn');
+    if (firstBtn) {
+      const category = firstBtn.getAttribute('data-category');
+      filterData(category, firstBtn);
+    }
+  } else {
+    // Refresh kategori yang sedang aktif
+    applyFilterAndRender();
+  }
+  
+  loading.style.display = 'none';
+  table.style.display = 'table';
+  buttons.forEach(btn => btn.style.pointerEvents = 'auto');
+}
+
 // Helper: Filter data berdasarkan term pencarian
-function getFilteredData(data, searchTerm) {
-  if (!searchTerm) return data;
-  const term = searchTerm.toLowerCase();
-  return data.filter(item => {
-    return (
-      (item.alamat_lokasi_kavling && item.alamat_lokasi_kavling.toLowerCase().includes(term)) ||
-      (item.no_sertifikat && item.no_sertifikat.toLowerCase().includes(term)) ||
-      (item.blok_cluster && item.blok_cluster.toLowerCase().includes(term)) ||
-      (item.nomor_imb && item.nomor_imb.toLowerCase().includes(term)) ||
-      (item.user_pemohon && item.user_pemohon.toLowerCase().includes(term)) ||
-      (item.pemegang_hak_sekarang && item.pemegang_hak_sekarang.toLowerCase().includes(term))
-    );
-  });
+function getFilteredData(data, searchTerm, searchUserPemohon) {
+  let filtered = data;
+  
+  // Filter berdasarkan search utama (Kavling/Sertif/dll)
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(item => {
+      return (
+        (item.alamat_lokasi_kavling && item.alamat_lokasi_kavling.toLowerCase().includes(term)) ||
+        (item.no_sertifikat && item.no_sertifikat.toLowerCase().includes(term)) ||
+        (item.blok_cluster && item.blok_cluster.toLowerCase().includes(term)) ||
+        (item.nomor_imb && item.nomor_imb.toLowerCase().includes(term)) ||
+        (item.user_pemohon && item.user_pemohon.toLowerCase().includes(term)) ||
+        (item.pemegang_hak_sekarang && item.pemegang_hak_sekarang.toLowerCase().includes(term))
+      );
+    });
+  }
+  
+  // Filter berdasarkan User Pemohon (hanya jika minimal 3 karakter)
+  if (searchUserPemohon && searchUserPemohon.length >= 3) {
+    const userTerm = searchUserPemohon.toLowerCase();
+    filtered = filtered.filter(item => {
+      return (item.user_pemohon && item.user_pemohon.toLowerCase().includes(userTerm));
+    });
+  }
+  
+  return filtered;
 }
 
 // Update Badges Count
@@ -139,7 +203,7 @@ function updateBadges() {
   buttons.forEach(btn => {
     const category = btn.getAttribute('data-category');
     if (category && globalData[category]) {
-      const filtered = getFilteredData(globalData[category], currentSearchTerm);
+      const filtered = getFilteredData(globalData[category], currentSearchTerm, currentSearchUserPemohon);
       const count = filtered.length;
       const badge = btn.querySelector('.count-badge');
       if (badge) badge.textContent = count;
@@ -182,8 +246,8 @@ function applyFilterAndRender() {
   // Ambil data dari kategori saat ini
   let data = globalData[currentCategory] || [];
   
-  // Filter berdasarkan Search Term
-  data = getFilteredData(data, currentSearchTerm);
+  // Filter berdasarkan Search Term dan User Pemohon
+  data = getFilteredData(data, currentSearchTerm, currentSearchUserPemohon);
 
   // Sorting Logic
   data.sort((a, b) => {
@@ -234,13 +298,14 @@ function applyFilterAndRender() {
     tr.dataset.index = index; // Simpan index untuk referensi klik
     tr.innerHTML = `
       <td style="text-align: center;">${index + 1}</td>
-      <td>${item.no_sertifikat || ''}</td>
-      <td>${item.alamat_lokasi_kavling || ''}</td>
-      <td>${item.nomor_imb || ''}</td>
-      <td>${item.penerima_imb || ''}</td>
-      <td>${item.update_penerima_imb || ''}</td>
-      <td>${formatDate(item.update_tgl_mutasi)}</td>
-      <td>${item.register_imb || ''}</td>
+      <td class="col-wrap-26">${item.no_sertifikat || ''}</td>
+      <td class="col-wrap-26">${item.alamat_lokasi_kavling || ''}</td>
+      <td class="col-wrap-30">${item.nomor_imb || ''}</td>
+      <td class="col-wrap-30">${item.penerima_imb || ''}</td>
+      <td style="background-color: #fff0f5;">${item.update_penerima_imb || ''}</td>
+      <td class="col-wrap-30">${formatDate(item.update_tgl_mutasi)}</td>
+      <td class="col-wrap-30">${item.register_imb || ''}</td>
+      <td style="background-color: #f0f8ff;">${item.user_pemohon || ''}</td>
       <td>${item.referensi_sertifikat || ''}</td>
       <td>${formatDate(item.tahun_terbit_sertifikat)}</td>
       <td>${formatDate(item.tahun_akhir_sertifikat)}</td>
@@ -252,12 +317,10 @@ function applyFilterAndRender() {
       <td>${item.pemegang_hak_sekarang || ''}</td>
       <td>${item.pemegang_hak_lama || ''}</td>
       <td>${item.kelurahan || ''}</td>
-      <td>${item.petok_letter_c || ''}</td>
-      <td>${item.skema_pembiayaan || ''}</td>
+      <td style="background-color: #e8f5e9;">${item.skema_pembiayaan || ''}</td>
       <td>${formatDate(item.serah_terima_kunci)}</td>
       <td>${item.tipe_kavling || ''}</td>
       <td>${item.blok_cluster || ''}</td>
-      <td>${item.user_pemohon || ''}</td>
       <td>${item.skema_penjualan || ''}</td>
       <td>${item.idpel_kwh || ''}</td>
       <td>${formatDate(item.tanggal_pasang_pdam)}</td>
@@ -265,6 +328,7 @@ function applyFilterAndRender() {
       <td></td> <!-- Nomor PBB (Dikosongkan) -->
       <td></td> <!-- Nomor Debitur User (Dikosongkan) -->
       <td>${item.bpujl || ''}</td>
+      <td>${item.petok_letter_c || ''}</td>
     `;
     
     // Tambahkan event listener klik: hanya 3 kolom pertama yang bisa buka detail
@@ -361,12 +425,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeBtn = document.querySelector('.close-btn');
   const cancelBtn = document.querySelector('.cancel-btn');
   const csvCloseBtn = document.querySelector('.csv-close');
+  const btnDownloadExcelModal = document.getElementById('btnDownloadExcel');
   const csvSertifikatBtn = document.getElementById('btnCsvSertifikat');
   const csvPropertyBtn = document.getElementById('btnCsvProperty');
   
   if (closeBtn) closeBtn.onclick = closeEditModal;
   if (cancelBtn) cancelBtn.onclick = closeEditModal;
   if (csvCloseBtn) csvCloseBtn.onclick = closeCsvModal;
+  
+  if (btnDownloadExcelModal) btnDownloadExcelModal.onclick = () => {
+    downloadExcel();
+    closeCsvModal();
+  };
+  
   if (csvSertifikatBtn) csvSertifikatBtn.onclick = () => {
     downloadCSV('sertifikat');
     closeCsvModal();
@@ -386,11 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateDownloadButtons(enable) {
-  const downloadBtnFull = document.getElementById('downloadBtnFull');
-  const downloadBtnEMS = document.getElementById('downloadBtnEMS');
-  
-  if (downloadBtnFull) downloadBtnFull.disabled = !enable;
-  if (downloadBtnEMS) downloadBtnEMS.disabled = !enable;
+  const mainDownloadBtn = document.getElementById('mainDownloadBtn');
+  if (mainDownloadBtn) mainDownloadBtn.disabled = !enable;
 }
 
 function initTableGrabScroll() {
@@ -679,15 +747,10 @@ window.onload = function() {
     });
   }
   
-  // Download button listener
-  const downloadBtnFull = document.getElementById('downloadBtnFull');
-  if(downloadBtnFull) {
-    downloadBtnFull.addEventListener('click', () => downloadExcel());
-  }
-
-  const downloadBtnEMS = document.getElementById('downloadBtnEMS');
-  if(downloadBtnEMS) {
-    downloadBtnEMS.addEventListener('click', () => openCsvModal());
+  // Main Download button listener
+  const mainDownloadBtn = document.getElementById('mainDownloadBtn');
+  if(mainDownloadBtn) {
+    mainDownloadBtn.addEventListener('click', () => openCsvModal());
   }
   
   // Search Input Listener
@@ -700,6 +763,19 @@ window.onload = function() {
     });
   }
 
+  // Search User Pemohon Listener
+  const searchUserPemohon = document.getElementById('searchUserPemohon');
+  if (searchUserPemohon) {
+    searchUserPemohon.addEventListener('input', function(e) {
+      currentSearchUserPemohon = e.target.value;
+      // Hanya jalankan filter jika input kosong (reset) atau >= 3 karakter
+      if (currentSearchUserPemohon === '' || currentSearchUserPemohon.length >= 3) {
+        updateBadges();
+        applyFilterAndRender();
+      }
+    });
+  }
+
   // Sorting Listener
   const sortHeader = document.getElementById('sortAlamat');
   if (sortHeader) {
@@ -708,6 +784,21 @@ window.onload = function() {
         currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
       } else {
         currentSortColumn = 'alamat_lokasi_kavling';
+        currentSortOrder = 'asc';
+      }
+      
+      updateSortUI();
+      applyFilterAndRender();
+    });
+  }
+
+  const sortUserPemohon = document.getElementById('sortUserPemohon');
+  if (sortUserPemohon) {
+    sortUserPemohon.addEventListener('click', function() {
+      if (currentSortColumn === 'user_pemohon') {
+        currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+      } else {
+        currentSortColumn = 'user_pemohon';
         currentSortOrder = 'asc';
       }
       
@@ -738,7 +829,10 @@ window.onload = function() {
       if (icon) icon.textContent = '↕️';
     });
 
-    const activeHeader = currentSortColumn === 'alamat_lokasi_kavling' ? sortHeader : sortSkema;
+    const activeHeader = 
+      currentSortColumn === 'alamat_lokasi_kavling' ? sortHeader : 
+      currentSortColumn === 'user_pemohon' ? sortUserPemohon :
+      sortSkema;
     if (activeHeader) {
       activeHeader.classList.add(currentSortOrder);
       const icon = activeHeader.querySelector('.sort-icon');
