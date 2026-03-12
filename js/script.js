@@ -43,6 +43,7 @@ function showAccessCodePopup() {
     } else if (code === 'BTU999') {
       accessLevel = 'limited';
       sessionStorage.setItem('access_level', 'limited'); // Simpan level akses
+      sessionStorage.setItem('imb_access', 'btu999'); // Simpan akses untuk IMB (BTU999)
       overlay.remove();
       applyAccessRestrictions();
 
@@ -79,9 +80,9 @@ function applyAccessRestrictions() {
     const certMapBtn = document.getElementById('openCertMap');
     if (certMapBtn) certMapBtn.style.display = 'none';
 
-    // Sembunyikan tombol IMB jika akses terbatas
+    // Tombol IMB tetap terlihat untuk BTU999
     const imbBtn = document.getElementById('checkImbStatus');
-    if (imbBtn) imbBtn.style.display = 'none';
+    if (imbBtn) imbBtn.style.display = 'block';
   } else if (accessLevel === 'full') {
     // Pastikan tombol IMB dan SITE MAP terlihat jika akses penuh (f888)
     const imbBtn = document.getElementById('checkImbStatus');
@@ -3385,16 +3386,20 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
   // BUTTON IMB/PBG/SLF
   // ===============================
   document.getElementById('checkImbStatus')?.addEventListener('click', () => {
-    // Jika sudah memasukkan kode F888 di awal, langsung masuk
-    if (sessionStorage.getItem('imb_access') === 'f888') {
+    // Jika sudah memasukkan kode F888 atau BTU999 di awal, langsung masuk
+    const currentImbAccess = sessionStorage.getItem('imb_access');
+    if (currentImbAccess === 'f888' || currentImbAccess === 'btu999') {
       window.location.href = 'imb_status.html';
       return;
     }
 
-    // Jika belum (misal masuk pakai BTU999), minta kode khusus
+    // Jika belum login, minta kode
     const accessCode = prompt('Masukkan Kode Akses Khusus IMB:');
     if (accessCode === 'f888') {
       sessionStorage.setItem('imb_access', 'f888');
+      window.location.href = 'imb_status.html';
+    } else if (accessCode === 'btu999') {
+      sessionStorage.setItem('imb_access', 'btu999');
       window.location.href = 'imb_status.html';
     } else if (accessCode !== null) {
       alert('Kode akses salah!');
