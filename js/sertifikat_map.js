@@ -57,11 +57,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const normalizeCertId = (raw) => {
     if (!raw) return '';
-    return String(raw)
+    // Hapus keterangan dalam kurung jika ada (misal: B.4597 (Bukopin) -> B.4597)
+    let text = String(raw).split('(')[0].trim();
+    return text
       .toUpperCase()
-      .replace(/\s+/g, '')
-      .replace(/[-_.]/g, '')
-      .replace(/\//g, '')
+      .replace(/SHGB|SHM/g, '') // Hapus kata kunci SHGB atau SHM
+      .replace(/[\s\-_./]/g, '') // Hapus spasi, strip, underscore, titik, slash
+      .replace(/^([A-Z])0+/, '$1') // Hapus leading zeros setelah satu huruf (misal: B04597 -> B4597)
+      .replace(/^0+/, '') // Hapus leading zeros di depan angka jika tidak ada huruf
       .trim();
   };
 
@@ -282,16 +285,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  const isGenericId = (id) => {
+    if (!id) return true;
+    const t = id.toLowerCase();
+    return t.includes('vector') || t.includes('rectangle') || t.includes('path') || 
+           t.includes('group') || t.includes('layer') || t.includes('frame') ||
+           t.includes('text') || t.includes('image') || t.includes('clip');
+  };
+
   const colorizeSertifikatMap = () => {
     const svg = mapEl.querySelector('svg');
     if (!svg || !certBankRows.length || !certIndexByKey.size) return;
     ensurePatterns(svg);
 
     const rootGroup = svg.querySelector('#sertifikatbtu') || svg;
-    const groups = Array.from(rootGroup.querySelectorAll('g[id]')).filter(g => g.id && g.id !== 'sertifikatbtu');
+    // Kumpulkan semua group yang memiliki ID dan bukan ID generik
+    const groups = Array.from(rootGroup.querySelectorAll('g'))
+      .filter(g => g.id && g.id !== 'sertifikatbtu' && !isGenericId(g.id));
+
+    // Sort groups agar yang paling "dangkal" (parent) diproses pertama
+    const getDepth = (el) => {
+      let depth = 0;
+      while (el.parentNode) { depth++; el = el.parentNode; }
+      return depth;
+    };
+    groups.sort((a, b) => getDepth(a) - getDepth(b));
 
     groupIndexByKey = new Map();
     certShapes = [];
+    const claimedShapes = new Set();
 
     const isTextOutline = (el) => {
       const rawFill = (el.getAttribute('fill') || el.style.fill || '').toLowerCase();
@@ -306,39 +328,44 @@ document.addEventListener('DOMContentLoaded', () => {
     groups.forEach(group => {
       const key = normalizeCertId(group.id);
       if (!key) return;
-      const allShapes = Array.from(group.querySelectorAll('path, polygon, rect, circle'));
-      if (!allShapes.length) return;
-      // Pilih hanya shape kavling utama (bukan outline teks/path tulisan)
-      let gbb;
-      try { gbb = group.getBBox(); } catch (_) { gbb = null; }
-      const gArea = gbb ? Math.max(1, gbb.width * gbb.height) : 1;
 
-      // Hitung area tiap shape
+      // Ambil semua elemen bentuk di dalam grup ini
+      const allShapes = Array.from(group.querySelectorAll('path, polygon, rect, circle, ellipse'));
+      if (!allShapes.length) return;
+      
+      // Hitung luas dan rasio setiap bentuk untuk menemukan "bidang tanah" utama
       const shapeAreas = allShapes.map(el => {
         try {
-          const bb = el.getBBox();
-          const area = Math.max(0, bb.width * bb.height);
-          return { el, area, ratio: area / gArea };
+          const bbox = el.getBBox();
+          const area = bbox.width * bbox.height;
+          const ratio = (bbox.width > 0 && bbox.height > 0) ? Math.min(bbox.width, bbox.height) / Math.max(bbox.width, bbox.height) : 0;
+          return { el, area, ratio };
         } catch (_) {
           return { el, area: 0, ratio: 0 };
         }
       });
 
-      // Ambil area terbesar sebagai kandidat utama
-      const maxArea = shapeAreas.reduce((m, s) => Math.max(m, s.area), 0);
-      // Kriteria: shape dianggap bidang kavling bila cukup besar terhadap grup
+      const maxArea = Math.max(...shapeAreas.map(s => s.area), 0);
+      
+      // Pilih bentuk yang memiliki rasio cukup "kotak" (bukan garis/teks tipis)
       // atau termasuk klaster terbesar (>= 60% dari max area)
       const shapes = shapeAreas
         .filter(s => s.area > 0 && (s.ratio >= 0.12 || s.area >= maxArea * 0.6))
         .map(s => s.el)
         // Buang path outline tulisan (fill hitam, tanpa stroke)
-        .filter(el => !isTextOutline(el));
+        .filter(el => !isTextOutline(el))
+        // Buang yang sudah diklaim oleh group parent
+        .filter(el => !claimedShapes.has(el));
+
+      if (!shapes.length) return;
+
+      // Tandai sebagai diklaim agar tidak diambil grup anak
+      shapes.forEach(el => claimedShapes.add(el));
 
       // Tandai target pewarnaan
       allShapes.forEach(s => s.removeAttribute('data-fill-target'));
       shapes.forEach(s => s.setAttribute('data-fill-target', '1'));
 
-      if (!shapes.length) return;
       groupIndexByKey.set(key, { group, shapes });
       certShapes.push(...shapes);
     });
@@ -401,7 +428,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
-    // Warnai hitam untuk ID yang ada di SVG tapi tidak ada di database
+    // Warnai abu-abu muda untuk ID yang ada di SVG tapi tidak ada di database
+    // (Bukan hitam agar tidak tertukar dengan outline teks)
     groupIndexByKey.forEach((mapping, key) => {
       if (coloredKeys.has(key)) return;
       const shapes = mapping.shapes || [];
@@ -409,9 +437,9 @@ document.addEventListener('DOMContentLoaded', () => {
         el.dataset.missing = '1';
         el.dataset.key = key;
         el.dataset.nomor = mapping.group && mapping.group.id ? mapping.group.id : key;
-        el.style.fill = '#000000';
-        el.style.removeProperty('stroke');
-        el.style.removeProperty('stroke-width');
+        el.style.fill = '#eeeeee'; // Abu-abu sangat muda
+        el.style.stroke = '#cccccc'; // Garis tepi abu-abu
+        el.style.strokeWidth = '0.5';
       });
       const texts = mapping.group.querySelectorAll('text');
       texts.forEach(t => {
