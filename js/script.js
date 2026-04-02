@@ -834,6 +834,19 @@ function updateStatusPanel(data) {
   }
 
   // ========== BUAT HTML PANEL ==========
+  const onHandActive = localStorage.getItem('onHandFilter') === 'true';
+
+  // Hitung ON HAND dari data
+  let onHandTotal = 0;
+  if (data && Array.isArray(data.data)) {
+    data.data.forEach(item => {
+      const raw = item.rawData || [];
+      const qValue = raw.length > 16 ? String(raw[16] || '').trim().toUpperCase() : '';
+      const kValue = raw.length > 10 ? String(raw[10] || '').trim().toUpperCase() : '';
+      if (qValue.includes('ON_HAND') || kValue.includes('ON_HAND')) onHandTotal++;
+    });
+  }
+
   let html = `
     <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #673ab7; color: white; gap: 8px;">
       <h4 style="margin: 0; font-size: 14px;">📊 Statistik Kavling (IMB)</h4>
@@ -845,6 +858,14 @@ function updateStatusPanel(data) {
     </div>
 
     <div class="status-content" style="padding: 12px;">
+      <!-- FILTER ON HAND -->
+      <div style="margin-bottom: 15px; display: flex; align-items: center; background: ${onHandActive ? '#fff9c4' : '#f5f5f5'}; padding: 10px 14px; border-radius: 12px; border: 2px solid ${onHandActive ? '#fbc02d' : '#ddd'}; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s ease;" id="onHandToggleContainer">
+        <input type="checkbox" id="onHandFilter" ${onHandActive ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer; accent-color: #fbc02d;">
+        <label for="onHandFilter" style="cursor: pointer; font-size: 14px; font-weight: 800; color: ${onHandActive ? '#827717' : '#666'}; margin-left: 12px; display: flex; align-items: center; gap: 8px; flex: 1;">
+          <span style="font-size: 18px;">✨</span> HIGHLIGHT ON HAND
+        </label>
+        <div style="font-size: 12px; background: ${onHandActive ? '#fbc02d' : '#999'}; color: white; padding: 2px 10px; border-radius: 12px; font-weight: 900; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">${onHandTotal}</div>
+      </div>
   `;
 
   const categories = [
@@ -986,6 +1007,31 @@ function updateStatusPanel(data) {
     }
   });
 
+  // Event listener untuk Filter ON HAND
+  const onHandCheckbox = document.getElementById('onHandFilter');
+  const onHandContainer = document.getElementById('onHandToggleContainer');
+
+  if (onHandCheckbox && onHandContainer) {
+    onHandContainer.addEventListener('click', function(e) {
+      // Jika klik bukan pada checkbox itu sendiri, toggle checkbox
+      if (e.target !== onHandCheckbox) {
+        onHandCheckbox.checked = !onHandCheckbox.checked;
+        // Trigger change event manual
+        onHandCheckbox.dispatchEvent(new Event('change'));
+      }
+    });
+
+    onHandCheckbox.addEventListener('change', function() {
+      localStorage.setItem('onHandFilter', this.checked);
+      // Re-render panel UI
+      updateStatusPanel(data);
+      // Re-colorize map to show/hide labels
+      if (statusData && Array.isArray(statusData.data)) {
+        colorizeKavling(statusData.data);
+      }
+    });
+  }
+
   const closeBtn = panelBody.querySelector('.close-status-btn');
   if (closeBtn) {
     closeBtn.addEventListener('click', function(e) {
@@ -1018,6 +1064,7 @@ function colorizeKavling(kavlingData) {
 
   let coloredCount = 0;
   let notFoundCount = 0;
+  let onHandCount = 0; // Tambahkan counter untuk ON HAND
   let processedIds = new Set();
 
   kavlingData.forEach(item => {
@@ -1027,6 +1074,13 @@ function colorizeKavling(kavlingData) {
     const hasImb = Object.prototype.hasOwnProperty.call(item, 'hasImb') ? item.hasImb : null;
     let kategori = (item.kategori || 'unknown').toLowerCase();
     const skemaText = (item.skema || '').toString().toUpperCase();
+
+    // Cek status ON HAND (Prioritas Kolom Q / Index 16, Fallback Kolom K / Index 10)
+    const rawData = item.rawData || [];
+    const qValue = rawData.length > 16 ? String(rawData[16] || '').trim().toUpperCase() : '';
+    const kValue = rawData.length > 10 ? String(rawData[10] || '').trim().toUpperCase() : '';
+    const isOnHand = qValue.includes('ON_HAND') || kValue.includes('ON_HAND');
+    if (isOnHand) onHandCount++; // Hitung total ON HAND
 
     if (kategori === 'unknown' && skemaText) {
       if (skemaText.includes('DISEWAKAN') || skemaText.includes('SEWA') || skemaText.includes('DIPINJAM')) {
@@ -1081,6 +1135,16 @@ function colorizeKavling(kavlingData) {
     if (element) {
       if (element.id) processedIds.add(element.id);
 
+      // Cek status ON HAND (Prioritas Kolom Q / Index 16, Fallback Kolom K / Index 10)
+      const onHandActive = localStorage.getItem('onHandFilter') === 'true';
+      const rawData = item.rawData || [];
+      const qValue = rawData.length > 16 ? String(rawData[16] || '').trim().toUpperCase() : '';
+      const kValue = rawData.length > 10 ? String(rawData[10] || '').trim().toUpperCase() : '';
+      const isOnHand = qValue.includes('ON_HAND') || kValue.includes('ON_HAND');
+
+      // Terapkan highlight kuning jika ON HAND aktif dan data cocok
+      const applyHighlight = onHandActive && isOnHand;
+
       // Hapus semua kelas status sebelumnya pada group (sekadar bersih-bersih)
       element.classList.remove(
         'kavling-status-kpr',
@@ -1112,10 +1176,18 @@ function colorizeKavling(kavlingData) {
         } catch (_) {}
       });
 
+      // Terapkan highlight ON HAND jika diperlukan
+      if (applyHighlight) {
+        element.classList.add('on-hand-highlight');
+      } else {
+        element.classList.remove('on-hand-highlight');
+      }
+
       // Jika element adalah group, tambahkan ke child elements juga
       if (element.tagName.toLowerCase() === 'g') {
         element.querySelectorAll('rect, path, polygon, circle').forEach(child => {
           child.classList.remove(
+            'on-hand-highlight',
             'kavling-status-kpr',
             'kavling-status-kpr-no-imb',
             'kavling-status-stok', 
@@ -1128,6 +1200,12 @@ function colorizeKavling(kavlingData) {
             'kavling-status-dipinjam-no-imb',
             'kavling-status-unknown'
           );
+
+          // Tambahkan highlight jika diperlukan (SETELAH pembersihan)
+          if (applyHighlight) {
+            child.classList.add('on-hand-highlight');
+          }
+
           if (className) {
             child.classList.add(className);
           }
@@ -1195,6 +1273,9 @@ function clearStatusColors() {
       el.style.fill = '';
       el.style.stroke = '';
 
+      // Hapus highlight ON HAND jika ada
+      el.classList.remove('on-hand-highlight');
+
       el.classList.remove(
         'kavling-status-kpr',
         'kavling-status-stok', 
@@ -1209,6 +1290,7 @@ function clearStatusColors() {
           child.style.fill = '';
           child.style.stroke = '';
           child.classList.remove(
+            'on-hand-highlight',
             'kavling-status-kpr',
             'kavling-status-stok', 
             'kavling-status-rekom',
