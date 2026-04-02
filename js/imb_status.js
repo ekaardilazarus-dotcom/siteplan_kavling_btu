@@ -854,6 +854,21 @@ window.onload = function() {
     });
   }
 
+  const sortSkemaPembiayaan = document.getElementById('sortSkemaPembiayaan');
+  if (sortSkemaPembiayaan) {
+    sortSkemaPembiayaan.addEventListener('click', function() {
+      if (currentSortColumn === 'skema_pembiayaan') {
+        currentSortOrder = (currentSortOrder === 'asc') ? 'desc' : 'asc';
+      } else {
+        currentSortColumn = 'skema_pembiayaan';
+        currentSortOrder = 'asc';
+      }
+      
+      updateSortUI();
+      applyFilterAndRender();
+    });
+  }
+
   function updateSortUI() {
     document.querySelectorAll('.sortable').forEach(header => {
       header.classList.remove('asc', 'desc');
@@ -864,7 +879,9 @@ window.onload = function() {
     const activeHeader = 
       currentSortColumn === 'alamat_lokasi_kavling' ? sortHeader : 
       currentSortColumn === 'user_pemohon' ? sortUserPemohon :
-      sortSkema;
+      currentSortColumn === 'skema_penjualan' ? sortSkema :
+      currentSortColumn === 'skema_pembiayaan' ? sortSkemaPembiayaan :
+      null;
     if (activeHeader) {
       activeHeader.classList.add(currentSortOrder);
       const icon = activeHeader.querySelector('.sort-icon');
