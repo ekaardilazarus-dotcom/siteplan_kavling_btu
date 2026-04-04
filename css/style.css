@@ -25,18 +25,6 @@ body {
 }
 
 /* =============================== */
-/* KAVLING HIGHLIGHTS */
-/* =============================== */
-.on-hand-highlight {
-  stroke: #ffff00 !important; /* Kuning Terang */
-  stroke-width: 3.5px !important;
-  stroke-dasharray: 5, 2; /* Efek bergaris-garis kuning */
-  stroke-linejoin: round;
-  paint-order: stroke fill;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 0, 0.8));
-}
-
-/* =============================== */
 /* LAYOUT STRUKTUR */
 /* =============================== */
 .main-header {
