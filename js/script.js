@@ -1051,6 +1051,29 @@ function colorizeKavling(kavlingData) {
     return;
   }
 
+  // ENSURE PATTERN DEFINITION
+  let defs = svgMap.querySelector('defs');
+  if (!defs) {
+    defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    svgMap.insertBefore(defs, svgMap.firstChild);
+  }
+  if (!document.getElementById('onHandHatch')) {
+    const pattern = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+    pattern.setAttribute('id', 'onHandHatch');
+    pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+    pattern.setAttribute('width', '8');
+    pattern.setAttribute('height', '8');
+    pattern.setAttribute('patternTransform', 'rotate(45)');
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute('x1', '0'); line.setAttribute('y1', '0');
+    line.setAttribute('x2', '0'); line.setAttribute('y2', '6');
+    line.setAttribute('stroke', '#ffff3eff');
+    line.setAttribute('stroke-width', '3.5');
+    line.setAttribute('stroke-opacity', '0.7');
+    pattern.appendChild(line);
+    defs.appendChild(pattern);
+  }
+
   console.log(`🎨 Mulai mewarnai ${kavlingData.length} kavling`);
 
   // LOG DISTRIBUSI KATEGORI
@@ -1160,8 +1183,6 @@ function colorizeKavling(kavlingData) {
         'kavling-status-unknown'
       );
 
-      // JANGAN menambahkan class ke group: hanya ke vektor anak (rect/path/polygon/circle)
-
       // Pastikan warna teks tetap hitam saat grup diwarnai
       const textEls = element.querySelectorAll('text');
       textEls.forEach(t => {
@@ -1176,18 +1197,43 @@ function colorizeKavling(kavlingData) {
         } catch (_) {}
       });
 
-      // Terapkan highlight ON HAND jika diperlukan
+      // Terapkan highlight ON HAND jika diperlukan (ARSIRAN)
+      element.querySelectorAll('.on-hand-overlay').forEach(ov => ov.remove());
       if (applyHighlight) {
-        element.classList.add('on-hand-highlight');
-      } else {
-        element.classList.remove('on-hand-highlight');
+        // Buat clone sebagai overlay arsiran
+        const overlay = element.cloneNode(true);
+        overlay.removeAttribute('id'); // Jangan duplikasi ID
+        overlay.setAttribute('class', 'on-hand-overlay');
+        overlay.style.pointerEvents = 'none'; // Biar tetep bisa klik elemen aslinya
+        
+        // Atur isi overlay agar hanya berisi arsiran
+        const children = overlay.querySelectorAll('rect, path, polygon, circle');
+        if (children.length > 0) {
+          children.forEach(child => {
+            child.style.fill = 'url(#onHandHatch)';
+            child.style.stroke = 'none';
+            child.style.filter = 'none';
+            child.classList.remove('on-hand-highlight');
+            // Hapus class status dari overlay agar tidak konflik warna
+            child.className = ''; 
+          });
+        } else if (overlay.tagName.toLowerCase() !== 'g') {
+          // Jika bukan group tapi single element
+          overlay.style.fill = 'url(#onHandHatch)';
+          overlay.style.stroke = 'none';
+          overlay.className = '';
+        }
+        
+        element.appendChild(overlay);
       }
 
       // Jika element adalah group, tambahkan ke child elements juga
       if (element.tagName.toLowerCase() === 'g') {
         element.querySelectorAll('rect, path, polygon, circle').forEach(child => {
+          // Abaikan jika ini adalah overlay arsiran
+          if (child.closest('.on-hand-overlay')) return;
+
           child.classList.remove(
-            'on-hand-highlight',
             'kavling-status-kpr',
             'kavling-status-kpr-no-imb',
             'kavling-status-stok', 
@@ -1200,12 +1246,6 @@ function colorizeKavling(kavlingData) {
             'kavling-status-dipinjam-no-imb',
             'kavling-status-unknown'
           );
-
-          // Tambahkan highlight jika diperlukan (SETELAH pembersihan)
-          if (applyHighlight) {
-            child.classList.add('on-hand-highlight');
-          }
-
           if (className) {
             child.classList.add(className);
           }
@@ -1275,6 +1315,7 @@ function clearStatusColors() {
 
       // Hapus highlight ON HAND jika ada
       el.classList.remove('on-hand-highlight');
+      el.querySelectorAll('.on-hand-overlay').forEach(ov => ov.remove());
 
       el.classList.remove(
         'kavling-status-kpr',
