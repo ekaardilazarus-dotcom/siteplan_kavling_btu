@@ -410,15 +410,17 @@ function applyViewBox(svg) {
 function clearHighlight() {
   document.querySelectorAll('#map rect, #map path, #map polygon')
     .forEach(el => {
+      // ABAIKAN jika ini adalah bagian dari overlay arsiran ON HAND
+      if (el.closest('.on-hand-overlay')) return;
+
       // Don't clear style if it's a status color class element
       const parent = el.closest('g');
       const target = (parent && parent.id && parent.id !== 'map') ? parent : el;
 
-      if (!target.classList.contains('kavling-status-kpr') && 
-          !target.classList.contains('kavling-status-stok') && 
-          !target.classList.contains('kavling-status-rekom') && 
-          !target.classList.contains('kavling-status-disewakan') &&
-          !target.classList.contains('kavling-status-unknown')) {
+      // Cek apakah target memiliki salah satu class status (termasuk variasi -no-imb)
+      const hasStatus = Array.from(target.classList).some(cls => cls.startsWith('kavling-status-'));
+
+      if (!hasStatus) {
         el.style.cssText = '';
       } else {
         // Jika berstatus, pastikan stroke-width kembali normal
@@ -1183,6 +1185,11 @@ function colorizeKavling(kavlingData) {
         'kavling-status-unknown'
       );
 
+      // Tambahkan class status baru ke group agar clearHighlight bisa mengenalinya
+      if (className) {
+        element.classList.add(className);
+      }
+
       // Pastikan warna teks tetap hitam saat grup diwarnai
       const textEls = element.querySelectorAll('text');
       textEls.forEach(t => {
@@ -1198,33 +1205,38 @@ function colorizeKavling(kavlingData) {
       });
 
       // Terapkan highlight ON HAND jika diperlukan (ARSIRAN)
+      // Bersihkan overlay lama baik di dalam maupun di luar elemen
       element.querySelectorAll('.on-hand-overlay').forEach(ov => ov.remove());
+      const externalOverlay = document.querySelector(`.on-hand-overlay[data-for="${kode}"]`);
+      if (externalOverlay) externalOverlay.remove();
+
       if (applyHighlight) {
         // Buat clone sebagai overlay arsiran
         const overlay = element.cloneNode(true);
         overlay.removeAttribute('id'); // Jangan duplikasi ID
         overlay.setAttribute('class', 'on-hand-overlay');
+        overlay.setAttribute('data-for', kode); // Untuk memudahkan pembersihan
         overlay.style.pointerEvents = 'none'; // Biar tetep bisa klik elemen aslinya
         
-        // Atur isi overlay agar hanya berisi arsiran
-        const children = overlay.querySelectorAll('rect, path, polygon, circle');
-        if (children.length > 0) {
+        if (element.tagName.toLowerCase() === 'g') {
+          // Atur isi overlay agar hanya berisi arsiran
+          const children = overlay.querySelectorAll('rect, path, polygon, circle');
           children.forEach(child => {
             child.style.fill = 'url(#onHandHatch)';
             child.style.stroke = 'none';
             child.style.filter = 'none';
             child.classList.remove('on-hand-highlight');
-            // Hapus class status dari overlay agar tidak konflik warna
             child.className = ''; 
           });
-        } else if (overlay.tagName.toLowerCase() !== 'g') {
+          element.appendChild(overlay);
+        } else {
           // Jika bukan group tapi single element
           overlay.style.fill = 'url(#onHandHatch)';
           overlay.style.stroke = 'none';
-          overlay.className = '';
+          overlay.className = 'on-hand-overlay';
+          // Sisipkan setelah elemen asli agar berada di atasnya
+          element.parentNode.insertBefore(overlay, element.nextSibling);
         }
-        
-        element.appendChild(overlay);
       }
 
       // Jika element adalah group, tambahkan ke child elements juga
@@ -1316,6 +1328,11 @@ function clearStatusColors() {
       // Hapus highlight ON HAND jika ada
       el.classList.remove('on-hand-highlight');
       el.querySelectorAll('.on-hand-overlay').forEach(ov => ov.remove());
+      // Cari dan hapus overlay eksternal jika ada
+      if (el.id) {
+        const extOv = document.querySelector(`.on-hand-overlay[data-for="${el.id.toUpperCase()}"]`);
+        if (extOv) extOv.remove();
+      }
 
       el.classList.remove(
         'kavling-status-kpr',
@@ -3121,26 +3138,25 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
 
     if (el.tagName.toLowerCase() === 'g') {
       el.querySelectorAll('rect, path, polygon').forEach(c => {
+        // ABAIKAN jika ini adalah bagian dari overlay arsiran ON HAND
+        if (c.closest('.on-hand-overlay')) return;
+
         // Only apply highlight style if it doesn't already have a status color
         const parent = c.closest('g');
         const target = (parent && parent.id && parent.id !== 'map') ? parent : c;
 
-        if (!target.classList.contains('kavling-status-kpr') && 
-            !target.classList.contains('kavling-status-stok') && 
-            !target.classList.contains('kavling-status-rekom') && 
-            !target.classList.contains('kavling-status-disewakan') &&
-            !target.classList.contains('kavling-status-unknown')) {
+        // Gunakan regex untuk mengecek class status
+        const hasStatus = Array.from(target.classList).some(cls => cls.startsWith('kavling-status-'));
+
+        if (!hasStatus) {
           c.style.fill = '#ffd54f';
           c.style.stroke = '#ff6f00';
           c.style.strokeWidth = '2';
         }
       });
     } else {
-      if (!el.classList.contains('kavling-status-kpr') && 
-          !el.classList.contains('kavling-status-stok') && 
-          !el.classList.contains('kavling-status-rekom') && 
-          !el.classList.contains('kavling-status-disewakan') &&
-          !el.classList.contains('kavling-status-unknown')) {
+      const hasStatus = Array.from(el.classList).some(cls => cls.startsWith('kavling-status-'));
+      if (!hasStatus) {
         el.style.fill = '#ffd54f';
         el.style.stroke = '#ff6f00';
         el.style.strokeWidth = '2';
@@ -3185,25 +3201,23 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
     els.forEach(el => {
       if (el.tagName.toLowerCase() === 'g') {
         el.querySelectorAll('rect, path, polygon').forEach(c => {
+          // ABAIKAN jika ini adalah bagian dari overlay arsiran ON HAND
+          if (c.closest('.on-hand-overlay')) return;
+
           const parent = c.closest('g');
           const target = (parent && parent.id && parent.id !== 'map') ? parent : c;
 
-          if (!target.classList.contains('kavling-status-kpr') && 
-              !target.classList.contains('kavling-status-stok') && 
-              !target.classList.contains('kavling-status-rekom') && 
-              !target.classList.contains('kavling-status-disewakan') &&
-              !target.classList.contains('kavling-status-unknown')) {
+          const hasStatus = Array.from(target.classList).some(cls => cls.startsWith('kavling-status-'));
+
+          if (!hasStatus) {
             c.style.fill = '#ffd54f';
             c.style.stroke = '#ff6f00';
             c.style.strokeWidth = '2';
           }
         });
       } else {
-        if (!el.classList.contains('kavling-status-kpr') && 
-            !el.classList.contains('kavling-status-stok') && 
-            !el.classList.contains('kavling-status-rekom') && 
-            !el.classList.contains('kavling-status-disewakan') &&
-            !el.classList.contains('kavling-status-unknown')) {
+        const hasStatus = Array.from(el.classList).some(cls => cls.startsWith('kavling-status-'));
+        if (!hasStatus) {
           el.style.fill = '#ffd54f';
           el.style.stroke = '#ff6f00';
           el.style.strokeWidth = '2';
