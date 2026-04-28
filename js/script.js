@@ -866,7 +866,7 @@ function updateStatusPanel(data) {
         <label for="onHandFilter" style="cursor: pointer; font-size: 14px; font-weight: 800; color: ${onHandActive ? '#827717' : '#666'}; margin-left: 12px; display: flex; align-items: center; gap: 8px; flex: 1;">
           <span style="font-size: 18px;">✨</span> HIGHLIGHT ON HAND
         </label>
-        <div style="font-size: 12px; background: ${onHandActive ? '#fbc02d' : '#999'}; color: white; padding: 2px 10px; border-radius: 12px; font-weight: 900; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">${onHandTotal}</div>
+        <div id="countONHAND" style="font-size: 12px; background: ${onHandActive ? '#fbc02d' : '#999'}; color: white; padding: 2px 10px; border-radius: 12px; font-weight: 900; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">${onHandTotal}</div>
       </div>
   `;
 
@@ -2910,6 +2910,148 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
         map.innerHTML = `<div style="padding:40px;text-align:center;color:#c62828;line-height:1.6">${errorMsg}</div>`;
       });
   }
+
+  // ===============================
+  // DOWNLOAD MAP TO PDF (A3)
+  // ===============================
+  document.getElementById('downloadMap')?.addEventListener('click', async function() {
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> Mengolah PDF...';
+
+    try {
+      const mapElement = document.getElementById('map');
+      
+      // Gunakan html2canvas untuk menangkap tampilan elemen #map
+      // Scale 4 memberikan resolusi Ultra HD untuk cetakan A3
+      const canvas = await html2canvas(mapElement, {
+        scale: 5, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
+        imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          // Pastikan elemen SVG di dalam clone memiliki dimensi yang benar
+          const svg = clonedDoc.querySelector('#map svg');
+          if (svg) {
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+          }
+        }
+      });
+
+      // Menggunakan PNG untuk kualitas lossless (garis peta lebih tajam)
+      const imgData = canvas.toDataURL('image/png');
+      
+      const { jsPDF } = window.jspdf;
+      // Tentukan orientasi berdasarkan rasio aspek tampilan
+      const orientation = canvas.width > canvas.height ? 'l' : 'p';
+      // Gunakan compress: false untuk kualitas PDF terbaik
+      const pdf = new jsPDF({
+        orientation: orientation,
+        unit: 'mm',
+        format: 'a3',
+        compress: false
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+      const finalWidth = canvas.width * ratio;
+      const finalHeight = canvas.height * ratio;
+      
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = (pdfHeight - finalHeight) / 2;
+
+      // Gunakan alias 'SLOW' atau undefined untuk kualitas render terbaik
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight, undefined, 'SLOW');
+
+      // ===============================
+      // TAMBAHKAN LEGENDA (A3 BOTTOM)
+      // ===============================
+      const legendCategories = [
+        { id: 'ONHAND', title: 'Highlight On Hand', color: [251, 192, 45] },
+        { id: 'STOK_IMB', title: 'Stok IMB', color: [39, 174, 96] },
+        { id: 'STOK_NO_IMB', title: 'Belum IMB', color: [166, 192, 18] },
+        { id: 'TERSEWA_IMB', title: 'Sewa IMB', color: [30, 136, 229] },
+        { id: 'TERSEWA_NO_IMB', title: 'Sewa Tanpa IMB', color: [21, 101, 192] },
+        { id: 'DIPINJAM_IMB', title: 'Pinjam IMB', color: [0, 137, 123] },
+        { id: 'DIPINJAM_NO_IMB', title: 'Pinjam Belum IMB', color: [0, 137, 123] },
+        { id: 'TERJUAL_IMB', title: 'Sold IMB', color: [204, 0, 0] },
+        { id: 'TERJUAL_NO_IMB', title: 'Sold Tanpa IMB', color: [198, 40, 40] },
+        { id: 'REKOM_IMB', title: 'Rekom IMB', color: [123, 31, 162] },
+        { id: 'REKOM_NO_IMB', title: 'Rekom Belum IMB', color: [123, 31, 162] },
+        { id: 'UNKNOWN', title: 'Lainnya', color: [204, 204, 204] }
+      ];
+
+      // Background putih untuk area legenda agar kontras
+      pdf.setFillColor(255, 255, 255);
+      pdf.rect(0, pdfHeight - 20, pdfWidth, 20, 'F');
+      
+      pdf.setFontSize(10);
+       pdf.setTextColor(0, 0, 0);
+       
+       let startY = pdfHeight - 12;
+       let currentX = 10;
+       const spacing = 4;
+       const boxSize = 3;
+
+       legendCategories.forEach((cat) => {
+         const countElement = document.getElementById('count' + cat.id);
+         const count = countElement ? countElement.innerText : '0';
+         const text = `${cat.title}: ${count}`;
+         const textWidth = pdf.getTextWidth(text);
+         const itemWidth = boxSize + 1.5 + textWidth + spacing;
+
+         // Cek apakah muat di baris ini, jika tidak pindah ke baris bawahnya
+         if (currentX + itemWidth > pdfWidth - 10) {
+           currentX = 10;
+           startY += 5;
+         }
+         
+         // Kotak warna
+         pdf.setFillColor(cat.color[0], cat.color[1], cat.color[2]);
+         pdf.rect(currentX, startY - 3, boxSize, boxSize, 'F');
+         pdf.setDrawColor(0, 0, 0);
+         pdf.rect(currentX, startY - 3, boxSize, boxSize, 'S');
+         
+         // Teks legenda
+         pdf.text(text, currentX + boxSize + 1.5, startY);
+         
+         currentX += itemWidth;
+       });
+
+       // Tambahkan Total di akhir
+       const totalAll = document.getElementById('totalAll')?.innerText || '0';
+       pdf.setFont('helvetica', 'bold');
+       const totalText = `| TOTAL: ${totalAll}`;
+       const totalWidth = pdf.getTextWidth(totalText);
+       
+       if (currentX + totalWidth > pdfWidth - 10) {
+         currentX = 10;
+         startY += 5;
+       }
+       pdf.text(totalText, currentX, startY);
+      
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('id-ID').replace(/\//g, '-');
+      pdf.save(`Peta_Tampilan_BTU_${dateStr}.pdf`);
+      
+      btn.innerHTML = '<span>✅</span> Selesai!';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }, 2000);
+
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Gagal mendownload peta. Pastikan semua data sudah termuat sempurna.');
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  });
 
   // ===============================
   // DARK MODE TOGGLE
