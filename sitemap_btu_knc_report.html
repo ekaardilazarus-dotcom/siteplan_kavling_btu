@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SITEMAP BTU KNC REPORT</title>
+    <link rel="stylesheet" href="css/sitemap_report.css">
+    <!-- Dependencies for Download Feature -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="report-container">
+        <!-- SVG Patterns Definition -->
+        <svg style="width:0; height:0; position:absolute;" aria-hidden="true" focusable="false">
+            <defs>
+                <!-- Pattern for ON_HAND (Dark Green Hatch) -->
+                <pattern id="pattern-onhand" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
+                    <rect width="10" height="10" fill="#1b5e20" />
+                    <path d="M 0 0 L 0 10 M 5 0 L 5 10" stroke="#81c784" stroke-width="3" />
+                </pattern>
+                <!-- Pattern for Stok (Light Green Hatch) -->
+                <pattern id="pattern-stok" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
+                    <rect width="10" height="10" fill="#e8f5e9" />
+                    <path d="M 0 0 L 0 10 M 5 0 L 5 10" stroke="#4caf50" stroke-width="3" />
+                </pattern>
+            </defs>
+        </svg>
+
+        <!-- LAYOUT KIRI: SVG (4 parts) -->
+        <main class="map-area">
+            <div id="loading-overlay" class="loading-overlay">
+                <div class="spinner"></div>
+                <div id="loading-text">Memuat Peta...</div>
+                <button onclick="document.getElementById('loading-overlay').style.display='none'" style="margin-top: 20px; padding: 5px 15px; cursor: pointer; background: white; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem;">Tutup Loading (Jika Macet)</button>
+            </div>
+            <div id="map-container">
+                <!-- SVG will be loaded here -->
+            </div>
+        </main>
+
+        <!-- LAYOUT KANAN: MENU & DOWNLOAD -->
+        <aside class="sidebar-right">
+            <a href="index.html" class="back-btn"><span>🏠</span> Kembali ke Utama</a>
+            
+            <div class="filter-section">
+                <h3>Filter Status (Arsiran)</h3>
+                <div class="status-toggles">
+                    <div class="toggle-group">
+                        <label class="switch">
+                            <input type="checkbox" id="toggleOnHand">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label">ON_HAND (Hijau Tua)</span>
+                    </div>
+                    <div class="toggle-group">
+                        <label class="switch">
+                            <input type="checkbox" id="toggleStok">
+                            <span class="slider round"></span>
+                        </label>
+                        <span class="toggle-label">STOK (Hijau Muda)</span>
+                    </div>
+                </div>
+
+                <h3>Filter Pewarnaan Kustom</h3>
+                <div class="input-group">
+                    <label for="kavlingInput">Pilih Kavling (pisahkan dengan koma):</label>
+                    <div class="autocomplete">
+                        <input type="text" id="kavlingInput" placeholder="Contoh: GA1, GA2, ...">
+                        <div id="autocompleteList" class="autocomplete-items"></div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="colorSelect">Pilih Warna:</label>
+                    <select id="colorSelect">
+                        <option value="#ff0000">Merah</option>
+                        <option value="#ffff00">Kuning</option>
+                        <option value="#00ff00">Hijau</option>
+                        <option value="#808080">Abu-abu</option>
+                        <option value="#ffa500">Orange</option>
+                    </select>
+                </div>
+
+                <button id="addColorBtn" class="add-btn">
+                    <span>➕</span> Tambah Pewarnaan
+                </button>
+
+                <div class="applied-colors">
+                    <h4>Daftar Pewarnaan:</h4>
+                    <ul id="appliedColorsList">
+                        <!-- List items will be added here -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="download-section">
+                <button id="downloadMapBtn" class="download-btn">
+                    <span>📥</span> DOWNLOAD MAP
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <div id="kavlingPopupContainer"></div>
+
+    <script src="js/sitemap_report.js"></script>
+</body>
+</html>
