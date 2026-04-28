@@ -234,6 +234,8 @@ body {
 #searchByKavling { background: #f39c12; color: white; }
 #searchByKavling:hover { background: #d35400; }
 
+.download-btn { background: #2e7d32; color: white; margin-bottom: 8px !important; }
+ .download-btn:hover { background: #1b5e20; }
 .dark-mode-btn { background: #34495e; color: white; }
 .dark-mode-btn:hover { background: #2c3e50; }
 
