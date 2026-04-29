@@ -1022,35 +1022,41 @@ function initDownload() {
             
             URL.revokeObjectURL(url);
 
-            // 4. Buat PDF
+            // 4. Buat PDF (A3 Landscape)
             const { jsPDF } = window.jspdf;
-            const orientation = width > height ? 'l' : 'p';
             const pdf = new jsPDF({
-                orientation: orientation,
+                orientation: 'l', // Force Landscape
                 unit: 'mm',
                 format: 'a3'
             });
             
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgData = canvas.toDataURL('image/jpeg', 0.8);
+            const pdfWidth = 420; // A3 Landscape Width
+            const pdfHeight = 297; // A3 Landscape Height
+            const imgData = canvas.toDataURL('image/jpeg', 0.9); // Higher quality
             
-            const ratio = Math.min(pdfWidth / width, pdfHeight / height);
-            const finalWidth = width * ratio;
-            const finalHeight = height * ratio;
+            // Calculate scaling to fit the image on A3 Landscape
+            // We want to capture exactly what is on screen
+            const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+            const finalWidth = canvas.width * ratio;
+            const finalHeight = canvas.height * ratio;
+            
+            // Center the image
             const x = (pdfWidth - finalWidth) / 2;
             const y = (pdfHeight - finalHeight) / 2;
 
-            pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight);
+            pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
             
-            // Add Header Info
+            // Add Header Info (Boxed for visibility)
             pdf.setFillColor(255, 255, 255);
-            pdf.rect(5, 5, 100, 25, 'F');
+            pdf.setDrawColor(200, 200, 200);
+            pdf.rect(pdfWidth - 110, 5, 105, 25, 'FD'); // Move to top right to avoid covering map center
+            
             pdf.setTextColor(0, 0, 0);
-            pdf.setFontSize(16);
-            pdf.text('SITEMAP BTU KNC REPORT', 10, 15);
-            pdf.setFontSize(10);
-            pdf.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 10, 22);
+            pdf.setFontSize(14);
+            pdf.text('SITEMAP BTU KNC REPORT', pdfWidth - 105, 15);
+            pdf.setFontSize(9);
+            pdf.text(`Status: ${statusToggles.onhand ? 'ON_HAND Active' : ''} ${statusToggles.stok ? 'STOK Active' : ''}`, pdfWidth - 105, 20);
+            pdf.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, pdfWidth - 105, 25);
             
             const dateStr = new Date().toISOString().split('T')[0];
             pdf.save(`Sitemap_Report_BTU_${dateStr}.pdf`);
