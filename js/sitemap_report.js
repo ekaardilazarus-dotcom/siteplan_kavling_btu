@@ -1021,17 +1021,6 @@ function initDownload() {
             // 'FAST' render mode
             pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
             
-            // Tambahkan Header Info (Opsional, tapi membantu)
-            pdf.setFillColor(255, 255, 255);
-            pdf.setDrawColor(200, 200, 200);
-            pdf.rect(pdfWidth - 110, 5, 105, 20, 'FD');
-            
-            pdf.setTextColor(0, 0, 0);
-            pdf.setFontSize(14);
-            pdf.text('SITEMAP BTU KNC REPORT', pdfWidth - 105, 13);
-            pdf.setFontSize(9);
-            pdf.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, pdfWidth - 105, 18);
-            
             const dateStr = new Date().toISOString().split('T')[0];
             pdf.save(`Sitemap_Report_BTU_${dateStr}.pdf`);
             
