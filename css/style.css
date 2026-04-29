@@ -147,12 +147,6 @@ body {
   display: block;
 }
 
-/* Pastikan label teks pada peta tidak ikut terwarnai */
-#map text {
-  fill: #000 !important;
-  stroke: none !important;
-}
-
 /* =============================== */
 /* TOMBOL & INPUT SIDEBAR */
 /* =============================== */
@@ -241,6 +235,9 @@ body {
 
 .status-btn { background: #9b59b6; color: white; margin-top: 15px; }
 .status-btn:hover { background: #8e44ad; }
+
+.yellow-btn { background: #f1c40f; color: white; margin-top: 10px; }
+.yellow-btn:hover { background: #d4ac0d; }
 
 /* Soft Pink Button */
 .soft-pink-btn {
