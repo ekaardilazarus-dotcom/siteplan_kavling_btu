@@ -12,10 +12,18 @@ let searchCache = new Map();
 let certSearchCache = new Map();
 let kavlingStatusIndex = new Map();
 let certificateDB = new Map();
+let svgElementMap = new Map(); // Normalized ID -> actual SVG element
 const CACHE_DURATION = 1000 * 60 * 60 * 24; // 24 jam
+
+// Progress State
+let dbProgress = {
+    status: 0, // 0-50
+    cert: 0    // 0-50
+};
 
 // Color Filter State
 let allKavlingIds = [];
+let allKavlingNormalizedIds = [];
 let appliedColorings = []; // { id: timestamp, kavlings: [], color: '', colorName: '' }
 let statusToggles = {
     onhand: false,
@@ -105,11 +113,27 @@ async function loadSvg() {
             try {
                 console.log('🔄 Mengekstrak ID kavling di background...');
                 const groups = container.querySelectorAll('g[id^="GA"], g[id^="UJ"], g[id^="KR"], g[id^="M"], g[id^="Blok"], g[id^="BLOK"]');
-                allKavlingIds = Array.from(groups)
-                    .map(g => g.id.trim().toUpperCase())
-                    .filter((v, i, a) => a.indexOf(v) === i)
-                    .sort();
-                console.log(`✅ ${allKavlingIds.length} ID kavling ditemukan`);
+                
+                svgElementMap.clear();
+                allKavlingIds = [];
+                allKavlingNormalizedIds = [];
+
+                groups.forEach(g => {
+                    const originalId = g.id.trim();
+                    const normalizedId = originalId.toUpperCase().replace(/[-_]/g, '');
+                    
+                    allKavlingIds.push(originalId);
+                    allKavlingNormalizedIds.push(normalizedId);
+                    
+                    // Map normalized ID to the actual group element
+                    svgElementMap.set(normalizedId, g);
+                });
+
+                // Remove duplicates from lists
+                allKavlingIds = [...new Set(allKavlingIds)];
+                allKavlingNormalizedIds = [...new Set(allKavlingNormalizedIds)];
+
+                console.log(`✅ ${allKavlingIds.length} ID kavling (${allKavlingNormalizedIds.length} unik normalized) ditemukan`);
             } catch (e) {
                 console.error('⚠️ Error extracting IDs in background:', e);
             }
@@ -350,22 +374,69 @@ function showKavlingPopup(address, result) {
 }
 
 /**
+ * Update Database Loading Progress Bar
+ */
+function updateDBProgress(type, value) {
+    if (type === 'status') dbProgress.status = value;
+    if (type === 'cert') dbProgress.cert = value;
+
+    const totalProgress = dbProgress.status + dbProgress.cert;
+    const progressBar = document.getElementById('dbProgressBar');
+    const progressText = document.getElementById('dbProgressText');
+
+    if (progressBar) progressBar.style.width = totalProgress + '%';
+    if (progressText) progressText.textContent = totalProgress + '%';
+
+    if (totalProgress >= 100) {
+        setTimeout(() => {
+            const container = document.getElementById('dbLoadingContainer');
+            if (container) {
+                container.style.border = '1px solid #4CAF50';
+                container.style.background = '#e8f5e9';
+                if (progressText) progressText.innerHTML = '✅ Loaded';
+            }
+        }, 500);
+    }
+}
+
+/**
  * Data Preloading Functions
  */
 async function preloadKavlingStatusData() {
     console.log('📦 Memulai preload status kavling...');
+    updateDBProgress('status', 10); // Start progress
+
     try {
-        // Cek LocalStorage dulu untuk efisiensi
-        const CACHE_KEY = 'kavlingStatusData_Report';
+        // Gunakan key yang sama dengan index.html agar berbagi cache
+        const CACHE_KEY = 'kavlingStatusData';
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Date.now() - parsed.timestamp < 1000 * 60 * 60) { // Cache 1 jam
-                parsed.data.forEach(item => {
-                    kavlingStatusIndex.set(item.kode.toUpperCase(), item);
-                });
-                console.log('⚡ Menggunakan cache status kavling (Local)');
-                return;
+            try {
+                const parsed = JSON.parse(cached);
+                // Cache 10 menit (sama dengan script.js)
+                if (Date.now() - parsed.timestamp < 10 * 60 * 1000) { 
+                    if (parsed.data && Array.isArray(parsed.data.data)) {
+                        parsed.data.data.forEach(item => {
+                            if (item.kode) {
+                                // Add IMB detection logic here so it's available in the index
+                                const raw = item.rawData || [];
+                                let hasImb = typeof item.hasImb === 'boolean' ? item.hasImb : null;
+                                if (hasImb === null && raw.length > 31) {
+                                    const noImbStr = String(raw[31] || '').trim();
+                                    const lower = noImbStr.toLowerCase();
+                                    hasImb = noImbStr !== '' && noImbStr !== '-' && !lower.includes('belum') && !lower.includes('[belum memiliki]');
+                                }
+                                item.hasImbEffective = hasImb;
+                                kavlingStatusIndex.set(item.kode.toUpperCase(), item);
+                            }
+                        });
+                        console.log('⚡ Menggunakan cache status kavling (Shared with index.html)');
+                        updateDBProgress('status', 50);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('⚠️ Gagal parse cache:', e);
             }
         }
 
@@ -377,17 +448,26 @@ async function preloadKavlingStatusData() {
         if (data && data.data) {
             data.data.forEach(item => {
                 if (item.kode) {
+                    const raw = item.rawData || [];
+                    let hasImb = typeof item.hasImb === 'boolean' ? item.hasImb : null;
+                    if (hasImb === null && raw.length > 31) {
+                        const noImbStr = String(raw[31] || '').trim();
+                        const lower = noImbStr.toLowerCase();
+                        hasImb = noImbStr !== '' && noImbStr !== '-' && !lower.includes('belum') && !lower.includes('[belum memiliki]');
+                    }
+                    item.hasImbEffective = hasImb;
                     kavlingStatusIndex.set(item.kode.toUpperCase(), item);
                 }
             });
 
-            // Simpan ke cache
+            // Simpan ke cache (format sama dengan script.js)
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
-                data: data.data
+                data: data
             }));
             
-            console.log('✅ Status data preloaded from API');
+            console.log('✅ Status data preloaded from API and cached');
+            updateDBProgress('status', 50);
             
             // Re-apply colors if any toggles are already on
             if (statusToggles.onhand || statusToggles.stok) {
@@ -396,22 +476,80 @@ async function preloadKavlingStatusData() {
         }
     } catch (e) {
         console.warn('⚠️ Gagal preload status:', e);
+        updateDBProgress('status', 0); // Fail
     }
 }
 
 async function loadFullCertificateDatabase() {
+    console.log('📦 Memulai preload cert db...');
+    updateDBProgress('cert', 5);
+
+    const CACHE_KEY = 'fullCertDatabaseCache';
+    const CACHE_DURATION = 15 * 60 * 1000; // 15 menit
+
     try {
-        const res = await fetch(CERT_API_URL + '?action=get_all');
+        // 1. Cek LocalStorage (Shared with index.html)
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                const age = Date.now() - parsed.timestamp;
+                if (age < CACHE_DURATION && Array.isArray(parsed.data)) {
+                    console.log(`⚡ Menggunakan cache database sertifikat (Shared with index.html)`);
+                    parsed.data.forEach(row => {
+                        const rawKey = row[0] || '';
+                        if (rawKey) {
+                            const key = normalizeCertId(rawKey);
+                            certificateDB.set(key, {
+                                nomor: rawKey,
+                                data: row[34] || '', // Kolom AI (indeks 34)
+                                fullData: row
+                            });
+                        }
+                    });
+                    updateDBProgress('cert', 50);
+                    return;
+                }
+            } catch (e) {
+                console.warn('⚠️ Gagal parse cache database:', e);
+                localStorage.removeItem(CACHE_KEY);
+            }
+        }
+
+        // 2. Jika tidak ada cache, ambil dari API
+        const url = `${CERT_API_URL}?action=get_all&_t=${Date.now()}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Network response was not ok');
+        
         const data = await res.json();
-        if (data.status === 'success') {
-            data.data.forEach(item => {
-                const key = normalizeCertId(item.kode);
-                certificateDB.set(key, item);
+        if (data.status === 'success' && Array.isArray(data.data)) {
+            data.data.forEach(row => {
+                const rawKey = row[0] || '';
+                if (rawKey) {
+                    const key = normalizeCertId(rawKey);
+                    certificateDB.set(key, {
+                        nomor: rawKey,
+                        data: row[34] || '', // Kolom AI (indeks 34)
+                        fullData: row
+                    });
+                }
             });
-            console.log('✅ Cert database preloaded');
+
+            // Simpan ke cache
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: data.data
+            }));
+
+            console.log('✅ Cert database preloaded and cached');
+            updateDBProgress('cert', 50);
+        } else {
+            throw new Error(data.message || 'Unknown error from API');
         }
     } catch (e) {
-        console.warn('⚠️ Gagal preload cert db');
+        console.warn('⚠️ Gagal preload cert db:', e.message);
+        // Fallback to empty if it fails but still allow the UI to finish
+        updateDBProgress('cert', 50); 
     }
 }
 
@@ -447,6 +585,42 @@ function initColorFilter() {
         });
     }
 
+    // Handle paste for automatic comma separation
+    kavlingInput.addEventListener('paste', (e) => {
+        // Stop default paste to handle it manually
+        e.preventDefault();
+        
+        // Get pasted data via clipboard API
+        const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+        console.log('📋 Data di-paste (raw):', pastedData);
+        
+        if (pastedData) {
+            // Split by any whitespace (newline, tab, space) or comma
+            const cleanedKavlings = pastedData.split(/[\s,]+/)
+                                           .map(s => s.trim())
+                                           .filter(s => s !== '')
+                                           .join(', ');
+            
+            console.log(`✅ Berhasil memproses ${cleanedKavlings.split(',').length} kavling.`);
+            
+            // If the input already has content, append with a comma
+            const currentVal = kavlingInput.value.trim();
+            let newVal = '';
+            
+            if (currentVal) {
+                const separator = currentVal.endsWith(',') ? ' ' : (currentVal.endsWith(', ') ? '' : ', ');
+                newVal = currentVal + separator + cleanedKavlings;
+            } else {
+                newVal = cleanedKavlings;
+            }
+            
+            kavlingInput.value = newVal;
+            
+            // Trigger input event to notify other listeners (like autocomplete)
+            kavlingInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    });
+
     // Autocomplete for kavling input
     setupAutocomplete(kavlingInput);
 
@@ -467,7 +641,8 @@ function initColorFilter() {
             id: Date.now(),
             kavlings: kavlings,
             color: color,
-            colorName: colorName
+            colorName: colorName,
+            matchedCount: 0 // Will be updated during updateSVGColors
         });
 
         // Reset input
@@ -574,7 +749,10 @@ function renderAppliedColorsList() {
         li.className = 'applied-item';
         li.innerHTML = `
             <span class="color-dot" style="background-color: ${item.color}"></span>
-            <span class="kavling-names" title="${item.kavlings.join(', ')}">${item.kavlings.join(', ')}</span>
+            <div class="applied-item-info">
+                <span class="kavling-names" title="${item.kavlings.join(', ')}">${item.kavlings.join(', ')}</span>
+                <span class="matched-count">(${item.matchedCount || 0} Kavling)</span>
+            </div>
             <span class="remove-item" onclick="removeColoring(${item.id})">&times;</span>
         `;
         list.appendChild(li);
@@ -597,84 +775,181 @@ function updateSVGColors() {
     const svg = document.getElementById('sitemap-svg');
     if (!svg) return;
 
+    // Regex to identify text paths (e.g., "119", "131_5", "2_2")
+    // This avoids matching "Vector_3", "Rectangle_1", etc.
+    const isTextId = (id) => id && /^\d+(_\d+)*$/.test(id);
+    // Helper to check if element should be colored (Vector or Rectangle)
+    const shouldColor = (el) => {
+        const id = el.id || '';
+        const tagName = el.tagName.toLowerCase();
+        // Only color if it's a Vector or Rectangle path/rect
+        return (id.includes('Vector') || id.includes('Rectangle') || id.includes('Union')) && !isTextId(id);
+    };
+
     // 1. Reset all colors first
-    allKavlingIds.forEach(id => {
-        const group = svg.getElementById(id);
-        if (group) {
-            group.style.fill = '';
-            group.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
+    svgElementMap.forEach((group, normalizedId) => {
+        group.style.fill = '';
+        group.style.fillOpacity = '';
+        group.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
+            const id = el.id || '';
+            const isText = /^\d+(_\d+)*$/.test(id);
+            if (!isText) {
                 el.style.fill = '';
                 el.style.fillOpacity = '';
-            });
-        }
+            }
+        });
     });
 
     // 2. Apply Status Toggles (Hatch Patterns)
     if (statusToggles.onhand || statusToggles.stok) {
         console.log('🎨 Applying status hatches...', statusToggles);
-        let countOnHand = 0;
-        let countStok = 0;
+        let countOnHandMatched = 0;
+        let countStokMatched = 0;
+        let countOnHandDetectedInData = 0;
+        let countStokDetectedInData = 0;
 
-        const foundCategories = new Set();
         const missingIds = [];
+        
         kavlingStatusIndex.forEach((item, kode) => {
-            const group = svg.getElementById(kode);
-            const kategori = (item.kategori || '').toUpperCase().trim();
-            const skema = (item.skema_pembiayaan || '').toUpperCase().trim();
-            foundCategories.add(kategori);
+            if (!kode) return;
 
-            // Check for various forms of "ON HAND" to be safe
-            const isOnHands = (
-                kategori === 'ON_HAND' || kategori === 'ON HAND' || kategori === 'ONHAND' || kategori === 'ON-HAND' ||
-                skema === 'ON_HAND' || skema === 'ON HAND' || skema === 'ONHAND' || skema === 'ON-HAND'
-            );
-            const isStok = (kategori === 'STOK' || kategori === 'STOCK');
+            const raw = item.rawData || [];
+            
+            // Normalize kode for matching (e.g. "GA-1" -> "GA1")
+            const normalizedKode = kode.toUpperCase().replace(/[-_]/g, '');
+            
+            // SEARCH FOR ELEMENT (Same logic as index colorizeKavling)
+            let group = svgElementMap.get(normalizedKode);
+            
+            if (!group) {
+                // Last resort search in DOM if map missed it
+                const el = document.getElementById(kode.toUpperCase());
+                if (el) {
+                    group = el;
+                    svgElementMap.set(normalizedKode, el);
+                }
+            }
+
+            // 1. Deteksi ON HAND (Berdasarkan Kolom Skema Pembiayaan (K) - Index 10)
+            const skemaPembiayaan = raw.length > 10 ? String(raw[10] || '').trim().toUpperCase() : '';
+            const isOnHand = skemaPembiayaan.includes('ON HAND') || skemaPembiayaan.includes('ON_HAND') || skemaPembiayaan.includes('ON-HAND');
+
+            // 2. Deteksi STOK (Berdasarkan Kolom Skema Penjualan (I) - Index 8)
+            let kategori = (item.kategori || 'unknown').toLowerCase();
+            const skemaText = (item.skema || '').toString().toUpperCase();
+            
+            if (kategori === 'unknown' && skemaText) {
+                if (skemaText.includes('STOK')) {
+                    kategori = 'stok';
+                }
+            }
+            const isStok = (kategori === 'stok' || skemaText.includes('STOK'));
+
+            if (isOnHand) countOnHandDetectedInData++;
+            if (isStok) countStokDetectedInData++;
 
             if (!group) {
-                if (isOnHands || isStok) {
+                if ((statusToggles.onhand && isOnHand) || (statusToggles.stok && isStok)) {
                     missingIds.push(kode);
                 }
                 return;
             }
 
+            // 3. Deteksi IMB (Sesuai logic script.js)
+            const hasImb = item.hasImbEffective;
+
             let fillValue = null;
             
-            if (statusToggles.onhand && isOnHands) {
-                fillValue = 'url(#pattern-onhand)';
-                countOnHand++;
+            // Prioritas ON HAND jika kedua toggle aktif
+            if (statusToggles.onhand && isOnHand) {
+                // Pilih pattern berdasarkan IMB
+                fillValue = hasImb ? 'url(#pattern-onhand)' : 'url(#pattern-onhand-noimb)';
+                countOnHandMatched++;
             } else if (statusToggles.stok && isStok) {
-                fillValue = 'url(#pattern-stok)';
-                countStok++;
+                // Pilih pattern berdasarkan IMB
+                fillValue = hasImb ? 'url(#pattern-stok)' : 'url(#pattern-stok-noimb)';
+                countStokMatched++;
             }
 
             if (fillValue) {
-                group.style.fill = fillValue;
-                group.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
-                    el.style.fill = fillValue;
-                    el.style.fillOpacity = '1';
-                });
+                // If it's a group, color the appropriate children
+                if (group.tagName.toLowerCase() === 'g') {
+                    group.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
+                        const id = el.id || '';
+                        const isText = /^\d+(_\d+)*$/.test(id);
+                        if (!isText) {
+                            el.style.fill = fillValue;
+                            el.style.fillOpacity = '1';
+                        }
+                    });
+                } else {
+                    // If it's a single element, color it directly
+                    group.style.fill = fillValue;
+                    group.style.fillOpacity = '1';
+                }
             }
         });
-        console.log('📑 Unique categories in data:', Array.from(foundCategories));
+
         if (missingIds.length > 0) {
-            console.warn(`⚠️ ${missingIds.length} IDs with status not found in SVG:`, missingIds.slice(0, 10), missingIds.length > 10 ? '...' : '');
+            console.warn(`⚠️ ${missingIds.length} IDs with status not found in SVG map:`, missingIds.slice(0, 10), missingIds.length > 10 ? '...' : '');
         }
-        console.log(`📊 Hatch results: ON_HAND: ${countOnHand}, STOK: ${countStok}`);
+        
+        // Update the count badges in the UI
+        const countOnHandEl = document.getElementById('countOnHand');
+        const countStokEl = document.getElementById('countStok');
+        if (countOnHandEl) countOnHandEl.textContent = countOnHandMatched;
+        if (countStokEl) countStokEl.textContent = countStokMatched;
+
+        console.log(`📊 Data Analysis: ON_HAND in Data: ${countOnHandDetectedInData}, STOK in Data: ${countStokDetectedInData}`);
+        console.log(`🎨 Coloring Results: ON_HAND Colored: ${countOnHandMatched}, STOK Colored: ${countStokMatched}`);
+    } else {
+        // Reset counts if toggles are off
+        const countOnHandEl = document.getElementById('countOnHand');
+        const countStokEl = document.getElementById('countStok');
+        if (countOnHandEl) countOnHandEl.textContent = '0';
+        if (countStokEl) countStokEl.textContent = '0';
     }
 
     // 3. Apply Custom Colorings (later ones override earlier ones)
     appliedColorings.forEach(item => {
+        let currentMatchedCount = 0;
         item.kavlings.forEach(kavId => {
-            const group = svg.getElementById(kavId);
+            const normalizedKavId = kavId.toUpperCase().replace(/[-_]/g, '');
+            let group = svgElementMap.get(normalizedKavId);
+            
+            // Last resort search in DOM if map missed it
+            if (!group) {
+                const el = document.getElementById(kavId.toUpperCase());
+                if (el) {
+                    group = el;
+                    svgElementMap.set(normalizedKavId, el);
+                }
+            }
+
             if (group) {
-                group.style.fill = item.color;
-                group.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
-                    el.style.fill = item.color;
-                    el.style.fillOpacity = '1';
-                });
+                currentMatchedCount++;
+                if (group.tagName.toLowerCase() === 'g') {
+                    group.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
+                        // Check if it's a valid part of the kavling (vector/rectangle)
+                        const id = el.id || '';
+                        const isText = /^\d+(_\d+)*$/.test(id);
+                        if (!isText) {
+                            el.style.fill = item.color;
+                            el.style.fillOpacity = '1';
+                        }
+                    });
+                } else {
+                    group.style.fill = item.color;
+                    group.style.fillOpacity = '1';
+                }
             }
         });
+        // Update the count for the UI
+        item.matchedCount = currentMatchedCount;
     });
+
+    // 4. Update UI list to show counts
+    renderAppliedColorsList();
 }
 
 /**
