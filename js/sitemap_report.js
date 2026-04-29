@@ -967,10 +967,10 @@ function initDownload() {
     const btn = document.getElementById('downloadMapBtn');
     btn.addEventListener('click', async () => {
         const originalText = btn.innerHTML;
-        const svg = document.getElementById('sitemap-svg');
+        const mapArea = document.querySelector('.map-area');
         
-        if (!svg) {
-            alert('Peta belum dimuat sempurna.');
+        if (!mapArea) {
+            alert('Area peta tidak ditemukan.');
             return;
         }
 
@@ -978,85 +978,59 @@ function initDownload() {
         btn.innerHTML = '<span>⏳</span> Mengolah PDF...';
 
         try {
-            // 1. Persiapkan Canvas
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // Ambil dimensi asli SVG atau viewBox
-            const viewBox = svg.viewBox.baseVal;
-            const width = viewBox.width || svg.width.baseVal.value || 11703;
-            const height = viewBox.height || svg.height.baseVal.value || 16003;
-            
-            // Set resolusi tinggi untuk PDF (Scale factor)
-            const scale = 0.5; // Resolusi tinggi tapi tidak membuat browser crash (SVG asli sangat besar)
-            canvas.width = width * scale;
-            canvas.height = height * scale;
-            
-            // 2. Serialize SVG ke XML
-            const serializer = new XMLSerializer();
-            let svgData = serializer.serializeToString(svg);
-            
-            // Pastikan namespace ada
-            if(!svgData.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
-                svgData = svgData.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
-            }
-            if(!svgData.match(/^<svg[^>]+xmlns\:xlink="http\:\/\/www\.w3\.org\/1999\/xlink"/)){
-                svgData = svgData.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
-            }
-
-            // 3. Render ke Image lalu ke Canvas
-            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
-            const url = URL.createObjectURL(svgBlob);
-            
-            const img = new Image();
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
-                img.src = url;
+            // Gunakan html2canvas untuk menangkap tampilan elemen .map-area
+            // Optimasi: Gunakan scale 2 (sudah cukup tajam untuk A3) dan JPEG untuk performa
+            const canvas = await html2canvas(mapArea, {
+                scale: 2, 
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                imageTimeout: 15000, // Tambahkan timeout agar tidak hang selamanya
+                onclone: (clonedDoc) => {
+                    const svg = clonedDoc.querySelector('#map-container svg');
+                    if (svg) {
+                        svg.style.width = '100%';
+                        svg.style.height = '100%';
+                        svg.style.display = 'block';
+                    }
+                }
             });
 
-            // Gambar ke canvas dengan background putih
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            
-            URL.revokeObjectURL(url);
-
-            // 4. Buat PDF (A3 Landscape)
+            // Gunakan JPEG instead of PNG untuk performa dan ukuran file lebih kecil
+            const imgData = canvas.toDataURL('image/jpeg', 0.8);
             const { jsPDF } = window.jspdf;
+            
+            // A3 Landscape
             const pdf = new jsPDF({
-                orientation: 'l', // Force Landscape
+                orientation: 'l',
                 unit: 'mm',
-                format: 'a3'
+                format: 'a3',
+                compress: true
             });
             
-            const pdfWidth = 420; // A3 Landscape Width
-            const pdfHeight = 297; // A3 Landscape Height
-            const imgData = canvas.toDataURL('image/jpeg', 0.9); // Higher quality
+            const pdfWidth = 420;
+            const pdfHeight = 297;
             
-            // Calculate scaling to fit the image on A3 Landscape
-            // We want to capture exactly what is on screen
             const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
             const finalWidth = canvas.width * ratio;
             const finalHeight = canvas.height * ratio;
             
-            // Center the image
             const x = (pdfWidth - finalWidth) / 2;
             const y = (pdfHeight - finalHeight) / 2;
 
+            // 'FAST' render mode
             pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
             
-            // Add Header Info (Boxed for visibility)
+            // Tambahkan Header Info (Opsional, tapi membantu)
             pdf.setFillColor(255, 255, 255);
             pdf.setDrawColor(200, 200, 200);
-            pdf.rect(pdfWidth - 110, 5, 105, 25, 'FD'); // Move to top right to avoid covering map center
+            pdf.rect(pdfWidth - 110, 5, 105, 20, 'FD');
             
             pdf.setTextColor(0, 0, 0);
             pdf.setFontSize(14);
-            pdf.text('SITEMAP BTU KNC REPORT', pdfWidth - 105, 15);
+            pdf.text('SITEMAP BTU KNC REPORT', pdfWidth - 105, 13);
             pdf.setFontSize(9);
-            pdf.text(`Status: ${statusToggles.onhand ? 'ON_HAND Active' : ''} ${statusToggles.stok ? 'STOK Active' : ''}`, pdfWidth - 105, 20);
-            pdf.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, pdfWidth - 105, 25);
+            pdf.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, pdfWidth - 105, 18);
             
             const dateStr = new Date().toISOString().split('T')[0];
             pdf.save(`Sitemap_Report_BTU_${dateStr}.pdf`);
