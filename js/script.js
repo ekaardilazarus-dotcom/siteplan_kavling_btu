@@ -80,6 +80,10 @@ function applyAccessRestrictions() {
     const certMapBtn = document.getElementById('openCertMap');
     if (certMapBtn) certMapBtn.style.display = 'none';
 
+    // Tampilkan tombol SITEMAP BTU KNC REPORT untuk BTU999
+    const reportMapBtn = document.getElementById('openReportMap');
+    if (reportMapBtn) reportMapBtn.style.display = 'block';
+
     // Tombol IMB tetap terlihat untuk BTU999
     const imbBtn = document.getElementById('checkImbStatus');
     if (imbBtn) imbBtn.style.display = 'block';
@@ -90,6 +94,9 @@ function applyAccessRestrictions() {
 
     const certMapBtn = document.getElementById('openCertMap');
     if (certMapBtn) certMapBtn.style.display = 'block';
+
+    const reportMapBtn = document.getElementById('openReportMap');
+    if (reportMapBtn) reportMapBtn.style.display = 'block';
   }
 }
 
@@ -1100,11 +1107,10 @@ function colorizeKavling(kavlingData) {
     let kategori = (item.kategori || 'unknown').toLowerCase();
     const skemaText = (item.skema || '').toString().toUpperCase();
 
-    // Cek status ON HAND (Prioritas Kolom Q / Index 16, Fallback Kolom K / Index 10)
+    // Cek status ON HAND (Hanya dari Kolom "SKEMA PEMBIAYAAN" / Kolom K / Index 10)
     const rawData = item.rawData || [];
-    const qValue = rawData.length > 16 ? String(rawData[16] || '').trim().toUpperCase() : '';
-    const kValue = rawData.length > 10 ? String(rawData[10] || '').trim().toUpperCase() : '';
-    const isOnHand = qValue.includes('ON_HAND') || kValue.includes('ON_HAND');
+    const skemaPembiayaan = rawData.length > 10 ? String(rawData[10] || '').trim().toUpperCase() : '';
+    const isOnHand = skemaPembiayaan.includes('ON HAND') || skemaPembiayaan.includes('ON_HAND') || skemaPembiayaan.includes('ON-HAND');
     if (isOnHand) onHandCount++; // Hitung total ON HAND
 
     if (kategori === 'unknown' && skemaText) {
@@ -1160,12 +1166,11 @@ function colorizeKavling(kavlingData) {
     if (element) {
       if (element.id) processedIds.add(element.id);
 
-      // Cek status ON HAND (Prioritas Kolom Q / Index 16, Fallback Kolom K / Index 10)
+      // Cek status ON HAND (Hanya dari Kolom "SKEMA PEMBIAYAAN" / Kolom K / Index 10)
       const onHandActive = localStorage.getItem('onHandFilter') === 'true';
       const rawData = item.rawData || [];
-      const qValue = rawData.length > 16 ? String(rawData[16] || '').trim().toUpperCase() : '';
-      const kValue = rawData.length > 10 ? String(rawData[10] || '').trim().toUpperCase() : '';
-      const isOnHand = qValue.includes('ON_HAND') || kValue.includes('ON_HAND');
+      const skemaPembiayaan = rawData.length > 10 ? String(rawData[10] || '').trim().toUpperCase() : '';
+      const isOnHand = skemaPembiayaan.includes('ON HAND') || skemaPembiayaan.includes('ON_HAND') || skemaPembiayaan.includes('ON-HAND');
 
       // Terapkan highlight kuning jika ON HAND aktif dan data cocok
       const applyHighlight = onHandActive && isOnHand;
@@ -1189,20 +1194,6 @@ function colorizeKavling(kavlingData) {
       if (className) {
         element.classList.add(className);
       }
-
-      // Pastikan warna teks tetap hitam saat grup diwarnai
-      const textEls = element.querySelectorAll('text');
-      textEls.forEach(t => {
-        t.style.fill = '#000000';
-        t.style.stroke = 'none';
-        t.style.strokeWidth = '';
-        t.style.filter = 'none';
-        t.style.transform = 'none';
-        try {
-          // Pastikan teks berada di atas bidang
-          element.appendChild(t);
-        } catch (_) {}
-      });
 
       // Terapkan highlight ON HAND jika diperlukan (ARSIRAN)
       // Bersihkan overlay lama baik di dalam maupun di luar elemen
@@ -3088,6 +3079,9 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
   });
   document.getElementById('openCertMap')?.addEventListener('click', () => {
     window.location.href = 'sertifikat_map.html';
+  });
+  document.getElementById('openReportMap')?.addEventListener('click', () => {
+    window.location.href = 'sitemap_btu_knc_report.html';
   });
 
   // Tutup modal
