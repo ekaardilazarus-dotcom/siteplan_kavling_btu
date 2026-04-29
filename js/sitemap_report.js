@@ -91,6 +91,14 @@ async function loadSvg() {
             svg.style.height = '100%';
             svg.style.display = 'block';
             
+            // Move patterns from external SVG to this SVG so they are available for download/rendering
+            const externalDefs = document.querySelector('svg defs');
+            if (externalDefs) {
+                const clonedDefs = externalDefs.cloneNode(true);
+                svg.insertBefore(clonedDefs, svg.firstChild);
+                console.log('✅ Patterns injected into main SVG');
+            }
+
             if (!svg.getAttribute('viewBox')) {
                 const width = svg.getAttribute('width') || 11703;
                 const height = svg.getAttribute('height') || 16003;
@@ -959,48 +967,88 @@ function initDownload() {
     const btn = document.getElementById('downloadMapBtn');
     btn.addEventListener('click', async () => {
         const originalText = btn.innerHTML;
+        const svg = document.getElementById('sitemap-svg');
+        
+        if (!svg) {
+            alert('Peta belum dimuat sempurna.');
+            return;
+        }
+
         btn.disabled = true;
         btn.innerHTML = '<span>⏳</span> Mengolah PDF...';
 
         try {
-            const mapArea = document.querySelector('.map-area');
+            // 1. Persiapkan Canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
             
-            // Capture the map area
-            const canvas = await html2canvas(mapArea, {
-                scale: 3, // High quality
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
+            // Ambil dimensi asli SVG atau viewBox
+            const viewBox = svg.viewBox.baseVal;
+            const width = viewBox.width || svg.width.baseVal.value || 11703;
+            const height = viewBox.height || svg.height.baseVal.value || 16003;
+            
+            // Set resolusi tinggi untuk PDF (Scale factor)
+            const scale = 0.5; // Resolusi tinggi tapi tidak membuat browser crash (SVG asli sangat besar)
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            
+            // 2. Serialize SVG ke XML
+            const serializer = new XMLSerializer();
+            let svgData = serializer.serializeToString(svg);
+            
+            // Pastikan namespace ada
+            if(!svgData.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
+                svgData = svgData.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            }
+            if(!svgData.match(/^<svg[^>]+xmlns\:xlink="http\:\/\/www\.w3\.org\/1999\/xlink"/)){
+                svgData = svgData.replace(/^<svg/, '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
+            }
+
+            // 3. Render ke Image lalu ke Canvas
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(svgBlob);
+            
+            const img = new Image();
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = url;
             });
 
-            const imgData = canvas.toDataURL('image/png');
-            const { jsPDF } = window.jspdf;
+            // Gambar ke canvas dengan background putih
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             
-            const orientation = canvas.width > canvas.height ? 'l' : 'p';
+            URL.revokeObjectURL(url);
+
+            // 4. Buat PDF
+            const { jsPDF } = window.jspdf;
+            const orientation = width > height ? 'l' : 'p';
             const pdf = new jsPDF({
                 orientation: orientation,
                 unit: 'mm',
-                format: 'a3',
-                compress: false
+                format: 'a3'
             });
             
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgData = canvas.toDataURL('image/jpeg', 0.8);
             
-            const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
-            const finalWidth = canvas.width * ratio;
-            const finalHeight = canvas.height * ratio;
-            
+            const ratio = Math.min(pdfWidth / width, pdfHeight / height);
+            const finalWidth = width * ratio;
+            const finalHeight = height * ratio;
             const x = (pdfWidth - finalWidth) / 2;
             const y = (pdfHeight - finalHeight) / 2;
 
-            pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight, undefined, 'SLOW');
+            pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight);
             
-            // Add Title
+            // Add Header Info
+            pdf.setFillColor(255, 255, 255);
+            pdf.rect(5, 5, 100, 25, 'F');
+            pdf.setTextColor(0, 0, 0);
             pdf.setFontSize(16);
             pdf.text('SITEMAP BTU KNC REPORT', 10, 15);
-            
-            // Add Timestamp
             pdf.setFontSize(10);
             pdf.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 10, 22);
             
@@ -1015,7 +1063,7 @@ function initDownload() {
 
         } catch (error) {
             console.error('❌ Download error:', error);
-            alert('Gagal mendownload peta.');
+            alert('Gagal mendownload peta: ' + error.message);
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
