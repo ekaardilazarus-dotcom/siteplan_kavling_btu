@@ -42,6 +42,21 @@ body, html {
     height: auto;
 }
 
+/* Pastikan label teks pada peta tidak ikut terwarnai */
+#map-container text, 
+#map-container path[id^="0"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="1"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="2"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="3"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="4"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="5"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="6"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="7"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="8"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]), 
+#map-container path[id^="9"]:not([id*="Vector"]):not([id*="Union"]):not([id*="Rectangle"]) {
+    pointer-events: none; /* Agar tidak mengganggu klik pada kavling */
+}
+
 /* Right Layout: Filters (1 part) */
 .sidebar-right {
     flex: 1;
@@ -159,6 +174,18 @@ input:checked + .slider:before {
     border-radius: 50%;
 }
 
+.status-count-badge {
+    background-color: #4CAF50;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+}
+
 .input-group {
     display: flex;
     flex-direction: column;
@@ -182,7 +209,8 @@ input:checked + .slider:before {
 /* Autocomplete */
 .autocomplete {
     position: relative;
-    display: inline-block;
+    display: block; /* Changed from inline-block to block */
+    width: 100%;
 }
 
 .autocomplete-items {
@@ -279,14 +307,28 @@ input:checked + .slider:before {
     display: inline-block;
     margin-right: 8px;
     border: 1px solid rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.applied-item-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-right: 10px;
 }
 
 .applied-item .kavling-names {
-    flex-grow: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-right: 10px;
+    font-weight: 500;
+}
+
+.matched-count {
+    font-size: 0.75rem;
+    color: #2e7d32;
+    font-weight: bold;
 }
 
 .applied-item .remove-item {
@@ -483,6 +525,38 @@ input:checked + .slider:before {
 #map-container g[id^="Blok"]:hover,
 #map-container g[id^="BLOK"]:hover {
     fill-opacity: 0.7;
+}
+
+/* Database Loading Bar */
+.db-loading-container {
+    margin-bottom: 15px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+.db-loading-label {
+    font-size: 0.8rem;
+    color: #555;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+}
+
+.db-progress-bg {
+    height: 10px;
+    background: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.db-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #81c784);
+    width: 0%;
+    transition: width 0.3s ease;
 }
 
 @media (max-width: 768px) {
