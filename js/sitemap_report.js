@@ -798,12 +798,20 @@ function updateSVGColors() {
     svgElementMap.forEach((group, normalizedId) => {
         group.style.fill = '';
         group.style.fillOpacity = '';
+        group.style.stroke = '';
+        group.style.strokeWidth = '';
+        
+        // Remove any existing overlay clones
+        group.querySelectorAll('.status-overlay').forEach(ov => ov.remove());
+
         group.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
             const id = el.id || '';
             const isText = /^\d+(_\d+)*$/.test(id);
             if (!isText) {
                 el.style.fill = '';
                 el.style.fillOpacity = '';
+                el.style.stroke = '';
+                el.style.strokeWidth = '';
             }
         });
     });
@@ -863,38 +871,60 @@ function updateSVGColors() {
                 return;
             }
 
-            // 3. Deteksi IMB (Sesuai logic script.js)
-            const hasImb = item.hasImbEffective;
+            const applyOnHand = statusToggles.onhand && isOnHand;
+            const applyStok = statusToggles.stok && isStok;
 
-            let fillValue = null;
-            
-            // Prioritas ON HAND jika kedua toggle aktif
-            if (statusToggles.onhand && isOnHand) {
-                // Pilih pattern berdasarkan IMB
-                fillValue = hasImb ? 'url(#pattern-onhand)' : 'url(#pattern-onhand-noimb)';
-                countOnHandMatched++;
-            } else if (statusToggles.stok && isStok) {
-                // Pilih pattern berdasarkan IMB
-                fillValue = hasImb ? 'url(#pattern-stok)' : 'url(#pattern-stok-noimb)';
-                countStokMatched++;
-            }
+            if (applyOnHand) countOnHandMatched++;
+            if (applyStok) countStokMatched++;
 
-            if (fillValue) {
-                // If it's a group, color the appropriate children
-                if (group.tagName.toLowerCase() === 'g') {
-                    group.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
+            // Helper function to apply fill and optional highlight to group or its children
+            const applyFill = (target, fill, isOnHandHighlight = false) => {
+                if (target.tagName.toLowerCase() === 'g') {
+                    target.querySelectorAll('path, rect, polygon, circle, ellipse').forEach(el => {
                         const id = el.id || '';
                         const isText = /^\d+(_\d+)*$/.test(id);
                         if (!isText) {
-                            el.style.fill = fillValue;
+                            el.style.fill = fill;
                             el.style.fillOpacity = '1';
+                            if (isOnHandHighlight) {
+                                el.style.stroke = '#2e7d32'; // Dark green border for ON_HAND
+                                el.style.strokeWidth = '3px';
+                                el.style.paintOrder = 'stroke fill';
+                            }
                         }
                     });
                 } else {
-                    // If it's a single element, color it directly
-                    group.style.fill = fillValue;
-                    group.style.fillOpacity = '1';
+                    target.style.fill = fill;
+                    target.style.fillOpacity = '1';
+                    if (isOnHandHighlight) {
+                        target.style.stroke = '#2e7d32';
+                        target.style.strokeWidth = '3px';
+                        target.style.paintOrder = 'stroke fill';
+                    }
                 }
+            };
+
+            // Logic: ON_HAND (Bottom) + STOK (Top)
+            if (applyOnHand && applyStok) {
+                // Apply ON_HAND to original with highlight
+                applyFill(group, 'url(#pattern-onhand)', true);
+                
+                // Create overlay for STOK (No highlight for stok)
+                const overlay = group.cloneNode(true);
+                overlay.removeAttribute('id');
+                overlay.setAttribute('class', 'status-overlay');
+                overlay.style.pointerEvents = 'none';
+                applyFill(overlay, 'url(#pattern-stok)', false);
+                
+                if (group.tagName.toLowerCase() === 'g') {
+                    group.appendChild(overlay);
+                } else {
+                    group.parentNode.insertBefore(overlay, group.nextSibling);
+                }
+            } else if (applyOnHand) {
+                applyFill(group, 'url(#pattern-onhand)', true);
+            } else if (applyStok) {
+                applyFill(group, 'url(#pattern-stok)', false);
             }
         });
 
