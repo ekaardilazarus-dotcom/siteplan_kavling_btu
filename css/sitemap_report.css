@@ -5,7 +5,7 @@ body, html {
     height: 100%;
     overflow: hidden;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: rgba(180, 240, 180, 0.3); /* Baby Green 30% Transparency */
+    background-color: rgba(173, 216, 230, 0.6); /* Baby Blue Soft 60% Transparency */
 }
 
 .report-container {
@@ -409,7 +409,7 @@ input:checked + .slider:before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(180, 240, 180, 0.8); /* Matching baby green for loading */
+    background: rgba(173, 216, 230, 0.8); /* Matching baby blue for loading */
     display: flex;
     flex-direction: column;
     align-items: center;
