@@ -14,25 +14,13 @@
         <!-- SVG Patterns Definition -->
         <svg style="width:0; height:0; position:absolute;" aria-hidden="true" focusable="false">
             <defs>
-                <!-- Pattern for ON_HAND (Dark Green Hatch) -->
+                <!-- Pattern for ON_HAND (Light Green Hatch Right) -->
                 <pattern id="pattern-onhand" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
-                    <rect width="10" height="10" fill="#1b5e20" />
-                    <path d="M 0 0 L 0 10 M 5 0 L 5 10" stroke="#81c784" stroke-width="3" />
+                    <path d="M 0 0 L 0 10 M 5 0 L 5 10" stroke="#81c784" stroke-width="4" />
                 </pattern>
-                <!-- Pattern for ON_HAND NO IMB (Dark Green + Light Green thin Hatch) -->
-                <pattern id="pattern-onhand-noimb" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
-                    <rect width="10" height="10" fill="#1b5e20" />
-                    <path d="M 0 0 L 0 10 M 5 0 L 5 10" stroke="#a5d6a7" stroke-width="1.5" />
-                </pattern>
-                <!-- Pattern for Stok (Light Green Hatch) -->
-                <pattern id="pattern-stok" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
-                    <rect width="10" height="10" fill="#e8f5e9" />
-                    <path d="M 0 0 L 0 10 M 5 0 L 5 10" stroke="#4caf50" stroke-width="3" />
-                </pattern>
-                <!-- Pattern for Stok NO IMB (Light Green + Green thin Hatch) -->
-                <pattern id="pattern-stok-noimb" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(45)">
-                    <rect width="10" height="10" fill="#e8f5e9" />
-                    <path d="M 0 0 L 0 10 M 5 0 L 5 10" stroke="#81c784" stroke-width="1.5" />
+                <!-- Pattern for Stok (Yellow Hatch Left) -->
+                <pattern id="pattern-stok" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(-45)">
+                    <path d="M 0 0 L 0 10 M 5 0 L 5 10" stroke="#ffff00" stroke-width="2" />
                 </pattern>
             </defs>
         </svg>
@@ -80,7 +68,7 @@
                             <input type="checkbox" id="toggleStok">
                             <span class="slider round"></span>
                         </label>
-                        <span class="toggle-label">STOK (Hijau Muda)</span>
+                        <span class="toggle-label">STOK (Kuning)</span>
                         <span id="countStok" class="status-count-badge">0</span>
                     </div>
                 </div>
