@@ -30,6 +30,9 @@ let statusToggles = {
     stok: false
 };
 
+// Global state for orientation modal
+let orientationCallback = null;
+
 // Audio
 const clickSound = new Audio('klik.mp3');
 
@@ -42,12 +45,199 @@ document.addEventListener('DOMContentLoaded', async () => {
     initClickPopup();
     initColorFilter();
     initDownload();
+    initSelectionPrint();
 
     // 3. Preload data from database in background
     // This won't block the UI
     preloadKavlingStatusData();
     loadFullCertificateDatabase();
 });
+
+/**
+ * Selection to Print Feature
+ */
+function initSelectionPrint() {
+    const selectionBtn = document.getElementById('selectionPrintBtn');
+    const overlay = document.getElementById('selection-overlay');
+    const selectionBox = document.getElementById('selection-box');
+    const cancelBtn = document.getElementById('cancelSelectionBtn');
+    const orientationModal = document.getElementById('orientationModal');
+    const printLandscapeBtn = document.getElementById('printLandscapeBtn');
+    const printPortraitBtn = document.getElementById('printPortraitBtn');
+
+    if (!selectionBtn || !overlay) return;
+
+    let isSelecting = false;
+    let startX, startY;
+    let selectedRect = null;
+
+    // Handle Orientation Modal Buttons (Global)
+    printLandscapeBtn.addEventListener('click', () => {
+        if (orientationCallback) {
+            orientationModal.style.display = 'none';
+            orientationCallback('l');
+            orientationCallback = null;
+        }
+    });
+
+    printPortraitBtn.addEventListener('click', () => {
+        if (orientationCallback) {
+            orientationModal.style.display = 'none';
+            orientationCallback('p');
+            orientationCallback = null;
+        }
+    });
+
+    selectionBtn.addEventListener('click', () => {
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        resetSelection();
+    });
+
+    overlay.addEventListener('mousedown', (e) => {
+        if (e.target !== overlay) return;
+        isSelecting = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        selectionBox.style.left = startX + 'px';
+        selectionBox.style.top = startY + 'px';
+        selectionBox.style.width = '0px';
+        selectionBox.style.height = '0px';
+        selectionBox.style.display = 'block';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isSelecting) return;
+        const currentX = e.clientX;
+        const currentY = e.clientY;
+
+        const left = Math.min(startX, currentX);
+        const top = Math.min(startY, currentY);
+        const width = Math.abs(startX - currentX);
+        const height = Math.abs(startY - currentY);
+
+        selectionBox.style.left = left + 'px';
+        selectionBox.style.top = top + 'px';
+        selectionBox.style.width = width + 'px';
+        selectionBox.style.height = height + 'px';
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if (!isSelecting) return;
+        isSelecting = false;
+        
+        const rect = selectionBox.getBoundingClientRect();
+        if (rect.width < 20 || rect.height < 20) {
+            selectionBox.style.display = 'none';
+            return;
+        }
+
+        selectedRect = {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height
+        };
+
+        // Set callback for orientation modal
+        orientationCallback = (orientation) => {
+            processSelectionPrint(orientation);
+        };
+
+        // Show orientation modal
+        orientationModal.style.display = 'flex';
+    });
+
+    function resetSelection() {
+        overlay.style.display = 'none';
+        selectionBox.style.display = 'none';
+        orientationModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        isSelecting = false;
+        selectedRect = null;
+        orientationCallback = null;
+    }
+
+    async function processSelectionPrint(orientation) {
+        if (!selectedRect) return;
+
+        const btn = document.getElementById('selectionPrintBtn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳</span> Rendering...';
+
+        try {
+            // Hide selection UI for capture
+            selectionBox.style.display = 'none';
+            overlay.style.display = 'none';
+
+            const mapArea = document.querySelector('.map-area');
+            
+            // Capture with HD Scale (Scale 4)
+            const canvas = await html2canvas(mapArea, {
+                scale: 4,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                x: selectedRect.left - mapArea.getBoundingClientRect().left,
+                y: selectedRect.top - mapArea.getBoundingClientRect().top,
+                width: selectedRect.width,
+                height: selectedRect.height,
+                imageTimeout: 30000,
+                onclone: (clonedDoc) => {
+                    const svg = clonedDoc.querySelector('#map-container svg');
+                    if (svg) {
+                        svg.style.width = '100%';
+                        svg.style.height = '100%';
+                        svg.style.display = 'block';
+                    }
+                }
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.98);
+            const { jsPDF } = window.jspdf;
+            
+            const pdf = new jsPDF({
+                orientation: orientation,
+                unit: 'mm',
+                format: 'a3',
+                compress: true
+            });
+            
+            const pdfWidth = orientation === 'l' ? 420 : 297;
+            const pdfHeight = orientation === 'l' ? 297 : 420;
+            
+            const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+            const finalWidth = canvas.width * ratio;
+            const finalHeight = canvas.height * ratio;
+            
+            const x = (pdfWidth - finalWidth) / 2;
+            const y = (pdfHeight - finalHeight) / 2;
+
+            pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'SLOW');
+            
+            const dateStr = new Date().toISOString().split('T')[0];
+            pdf.save(`BTU_Selection_${dateStr}.pdf`);
+            
+            btn.innerHTML = '<span>✅</span> Berhasil!';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 2000);
+
+        } catch (error) {
+            console.error('❌ Selection Print error:', error);
+            alert('Gagal merender seleksi: ' + error.message);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        } finally {
+            resetSelection();
+        }
+    }
+}
 
 /**
  * Load SVG from file
@@ -995,27 +1185,43 @@ function updateSVGColors() {
  */
 function initDownload() {
     const btn = document.getElementById('downloadMapBtn');
-    btn.addEventListener('click', async () => {
-        const originalText = btn.innerHTML;
+    const orientationModal = document.getElementById('orientationModal');
+
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
         const mapArea = document.querySelector('.map-area');
-        
         if (!mapArea) {
             alert('Area peta tidak ditemukan.');
             return;
         }
+
+        // Set callback for orientation modal
+        orientationCallback = (orientation) => {
+            processFullDownload(orientation);
+        };
+
+        // Show orientation modal
+        orientationModal.style.display = 'flex';
+    });
+
+    async function processFullDownload(orientation) {
+        const btn = document.getElementById('downloadMapBtn');
+        const originalText = btn.innerHTML;
+        const mapArea = document.querySelector('.map-area');
 
         btn.disabled = true;
         btn.innerHTML = '<span>⏳</span> Mengolah PDF...';
 
         try {
             // Gunakan html2canvas untuk menangkap tampilan elemen .map-area
-            // Optimasi: Gunakan scale 2 (sudah cukup tajam untuk A3) dan JPEG untuk performa
+            // Optimasi: Naikkan scale ke 4 untuk resolusi tinggi (A3) HD
             const canvas = await html2canvas(mapArea, {
-                scale: 2, 
+                scale: 4, 
                 useCORS: true,
                 logging: false,
                 backgroundColor: '#ffffff',
-                imageTimeout: 15000, // Tambahkan timeout agar tidak hang selamanya
+                imageTimeout: 20000, 
                 onclone: (clonedDoc) => {
                     const svg = clonedDoc.querySelector('#map-container svg');
                     if (svg) {
@@ -1026,20 +1232,18 @@ function initDownload() {
                 }
             });
 
-            // Gunakan JPEG instead of PNG untuk performa dan ukuran file lebih kecil
-            const imgData = canvas.toDataURL('image/jpeg', 0.8);
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
             const { jsPDF } = window.jspdf;
             
-            // A3 Landscape
             const pdf = new jsPDF({
-                orientation: 'l',
+                orientation: orientation,
                 unit: 'mm',
                 format: 'a3',
                 compress: true
             });
             
-            const pdfWidth = 420;
-            const pdfHeight = 297;
+            const pdfWidth = orientation === 'l' ? 420 : 297;
+            const pdfHeight = orientation === 'l' ? 297 : 420;
             
             const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
             const finalWidth = canvas.width * ratio;
@@ -1048,8 +1252,7 @@ function initDownload() {
             const x = (pdfWidth - finalWidth) / 2;
             const y = (pdfHeight - finalHeight) / 2;
 
-            // 'FAST' render mode
-            pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
+            pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'SLOW');
             
             const dateStr = new Date().toISOString().split('T')[0];
             pdf.save(`Sitemap_Report_BTU_${dateStr}.pdf`);
@@ -1066,5 +1269,5 @@ function initDownload() {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-    });
+    }
 }
