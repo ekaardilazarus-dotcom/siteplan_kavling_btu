@@ -387,6 +387,71 @@ input:checked + .slider:before {
     cursor: not-allowed;
 }
 
+.selection-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #ff9800; /* Orange for selection */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    transition: background 0.2s;
+}
+
+.selection-btn:hover {
+    background-color: #f57c00;
+}
+
+/* Selection Mode Overlays */
+.selection-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 2500;
+    cursor: crosshair;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 50px;
+}
+
+.selection-hint {
+    background: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    font-weight: bold;
+    color: #333;
+    pointer-events: none;
+}
+
+.cancel-selection {
+    margin-top: 20px;
+    padding: 8px 20px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.selection-box {
+    position: fixed;
+    border: 2px dashed #fff;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    z-index: 2600;
+    pointer-events: none;
+}
+
 .back-btn {
     padding: 8px 15px;
     background-color: #607D8B;
