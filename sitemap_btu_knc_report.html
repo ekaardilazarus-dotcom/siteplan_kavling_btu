@@ -106,11 +106,43 @@
             </div>
 
             <div class="download-section">
+                <button id="selectionPrintBtn" class="selection-btn">
+                    <span>✂️</span> SELECTION TO PRINT
+                </button>
                 <button id="downloadMapBtn" class="download-btn">
                     <span>📥</span> DOWNLOAD MAP
                 </button>
             </div>
         </aside>
+    </div>
+
+    <!-- Selection UI Overlays -->
+    <div id="selection-overlay" class="selection-overlay" style="display: none;">
+        <div class="selection-hint">Klik dan seret di peta untuk memilih area...</div>
+        <button id="cancelSelectionBtn" class="cancel-selection">Batal</button>
+    </div>
+    
+    <div id="selection-box" class="selection-box" style="display: none;"></div>
+
+    <!-- Orientation Modal -->
+    <div id="orientationModal" class="kavling-popup" style="display: none;">
+        <div class="kavling-popup-content" style="max-width: 400px;">
+            <div class="kavling-popup-header">
+                <h3>Pilih Orientasi Kertas A3</h3>
+                <button onclick="document.getElementById('orientationModal').style.display='none'">&times;</button>
+            </div>
+            <div class="kavling-popup-body" style="text-align: center; padding: 30px;">
+                <p style="margin-bottom: 25px;">Silakan pilih format tampilan untuk hasil cetak Ultra HD:</p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="printLandscapeBtn" class="add-btn" style="background: #2196F3; flex: 1;">
+                        <span>📄</span> LANDSCAPE
+                    </button>
+                    <button id="printPortraitBtn" class="add-btn" style="background: #673ab7; flex: 1;">
+                        <span>📋</span> PORTRAIT
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="kavlingPopupContainer"></div>
