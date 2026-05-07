@@ -398,12 +398,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Default coloring based on active category
         if (activeCategory === 'bank') {
           const color = getBankColor(bankKey);
-          if (color) el.style.fill = color; else el.style.removeProperty('fill');
+          if (color) el.style.fill = color; else el.style.fill = '#ffffff';
         } else if (activeCategory === 'recipient') {
           const color = getRecipientColor(recipientKey);
-          if (color) el.style.fill = color; else el.style.removeProperty('fill');
+          if (color) el.style.fill = color; else el.style.fill = '#ffffff';
         } else {
-          el.style.removeProperty('fill');
+          el.style.fill = '#ffffff';
         }
         
         el.style.removeProperty('stroke');
@@ -744,19 +744,19 @@ document.addEventListener('DOMContentLoaded', () => {
       certShapes.forEach(el => {
         el.style.opacity = '1';
         if (el.dataset && el.dataset.missing === '1') {
-          el.style.fill = '#000000';
+          el.style.fill = '#eeeeee';
           return;
         }
         if (activeCategory === 'bank') {
           const bankKey = el.dataset.bank || '';
           const c = getBankColor(bankKey);
-          if (c) el.style.fill = c; else el.style.removeProperty('fill');
+          if (c) el.style.fill = c; else el.style.fill = '#ffffff';
         } else if (activeCategory === 'recipient') {
           const recipientKey = el.dataset.recipient || '';
           const c = getRecipientColor(recipientKey);
-          if (c) el.style.fill = c; else el.style.removeProperty('fill');
+          if (c) el.style.fill = c; else el.style.fill = '#ffffff';
         } else {
-          el.style.removeProperty('fill');
+          el.style.fill = '#ffffff';
         }
       });
       updateAreaPanel([]);
@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
     certShapes.forEach(el => {
       if (el.dataset && el.dataset.missing === '1') {
         el.style.opacity = '1';
-        el.style.fill = '#000000';
+        el.style.fill = '#eeeeee';
         return;
       }
       let show = false;
@@ -803,7 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetColor) {
           el.style.fill = targetColor;
         } else {
-          el.style.removeProperty('fill');
+          el.style.fill = '#ffffff';
         }
         
         if (el.dataset && (el.dataset.key || el.dataset.nomor)) {
