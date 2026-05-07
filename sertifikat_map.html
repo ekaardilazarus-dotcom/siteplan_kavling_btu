@@ -15,6 +15,10 @@
 
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/sertifikat_map.css">
+
+  <!-- Dependencies for PDF Feature -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -202,6 +206,9 @@
 
         <div class="smap-search">
           <div class="smap-print-toolbar">
+            <button id="smapDownloadPDF" class="smap-print-btn" style="background: linear-gradient(135deg, #2196f3, #0d47a1); grid-column: span 2;">
+              <span>📥</span> DOWNLOAD PDF (A3)
+            </button>
             <button id="smapPrintFull" class="smap-print-btn">Cetak Keseluruhan</button>
             <button id="smapPrintView" class="smap-print-btn">Cetak Tampilan Saat Ini</button>
           </div>
@@ -214,6 +221,27 @@
         </div>
       </div>
     </aside>
+  </div>
+
+  <!-- Orientation Modal -->
+  <div id="orientationModal" class="kavling-popup" style="display: none; z-index: 1000;">
+      <div class="kavling-popup-content" style="max-width: 400px;">
+          <div class="kavling-popup-header">
+              <h3 style="margin:0; font-size:16px;">Pilih Orientasi Kertas A3</h3>
+              <button class="close-orientation-modal" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+          </div>
+          <div class="kavling-popup-body" style="text-align: center; padding: 20px;">
+              <p style="margin-bottom: 20px; font-size:14px;">Silakan pilih format orientasi PDF:</p>
+              <div style="display: flex; gap: 10px; justify-content: center;">
+                  <button id="printLandscapeBtn" class="smap-print-btn" style="background: #2196F3; flex: 1; height: 45px;">
+                      <span>📄</span> LANDSCAPE
+                  </button>
+                  <button id="printPortraitBtn" class="smap-print-btn" style="background: #673ab7; flex: 1; height: 45px;">
+                      <span>📋</span> PORTRAIT
+                  </button>
+              </div>
+          </div>
+      </div>
   </div>
 
   <footer class="futuristic-footer">
