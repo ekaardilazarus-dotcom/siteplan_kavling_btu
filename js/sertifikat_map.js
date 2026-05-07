@@ -1016,6 +1016,122 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('smapPrintFull')?.addEventListener('click', handlePrintFull);
   document.getElementById('smapPrintView')?.addEventListener('click', handlePrintView);
 
+  // ============ Download PDF (A3) ala sitemap_report ============
+  const setupPDFDownload = () => {
+    const btn = document.getElementById('smapDownloadPDF');
+    const modal = document.getElementById('orientationModal');
+    const landscapeBtn = document.getElementById('printLandscapeBtn');
+    const portraitBtn = document.getElementById('printPortraitBtn');
+    const closeBtn = modal?.querySelector('.close-orientation-modal');
+    
+    if (!btn || !modal) return;
+
+    let orientationCallback = null;
+
+    btn.addEventListener('click', () => {
+      modal.style.display = 'flex';
+    });
+
+    const closeModal = () => {
+      modal.style.display = 'none';
+      orientationCallback = null;
+    };
+
+    closeBtn?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    landscapeBtn?.addEventListener('click', () => {
+      modal.style.display = 'none';
+      processPDFDownload('l');
+    });
+
+    portraitBtn?.addEventListener('click', () => {
+      modal.style.display = 'none';
+      processPDFDownload('p');
+    });
+
+    const processPDFDownload = async (orientation) => {
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Mengolah PDF...';
+
+      try {
+        // Area yang akan ditangkap: smap-left (peta) + smap-middle (tabel data)
+        // Kita tangkap pembungkusnya agar informasinya lengkap
+        const captureArea = document.querySelector('.cert-map-layout');
+        
+        // Optimasi resolusi tinggi (scale 4) untuk A3
+        const canvas = await html2canvas(captureArea, {
+          scale: 4,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          imageTimeout: 30000,
+          onclone: (clonedDoc) => {
+            // Sembunyikan panel filter kanan saat cetak agar fokus ke peta dan tabel
+            const rightPanel = clonedDoc.querySelector('.smap-right');
+            if (rightPanel) rightPanel.style.display = 'none';
+            
+            // Lebarkan area utama agar mengisi ruang yang ditinggalkan panel filter
+            const layout = clonedDoc.querySelector('.cert-map-layout');
+            if (layout) {
+              layout.style.height = 'auto'; // Biarkan tinggi menyesuaikan konten
+              layout.style.padding = '20px';
+            }
+            
+            const svg = clonedDoc.querySelector('#cert-map svg');
+            if (svg) {
+              svg.style.width = '100%';
+              svg.style.height = '100%';
+              svg.style.display = 'block';
+            }
+          }
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const { jsPDF } = window.jspdf;
+        
+        const pdf = new jsPDF({
+          orientation: orientation,
+          unit: 'mm',
+          format: 'a3',
+          compress: true
+        });
+        
+        const pdfWidth = orientation === 'l' ? 420 : 297;
+        const pdfHeight = orientation === 'l' ? 297 : 420;
+        
+        const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+        const finalWidth = canvas.width * ratio;
+        const finalHeight = canvas.height * ratio;
+        
+        const x = (pdfWidth - finalWidth) / 2;
+        const y = (pdfHeight - finalHeight) / 2;
+
+        pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'SLOW');
+        
+        const dateStr = new Date().toISOString().split('T')[0];
+        pdf.save(`Sitemap_Sertifikat_BTU_${dateStr}.pdf`);
+        
+        btn.innerHTML = '<span>✅</span> Selesai!';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }, 2000);
+
+      } catch (error) {
+        console.error('❌ PDF Download error:', error);
+        alert('Gagal mendownload PDF: ' + error.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    };
+  };
+
+  setupPDFDownload();
+
   // ============ Fokus ke sertifikat pada SVG dari tabel ============
   const focusToCertByKey = (key) => {
     if (!key) return;
