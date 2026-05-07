@@ -762,44 +762,25 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.innerHTML = '<span>⏳</span> Mengolah...';
 
     try {
-      const captureArea = document.querySelector('.cert-map-layout');
       const mapContainer = document.getElementById('cert-map');
-      const tableContainer = document.querySelector('.smap-middle');
       
-      // Simpan dimensi asli saat ini untuk menjaga aspek rasio di clone
+      // Simpan dimensi asli peta saja
       const originalMapWidth = mapContainer.offsetWidth;
       const originalMapHeight = mapContainer.offsetHeight;
-      const originalTableWidth = tableContainer.offsetWidth;
 
-      const canvas = await html2canvas(captureArea, {
+      const canvas = await html2canvas(mapContainer, {
         scale: 4,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 30000,
         onclone: (clonedDoc) => {
-          // Sembunyikan elemen UI yang mengganggu
-          clonedDoc.querySelectorAll('.smap-right, .smap-print-toolbar, .back-home-btn, .category-tab, .header-actions').forEach(el => {
-            el.style.display = 'none';
-          });
-          
-          const layout = clonedDoc.querySelector('.cert-map-layout');
-          if (layout) {
-            layout.style.width = 'fit-content';
-            layout.style.height = 'auto';
-            layout.style.display = 'flex';
-            layout.style.gap = '20px';
-            layout.style.padding = '20px';
-            layout.style.background = '#ffffff';
-          }
-          
           const clonedMap = clonedDoc.getElementById('cert-map');
           if (clonedMap) {
-            clonedMap.style.flex = 'none';
             clonedMap.style.width = originalMapWidth + 'px';
             clonedMap.style.height = originalMapHeight + 'px';
-            clonedMap.style.border = '1px solid #ddd';
-            clonedMap.style.borderRadius = '12px';
+            clonedMap.style.border = 'none';
+            clonedMap.style.borderRadius = '0';
             
             const svg = clonedMap.querySelector('svg');
             if (svg) {
@@ -814,16 +795,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 svg.setAttribute('viewBox', vb);
               }
             }
-          }
-
-          const clonedTable = clonedDoc.querySelector('.smap-middle');
-          if (clonedTable) {
-            clonedTable.style.flex = 'none';
-            clonedTable.style.width = originalTableWidth + 'px';
-            clonedTable.style.height = originalMapHeight + 'px'; // Samakan tinggi dengan peta
-            clonedTable.style.overflow = 'hidden';
-            clonedTable.style.border = '1px solid #ddd';
-            clonedTable.style.borderRadius = '12px';
           }
         }
       });
