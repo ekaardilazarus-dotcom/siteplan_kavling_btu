@@ -763,7 +763,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       const captureArea = document.querySelector('.cert-map-layout');
+      const mapContainer = document.getElementById('cert-map');
+      const tableContainer = document.querySelector('.smap-middle');
       
+      // Simpan dimensi asli saat ini untuk menjaga aspek rasio di clone
+      const originalMapWidth = mapContainer.offsetWidth;
+      const originalMapHeight = mapContainer.offsetHeight;
+      const originalTableWidth = tableContainer.offsetWidth;
+
       const canvas = await html2canvas(captureArea, {
         scale: 4,
         useCORS: true,
@@ -771,27 +778,52 @@ document.addEventListener('DOMContentLoaded', () => {
         backgroundColor: '#ffffff',
         imageTimeout: 30000,
         onclone: (clonedDoc) => {
-          const rightPanel = clonedDoc.querySelector('.smap-right');
-          if (rightPanel) rightPanel.style.display = 'none';
+          // Sembunyikan elemen UI yang mengganggu
+          clonedDoc.querySelectorAll('.smap-right, .smap-print-toolbar, .back-home-btn, .category-tab, .header-actions').forEach(el => {
+            el.style.display = 'none';
+          });
           
           const layout = clonedDoc.querySelector('.cert-map-layout');
           if (layout) {
+            layout.style.width = 'fit-content';
             layout.style.height = 'auto';
+            layout.style.display = 'flex';
+            layout.style.gap = '20px';
             layout.style.padding = '20px';
+            layout.style.background = '#ffffff';
           }
           
-          const svg = clonedDoc.querySelector('#cert-map svg');
-          if (svg) {
-            svg.style.width = '100%';
-            svg.style.height = '100%';
-            svg.style.display = 'block';
+          const clonedMap = clonedDoc.getElementById('cert-map');
+          if (clonedMap) {
+            clonedMap.style.flex = 'none';
+            clonedMap.style.width = originalMapWidth + 'px';
+            clonedMap.style.height = originalMapHeight + 'px';
+            clonedMap.style.border = '1px solid #ddd';
+            clonedMap.style.borderRadius = '12px';
             
-            if (mode === 'full' && originalViewBox) {
-              svg.setAttribute('viewBox', originalViewBox);
-            } else if (mode === 'view' && viewBoxState) {
-              const vb = `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`;
-              svg.setAttribute('viewBox', vb);
+            const svg = clonedMap.querySelector('svg');
+            if (svg) {
+              svg.style.width = '100%';
+              svg.style.height = '100%';
+              svg.style.display = 'block';
+              
+              if (mode === 'full' && originalViewBox) {
+                svg.setAttribute('viewBox', originalViewBox);
+              } else if (mode === 'view' && viewBoxState) {
+                const vb = `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`;
+                svg.setAttribute('viewBox', vb);
+              }
             }
+          }
+
+          const clonedTable = clonedDoc.querySelector('.smap-middle');
+          if (clonedTable) {
+            clonedTable.style.flex = 'none';
+            clonedTable.style.width = originalTableWidth + 'px';
+            clonedTable.style.height = originalMapHeight + 'px'; // Samakan tinggi dengan peta
+            clonedTable.style.overflow = 'hidden';
+            clonedTable.style.border = '1px solid #ddd';
+            clonedTable.style.borderRadius = '12px';
           }
         }
       });
