@@ -910,12 +910,21 @@ function updateStatusPanel(data) {
     let countColor = 'white';
     let countBorder = 'rgba(255,255,255,0.3)';
 
-    if (cat.id === 'terjual_imb') { btnBg = '#ff4444'; darkerBg = '#cc0000'; }
-    else if (cat.id === 'terjual_no_imb') { btnBg = '#ef5350'; darkerBg = '#c62828'; }
+    // State visibilitas warna (default true jika belum ada)
+    const filterKey = `filter_${cat.id}`;
+    const isVisible = localStorage.getItem(filterKey) !== 'false';
+
+    if (cat.id === 'terjual_imb') { btnBg = 'grey'; darkerBg = '#555555'; }
+    else if (cat.id === 'terjual_no_imb') { btnBg = 'lightgrey'; darkerBg = '#999999'; }
     else if (cat.id === 'stok_imb') { btnBg = '#2ecc71'; darkerBg = '#27ae60'; }
     else if (cat.id === 'stok_no_imb') { 
-      btnBg = 'linear-gradient(90deg, #2ecc71 0%, #d8ff4dff 100%)'; 
-      darkerBg = '#a6c012ff'; 
+      btnBg = '#c6f7c6ff'; 
+      darkerBg = '#b0ffb0'; 
+      textColor = '#333333'; 
+      textShadow = 'none';
+      countBg = 'rgba(0,0,0,0.05)';
+      countColor = '#333333';
+      countBorder = 'rgba(0,0,0,0.1)';
     }
     else if (cat.id === 'rekom_imb') { btnBg = '#9c27b0'; darkerBg = '#7b1fa2'; }
     else if (cat.id === 'rekom_no_imb') { 
@@ -927,26 +936,35 @@ function updateStatusPanel(data) {
     else if (cat.id === 'tersewa_imb') { btnBg = '#42A5F5'; darkerBg = '#1E88E5'; }
     else if (cat.id === 'tersewa_no_imb') { btnBg = '#1E88E5'; darkerBg = '#1565C0'; }
     else if (cat.id === 'unknown') { 
-      textColor = '#666666'; 
-      textShadow = 'none';
-      countBg = 'rgba(0,0,0,0.05)';
-      countColor = '#333333';
-      countBorder = 'rgba(0,0,0,0.1)';
+      btnBg = 'red'; 
+      darkerBg = '#cc0000';
+      textColor = 'white'; 
+      textShadow = '-0.5px -0.5px 0 #000, 0.5px -0.5px 0 #000, -0.5px 0.5px 0 #000, 0.5px 0.5px 0 #000, 1px 1px 2px rgba(0,0,0,0.5)';
+      countBg = 'rgba(255,255,255,0.2)';
+      countColor = 'white';
+      countBorder = 'rgba(255,255,255,0.3)';
     }
 
     html += `
-      <div class="status-item clickable-status-item" data-type="${cat.id}" 
-           style="display: flex; align-items: center; padding: 10px; margin-bottom: 10px; 
-                  background: ${btnBg}; border-radius: 10px; box-shadow: 0 3px 0 rgba(0,0,0,0.15); 
-                  cursor: pointer; transition: all 0.1s ease; border: 1px solid rgba(0,0,0,0.1);
-                  color: ${textColor}; font-weight: 700;
-                  text-shadow: ${textShadow}; width: 100%; box-sizing: border-box; overflow: hidden;">
-        <div class="status-color-sample" style="flex-shrink: 0; width: 18px; height: 18px; border-radius: 4px; margin-right: 10px; background-color: ${darkerBg}; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);"></div>
-        <div class="status-info" style="flex: 1; display: flex; justify-content: space-between; align-items: center; min-width: 0;">
-          <div class="status-title" style="font-size: 11px; font-weight: 700; line-height: 1.2; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-right: 5px;">${cat.title}</div>
-          <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
-            <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 12px; font-weight: 800; background: ${countBg}; color: ${countColor}; padding: 1px 8px; border-radius: 12px; border: 1px solid ${countBorder}; min-width: 20px; text-align: center;">${count}</div>
-            <span style="font-size: 14px; font-weight: 800; opacity: 0.7;">›</span>
+      <div class="status-item-container" style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; width: 100%;">
+        <div class="status-visibility-toggle" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #eee; padding: 10px; border-radius: 10px; border: 1px solid #ddd; cursor: pointer; height: 44px; box-sizing: border-box;" 
+             title="Tampilkan/Sembunyikan warna ini di peta" data-id="${cat.id}">
+          <input type="checkbox" class="color-filter-checkbox" data-id="${cat.id}" ${isVisible ? 'checked' : ''} 
+                 style="width: 18px; height: 18px; cursor: pointer; accent-color: #673ab7; margin: 0;">
+        </div>
+        <div class="status-item clickable-status-item" data-type="${cat.id}" 
+             style="display: flex; align-items: center; padding: 10px; 
+                    background: ${btnBg}; border-radius: 10px; box-shadow: 0 3px 0 rgba(0,0,0,0.15); 
+                    cursor: pointer; transition: all 0.1s ease; border: 1px solid rgba(0,0,0,0.1);
+                    color: ${textColor}; font-weight: 700;
+                    text-shadow: ${textShadow}; flex: 1; box-sizing: border-box; overflow: hidden; height: 44px;">
+          <div class="status-color-sample" style="flex-shrink: 0; width: 18px; height: 18px; border-radius: 4px; margin-right: 10px; background-color: ${darkerBg}; border: 1px solid rgba(0,0,0,0.2); box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);"></div>
+          <div class="status-info" style="flex: 1; display: flex; justify-content: space-between; align-items: center; min-width: 0;">
+            <div class="status-title" style="font-size: 11px; font-weight: 700; line-height: 1.2; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-right: 5px;">${cat.title}</div>
+            <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+              <div class="status-count" id="count${cat.id.toUpperCase()}" style="font-size: 12px; font-weight: 800; background: ${countBg}; color: ${countColor}; padding: 1px 8px; border-radius: 12px; border: 1px solid ${countBorder}; min-width: 20px; text-align: center;">${count}</div>
+              <span style="font-size: 14px; font-weight: 800; opacity: 0.7;">›</span>
+            </div>
           </div>
         </div>
       </div>
@@ -966,6 +984,83 @@ function updateStatusPanel(data) {
   </div>`;
 
   panelBody.innerHTML = html;
+
+  // Tombol Select All / Clear All
+  const selectAllContainer = document.createElement('div');
+  selectAllContainer.style.cssText = 'margin-bottom: 12px; display: flex; align-items: center; background: #f0f0f0; padding: 8px 12px; border-radius: 10px; border: 1px solid #ddd; cursor: pointer;';
+  
+  // Tentukan status awal checkbox "Semua"
+  const allCheckboxes = document.querySelectorAll('.color-filter-checkbox');
+  const allChecked = Array.from(document.querySelectorAll('.color-filter-checkbox')).every(cb => cb.checked);
+  
+  selectAllContainer.innerHTML = `
+    <input type="checkbox" id="allColorsFilter" ${allChecked ? 'checked' : ''} style="width: 18px; height: 18px; cursor: pointer; accent-color: #673ab7; margin: 0;">
+    <label for="allColorsFilter" style="cursor: pointer; font-size: 13px; font-weight: 700; color: #555; margin-left: 10px; flex: 1;">
+      TAMPILKAN SEMUA WARNA
+    </label>
+  `;
+  
+  const statusContent = panelBody.querySelector('.status-content');
+  if (statusContent) {
+    statusContent.insertBefore(selectAllContainer, statusContent.querySelector('.status-item-container'));
+  }
+
+  // Event listener untuk Select All
+  const allToggle = document.getElementById('allColorsFilter');
+  if (allToggle) {
+    allToggle.addEventListener('change', function() {
+      const isChecked = this.checked;
+      document.querySelectorAll('.color-filter-checkbox').forEach(cb => {
+        if (cb.checked !== isChecked) {
+          cb.checked = isChecked;
+          const id = cb.getAttribute('data-id');
+          localStorage.setItem(`filter_${id}`, isChecked);
+        }
+      });
+      
+      // Re-colorize map
+      if (statusData && Array.isArray(statusData.data)) {
+        colorizeKavling(statusData.data);
+      }
+    });
+    
+    selectAllContainer.addEventListener('click', function(e) {
+      if (e.target !== allToggle && e.target.tagName !== 'LABEL') {
+        allToggle.checked = !allToggle.checked;
+        allToggle.dispatchEvent(new Event('change'));
+      }
+    });
+  }
+
+  // Event listener untuk Filter Visibilitas Warna
+  document.querySelectorAll('.status-visibility-toggle').forEach(toggle => {
+    toggle.addEventListener('click', function(e) {
+      const checkbox = this.querySelector('.color-filter-checkbox');
+      if (e.target !== checkbox) {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+
+  document.querySelectorAll('.color-filter-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const id = this.getAttribute('data-id');
+      localStorage.setItem(`filter_${id}`, this.checked);
+      
+      // Update checkbox "Semua"
+      const allToggle = document.getElementById('allColorsFilter');
+      if (allToggle) {
+        const anyUnchecked = Array.from(document.querySelectorAll('.color-filter-checkbox')).some(cb => !cb.checked);
+        allToggle.checked = !anyUnchecked;
+      }
+
+      // Re-colorize map to apply filter
+      if (statusData && Array.isArray(statusData.data)) {
+        colorizeKavling(statusData.data);
+      }
+    });
+  });
 
   const refreshBtn = document.getElementById('refreshKavlingStatusBtn');
   if (refreshBtn) {
@@ -1134,17 +1229,31 @@ function colorizeKavling(kavlingData) {
     }
 
     let className = null;
+    let imbCategory = '';
 
     if (kategori === 'kpr') {
+      imbCategory = hasImb === false ? 'terjual_no_imb' : 'terjual_imb';
       className = hasImb === false ? 'kavling-status-kpr-no-imb' : 'kavling-status-kpr';
     } else if (kategori === 'stok') {
+      imbCategory = hasImb === false ? 'stok_no_imb' : 'stok_imb';
       className = hasImb === false ? 'kavling-status-stok-no-imb' : 'kavling-status-stok';
     } else if (kategori === 'rekom') {
+      imbCategory = hasImb === false ? 'rekom_no_imb' : 'rekom_imb';
       className = hasImb === false ? 'kavling-status-rekom-no-imb' : 'kavling-status-rekom';
     } else if (kategori === 'disewakan') {
+      imbCategory = hasImb === false ? 'tersewa_no_imb' : 'tersewa_imb';
       className = hasImb === false ? 'kavling-status-disewakan-no-imb' : 'kavling-status-disewakan';
     } else if (kategori === 'dipinjam') {
+      imbCategory = hasImb === false ? 'dipinjam_no_imb' : 'dipinjam_imb';
       className = hasImb === false ? 'kavling-status-dipinjam-no-imb' : 'kavling-status-dipinjam';
+    } else if (kategori === 'unknown') {
+      imbCategory = 'unknown';
+      className = 'kavling-status-unknown';
+    }
+
+    // Cek visibilitas warna berdasarkan filter checkbox
+    if (imbCategory && localStorage.getItem(`filter_${imbCategory}`) === 'false') {
+      className = null;
     }
 
     // Coba cari elemen dengan ID persis
@@ -1275,23 +1384,27 @@ function colorizeKavling(kavlingData) {
   let unknownCount = 0;
 
   allBlocksWithId.forEach(el => {
-    if (el.id && !processedIds.has(el.id) && 
-        !el.classList.contains('kavling-status-kpr') && 
-        !el.classList.contains('kavling-status-kpr-no-imb') && 
-        !el.classList.contains('kavling-status-stok') && 
-        !el.classList.contains('kavling-status-stok-no-imb') && 
-        !el.classList.contains('kavling-status-rekom') &&
-        !el.classList.contains('kavling-status-rekom-no-imb') &&
-        !el.classList.contains('kavling-status-disewakan') &&
-        !el.classList.contains('kavling-status-disewakan-no-imb') &&
-        !el.classList.contains('kavling-status-dipinjam') &&
-        !el.classList.contains('kavling-status-dipinjam-no-imb')) {
+    const hasAnyStatus = Array.from(el.classList).some(cls => cls.startsWith('kavling-status-') && cls !== 'kavling-status-unknown');
 
+    if (el.id && !processedIds.has(el.id) && !hasAnyStatus) {
+      // Cek visibilitas warna untuk 'unknown'
+      if (localStorage.getItem('filter_unknown') !== 'false') {
+        el.classList.add('kavling-status-unknown');
+        
+        // Jika element adalah group, tambahkan ke child elements juga
+        if (el.tagName.toLowerCase() === 'g') {
+          el.querySelectorAll('rect, path, polygon, circle').forEach(child => {
+            if (!child.closest('.on-hand-overlay')) {
+              child.classList.add('kavling-status-unknown');
+            }
+          });
+        }
+      }
       unknownCount++;
     }
   });
 
-  console.log(`✅ Selesai: ${coloredCount} kavling berwarna, ${unknownCount} tanpa status (dibiarkan putih), ${notFoundCount} tidak ditemukan`);
+  console.log(`✅ Selesai: ${coloredCount} kavling berwarna, ${unknownCount} tanpa status (diwarnai merah), ${notFoundCount} tidak ditemukan`);
 
   // LOG hasil akhir
   const finalCategoryCount = {};
