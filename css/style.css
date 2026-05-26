@@ -392,11 +392,11 @@ body.dark-mode .status-panel-inline {
 /* KAVLING COLORS (DARI SCRIPT)   */
 /* Berpasangan: dengan IMB vs tanpa IMB */
 /* =============================== */
-.kavling-status-kpr { fill: #ff4444 !important; stroke: #111 !important; }
-.kavling-status-kpr-no-imb { fill: #ef5350 !important; stroke: #111 !important; }
+.kavling-status-kpr { fill: grey !important; stroke: #111 !important; }
+.kavling-status-kpr-no-imb { fill: lightgrey !important; stroke: #111 !important; }
 
 .kavling-status-stok { fill: #2ecc71 !important; stroke: #111 !important; }
-.kavling-status-stok-no-imb { fill: #d8ff4d !important; stroke: #111 !important; }
+.kavling-status-stok-no-imb { fill: #aad8aa !important; stroke: #111 !important; }
 
 .kavling-status-rekom { fill: #9c27b0 !important; stroke: #111 !important; }
 .kavling-status-rekom-no-imb { fill: #9c27b0 !important; stroke: #111 !important; }
@@ -407,7 +407,7 @@ body.dark-mode .status-panel-inline {
 .kavling-status-dipinjam { fill: #26a69a !important; stroke: #111 !important; }
 .kavling-status-dipinjam-no-imb { fill: #4db6ac !important; stroke: #111 !important; }
 
-.kavling-status-unknown { fill: #ffffff !important; stroke: #111 !important; }
+.kavling-status-unknown { fill: red !important; stroke: #111 !important; }
 
 /* =============================== */
 /* FUTURISTIC ACCENTS */
