@@ -417,8 +417,8 @@ function applyViewBox(svg) {
 function clearHighlight() {
   document.querySelectorAll('#map rect, #map path, #map polygon')
     .forEach(el => {
-      // ABAIKAN jika ini adalah bagian dari overlay arsiran ON HAND
-      if (el.closest('.on-hand-overlay')) return;
+      // ABAIKAN jika ini adalah bagian dari overlay arsiran (ON HAND atau UNKNOWN HATCH)
+      if (el.closest('.on-hand-overlay') || el.closest('.unknown-hatch-overlay')) return;
 
       // Don't clear style if it's a status color class element
       const parent = el.closest('g');
@@ -607,6 +607,7 @@ async function fetchKavlingStatus() {
 
           // Simpan ke variabel global
         statusData = cachedObj.data;
+        window.lastFetchedKavlingData = statusData.data; // Simpan untuk ekspor Excel
         if (cachedObj.index && typeof cachedObj.index === 'object') {
           kavlingStatusIndex.clear();
           Object.keys(cachedObj.index).forEach(k => {
@@ -675,6 +676,7 @@ async function fetchKavlingStatus() {
 
     // Simpan data ke variabel global
     statusData = data;
+    window.lastFetchedKavlingData = data.data; // Simpan untuk ekspor Excel
     buildKavlingStatusIndex(statusData);
 
     if (data && data.data) {
@@ -753,7 +755,8 @@ function updateStatusPanel(data) {
     tersewa_no_imb: 0,
     dipinjam_imb: 0,
     dipinjam_no_imb: 0,
-    unknown: 0,
+    unknown_no_induk: 0,
+    unknown_with_induk: 0,
     total: 0
   };
 
@@ -769,7 +772,34 @@ function updateStatusPanel(data) {
     counts.tersewa_no_imb = summaryImb.tersewa_no_imb || 0;
     counts.dipinjam_imb = summaryImb.dipinjam_imb || 0;
     counts.dipinjam_no_imb = summaryImb.dipinjam_no_imb || 0;
-    counts.unknown = summaryImb.unknown || 0;
+    
+    // Split unknown from summaryImb if it exists as a single count
+    if (summaryImb.unknown !== undefined) {
+      // If we only have a single 'unknown' count from API, we need to split it manually from data
+      if (data.data) {
+        data.data.forEach(item => {
+          if (item.imbCategory === 'unknown' || item.kategori === 'unknown') {
+            const raw = item.rawData || [];
+            const refInduk = raw.length > 4 ? String(raw[4] || '').trim() : '';
+            const noSgb = raw.length > 12 ? String(raw[12] || '').trim() : ''; // Kolom M
+            const noInduk = raw.length > 15 ? String(raw[15] || '').trim() : ''; // Kolom P
+            
+            const hasCertificate = (refInduk !== '' && refInduk !== '-') || 
+                                  (noSgb !== '' && noSgb !== '-') || 
+                                  (noInduk !== '' && noInduk !== '-');
+                                  
+            if (hasCertificate) counts.unknown_with_induk++;
+            else counts.unknown_no_induk++;
+          }
+        });
+      } else {
+        counts.unknown_no_induk = summaryImb.unknown || 0;
+      }
+    } else {
+      counts.unknown_no_induk = summaryImb.unknown_no_induk || 0;
+      counts.unknown_with_induk = summaryImb.unknown_with_induk || 0;
+    }
+
     counts.total = summaryImb.total || (
       counts.terjual_imb +
       counts.terjual_no_imb +
@@ -781,7 +811,8 @@ function updateStatusPanel(data) {
       counts.tersewa_no_imb +
       counts.dipinjam_imb +
       counts.dipinjam_no_imb +
-      counts.unknown
+      counts.unknown_no_induk +
+      counts.unknown_with_induk
     );
   } else if (data && Array.isArray(data.data)) {
     data.data.forEach(item => {
@@ -797,7 +828,7 @@ function updateStatusPanel(data) {
       const skema = (item.skema || '').toUpperCase();
       let imbCategory = item.imbCategory || 'unknown';
 
-      if (!item.imbCategory) {
+      if (!item.imbCategory || item.imbCategory === 'unknown') {
         if (skema.includes('DIPINJAM') || skema.includes('PINJAM')) {
           imbCategory = hasImb ? 'dipinjam_imb' : 'dipinjam_no_imb';
         } else if (skema.includes('DISEWAKAN') || skema.includes('SEWA')) {
@@ -817,14 +848,28 @@ function updateStatusPanel(data) {
         } else if (skema.includes('STOK')) {
           imbCategory = hasImb ? 'stok_imb' : 'stok_no_imb';
         } else {
-          imbCategory = 'unknown';
+          // Check Ref Induk, SGB, and Induk if category is unknown
+          const raw = item.rawData || [];
+          const refInduk = raw.length > 4 ? String(raw[4] || '').trim() : '';
+          const noSgb = raw.length > 12 ? String(raw[12] || '').trim() : ''; // Kolom M
+          const noInduk = raw.length > 15 ? String(raw[15] || '').trim() : ''; // Kolom P
+          
+          const hasCertificate = (refInduk !== '' && refInduk !== '-') || 
+                                (noSgb !== '' && noSgb !== '-') || 
+                                (noInduk !== '' && noInduk !== '-');
+                                
+          imbCategory = hasCertificate ? 'unknown_with_induk' : 'unknown_no_induk';
         }
       }
 
       if (Object.prototype.hasOwnProperty.call(counts, imbCategory)) {
         counts[imbCategory]++;
+      } else if (imbCategory === 'unknown_no_induk') {
+        counts.unknown_no_induk++;
+      } else if (imbCategory === 'unknown_with_induk') {
+        counts.unknown_with_induk++;
       } else {
-        counts.unknown++;
+        counts.unknown_no_induk++;
       }
     });
 
@@ -839,7 +884,8 @@ function updateStatusPanel(data) {
       counts.tersewa_no_imb +
       counts.dipinjam_imb +
       counts.dipinjam_no_imb +
-      counts.unknown;
+      counts.unknown_no_induk +
+      counts.unknown_with_induk;
   }
 
   // ========== BUAT HTML PANEL ==========
@@ -894,12 +940,13 @@ function updateStatusPanel(data) {
     { id: 'rekom_imb', title: 'Rekom dengan IMB/PBG/SLF' },
     { id: 'rekom_no_imb', title: 'Rekom belum ada IMB/PBG/SLF' },
     // LAINNYA
-    { id: 'unknown', title: 'Tidak diketahui' }
+    { id: 'unknown_no_induk', title: 'Tidak diketahui (tanpa sertifikat induk)' },
+    { id: 'unknown_with_induk', title: 'Tidak diketahui (dengan sertifikat induk)' }
   ];
 
   categories.forEach(cat => {
     const count = counts[cat.id] || 0;
-    const borderStyle = cat.id === 'unknown' ? 'border: 1px solid #ddd;' : '';
+    const borderStyle = cat.id.startsWith('unknown') ? 'border: 1px solid #ddd;' : '';
     
     // Background solid dan Darker untuk area "ID" (ikon sebelah kiri)
     let btnBg = '#ffffff';
@@ -935,7 +982,7 @@ function updateStatusPanel(data) {
     else if (cat.id === 'dipinjam_no_imb') { btnBg = '#4db6ac'; darkerBg = '#00897b'; }
     else if (cat.id === 'tersewa_imb') { btnBg = '#42A5F5'; darkerBg = '#1E88E5'; }
     else if (cat.id === 'tersewa_no_imb') { btnBg = '#1E88E5'; darkerBg = '#1565C0'; }
-    else if (cat.id === 'unknown') { 
+    else if (cat.id === 'unknown_no_induk') { 
       btnBg = 'red'; 
       darkerBg = '#cc0000';
       textColor = 'white'; 
@@ -943,6 +990,15 @@ function updateStatusPanel(data) {
       countBg = 'rgba(255,255,255,0.2)';
       countColor = 'white';
       countBorder = 'rgba(255,255,255,0.3)';
+    }
+    else if (cat.id === 'unknown_with_induk') { 
+      btnBg = 'white'; 
+      darkerBg = 'red';
+      textColor = '#333333'; 
+      textShadow = 'none';
+      countBg = 'rgba(0,0,0,0.05)';
+      countColor = '#333333';
+      countBorder = 'rgba(0,0,0,0.1)';
     }
 
     html += `
@@ -979,7 +1035,7 @@ function updateStatusPanel(data) {
     <div class="status-debug-info" style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 6px; font-size: 11px; color: #666; width: 100%; box-sizing: border-box; overflow: hidden;">
       <h5 style="margin: 0 0 5px 0; color: #333; font-size: 11px;">Info Data:</h5>
       API Sync Active<br>
-      Total: ${data.totalRecords || 0} | ${new Date().toLocaleTimeString()}
+      Total: <span id="totalApiRecords">${data.totalRecords || 0}</span> | ${new Date().toLocaleTimeString()}
     </div>
   </div>`;
 
@@ -1171,9 +1227,26 @@ function colorizeKavling(kavlingData) {
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
     line.setAttribute('x1', '0'); line.setAttribute('y1', '0');
     line.setAttribute('x2', '0'); line.setAttribute('y2', '6');
-    line.setAttribute('stroke', '#ffff3eff');
+    line.setAttribute('stroke', '#e0d100ff');
     line.setAttribute('stroke-width', '3.5');
-    line.setAttribute('stroke-opacity', '0.7');
+    line.setAttribute('stroke-opacity', '1');
+    pattern.appendChild(line);
+    defs.appendChild(pattern);
+  }
+  
+  if (!document.getElementById('unknownHatch')) {
+    const pattern = document.createElementNS("http://www.w3.org/2000/svg", "pattern");
+    pattern.setAttribute('id', 'unknownHatch');
+    pattern.setAttribute('patternUnits', 'userSpaceOnUse');
+    pattern.setAttribute('width', '20'); // Lebih lebar agar jarang-jarang
+    pattern.setAttribute('height', '20');
+    pattern.setAttribute('patternTransform', 'rotate(45)');
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute('x1', '7.5'); line.setAttribute('y1', '0');
+    line.setAttribute('x2', '7.5'); line.setAttribute('y2', '15');
+    line.setAttribute('stroke', 'red');
+    line.setAttribute('stroke-width', '1.5'); // Garis lebih tipis
+    line.setAttribute('stroke-opacity', '0.8'); // Sedikit lebih transparan
     pattern.appendChild(line);
     defs.appendChild(pattern);
   }
@@ -1247,12 +1320,24 @@ function colorizeKavling(kavlingData) {
       imbCategory = hasImb === false ? 'dipinjam_no_imb' : 'dipinjam_imb';
       className = hasImb === false ? 'kavling-status-dipinjam-no-imb' : 'kavling-status-dipinjam';
     } else if (kategori === 'unknown') {
-      imbCategory = 'unknown';
-      className = 'kavling-status-unknown';
+      const refInduk = rawData.length > 4 ? String(rawData[4] || '').trim() : '';
+      const noSgb = rawData.length > 12 ? String(rawData[12] || '').trim() : ''; // Kolom M
+      const noInduk = rawData.length > 15 ? String(rawData[15] || '').trim() : ''; // Kolom P
+      
+      const hasRefInduk = refInduk !== '' && refInduk !== '-';
+      const hasNoSgb = noSgb !== '' && noSgb !== '-';
+      const hasNoInduk = noInduk !== '' && noInduk !== '-';
+      
+      // Jika ada data di Ref Induk ATAU SGB ATAU Induk, maka masuk ke "dengan sertifikat"
+      const withCertificate = hasRefInduk || hasNoSgb || hasNoInduk;
+      
+      imbCategory = withCertificate ? 'unknown_with_induk' : 'unknown_no_induk';
+      className = withCertificate ? 'kavling-status-unknown-with-induk' : 'kavling-status-unknown-no-induk';
     }
 
     // Cek visibilitas warna berdasarkan filter checkbox
-    if (imbCategory && localStorage.getItem(`filter_${imbCategory}`) === 'false') {
+    const isFilteredOut = imbCategory && localStorage.getItem(`filter_${imbCategory}`) === 'false';
+    if (isFilteredOut) {
       className = null;
     }
 
@@ -1296,7 +1381,9 @@ function colorizeKavling(kavlingData) {
         'kavling-status-disewakan-no-imb',
         'kavling-status-dipinjam',
         'kavling-status-dipinjam-no-imb',
-        'kavling-status-unknown'
+        'kavling-status-unknown',
+        'kavling-status-unknown-no-induk',
+        'kavling-status-unknown-with-induk'
       );
 
       // Tambahkan class status baru ke group agar clearHighlight bisa mengenalinya
@@ -1306,34 +1393,42 @@ function colorizeKavling(kavlingData) {
 
       // Terapkan highlight ON HAND jika diperlukan (ARSIRAN)
       // Bersihkan overlay lama baik di dalam maupun di luar elemen
-      element.querySelectorAll('.on-hand-overlay').forEach(ov => ov.remove());
-      const externalOverlay = document.querySelector(`.on-hand-overlay[data-for="${kode}"]`);
+      element.querySelectorAll('.on-hand-overlay, .unknown-hatch-overlay').forEach(ov => ov.remove());
+      const externalOverlay = document.querySelector(`.on-hand-overlay[data-for="${kode}"], .unknown-hatch-overlay[data-for="${kode}"]`);
       if (externalOverlay) externalOverlay.remove();
 
-      if (applyHighlight) {
+      // Tentukan apakah perlu overlay: ON HAND (selalu jika aktif) atau UNKNOWN_WITH_INDUK (hanya jika tidak difilter)
+      const needsUnknownHatch = (imbCategory === 'unknown_with_induk' && !isFilteredOut);
+      
+      if (applyHighlight || needsUnknownHatch) {
         // Buat clone sebagai overlay arsiran
         const overlay = element.cloneNode(true);
         overlay.removeAttribute('id'); // Jangan duplikasi ID
-        overlay.setAttribute('class', 'on-hand-overlay');
+        
+        // Prioritaskan ON HAND overlay jika keduanya aktif
+        const overlayClass = applyHighlight ? 'on-hand-overlay' : 'unknown-hatch-overlay';
+        overlay.setAttribute('class', overlayClass);
         overlay.setAttribute('data-for', kode); // Untuk memudahkan pembersihan
         overlay.style.pointerEvents = 'none'; // Biar tetep bisa klik elemen aslinya
         
+        const hatchId = applyHighlight ? 'onHandHatch' : 'unknownHatch';
+
         if (element.tagName.toLowerCase() === 'g') {
           // Atur isi overlay agar hanya berisi arsiran
           const children = overlay.querySelectorAll('rect, path, polygon, circle');
           children.forEach(child => {
-            child.style.fill = 'url(#onHandHatch)';
+            child.style.fill = `url(#${hatchId})`;
             child.style.stroke = 'none';
             child.style.filter = 'none';
-            child.classList.remove('on-hand-highlight');
+            child.classList.remove('on-hand-highlight', 'kavling-status-unknown-with-induk');
             child.className = ''; 
           });
           element.appendChild(overlay);
         } else {
           // Jika bukan group tapi single element
-          overlay.style.fill = 'url(#onHandHatch)';
+          overlay.style.fill = `url(#${hatchId})`;
           overlay.style.stroke = 'none';
-          overlay.className = 'on-hand-overlay';
+          overlay.className = overlayClass;
           // Sisipkan setelah elemen asli agar berada di atasnya
           element.parentNode.insertBefore(overlay, element.nextSibling);
         }
@@ -1343,7 +1438,7 @@ function colorizeKavling(kavlingData) {
       if (element.tagName.toLowerCase() === 'g') {
         element.querySelectorAll('rect, path, polygon, circle').forEach(child => {
           // Abaikan jika ini adalah overlay arsiran
-          if (child.closest('.on-hand-overlay')) return;
+          if (child.closest('.on-hand-overlay') || child.closest('.unknown-hatch-overlay')) return;
 
           child.classList.remove(
             'kavling-status-kpr',
@@ -1356,7 +1451,9 @@ function colorizeKavling(kavlingData) {
             'kavling-status-disewakan-no-imb',
             'kavling-status-dipinjam',
             'kavling-status-dipinjam-no-imb',
-            'kavling-status-unknown'
+            'kavling-status-unknown',
+            'kavling-status-unknown-no-induk',
+            'kavling-status-unknown-with-induk'
           );
           if (className) {
             child.classList.add(className);
@@ -1387,15 +1484,15 @@ function colorizeKavling(kavlingData) {
     const hasAnyStatus = Array.from(el.classList).some(cls => cls.startsWith('kavling-status-') && cls !== 'kavling-status-unknown');
 
     if (el.id && !processedIds.has(el.id) && !hasAnyStatus) {
-      // Cek visibilitas warna untuk 'unknown'
-      if (localStorage.getItem('filter_unknown') !== 'false') {
-        el.classList.add('kavling-status-unknown');
+      // Default untuk yang ada di SVG tapi tidak di DB: unknown_no_induk (merah)
+      if (localStorage.getItem('filter_unknown_no_induk') !== 'false') {
+        el.classList.add('kavling-status-unknown-no-induk');
         
         // Jika element adalah group, tambahkan ke child elements juga
         if (el.tagName.toLowerCase() === 'g') {
           el.querySelectorAll('rect, path, polygon, circle').forEach(child => {
-            if (!child.closest('.on-hand-overlay')) {
-              child.classList.add('kavling-status-unknown');
+            if (!child.closest('.on-hand-overlay') && !child.closest('.unknown-hatch-overlay')) {
+              child.classList.add('kavling-status-unknown-no-induk');
             }
           });
         }
@@ -1431,10 +1528,10 @@ function clearStatusColors() {
 
       // Hapus highlight ON HAND jika ada
       el.classList.remove('on-hand-highlight');
-      el.querySelectorAll('.on-hand-overlay').forEach(ov => ov.remove());
+      el.querySelectorAll('.on-hand-overlay, .unknown-hatch-overlay').forEach(ov => ov.remove());
       // Cari dan hapus overlay eksternal jika ada
       if (el.id) {
-        const extOv = document.querySelector(`.on-hand-overlay[data-for="${el.id.toUpperCase()}"]`);
+        const extOv = document.querySelector(`.on-hand-overlay[data-for="${el.id.toUpperCase()}"], .unknown-hatch-overlay[data-for="${el.id.toUpperCase()}"]`);
         if (extOv) extOv.remove();
       }
 
@@ -1443,7 +1540,9 @@ function clearStatusColors() {
         'kavling-status-stok', 
         'kavling-status-rekom',
         'kavling-status-disewakan',
-        'kavling-status-unknown'
+        'kavling-status-unknown',
+        'kavling-status-unknown-no-induk',
+        'kavling-status-unknown-with-induk'
       );
 
       // Hapus juga dari child elements jika group
@@ -1457,7 +1556,9 @@ function clearStatusColors() {
             'kavling-status-stok', 
             'kavling-status-rekom',
             'kavling-status-disewakan',
-            'kavling-status-unknown'
+            'kavling-status-unknown',
+            'kavling-status-unknown-no-induk',
+            'kavling-status-unknown-with-induk'
           );
         });
       }
@@ -1473,7 +1574,8 @@ function countKavlingFromMap() {
     stok: 0,
     rekom: 0,
     disewakan: 0,
-    unknown: 0,
+    unknown_no_induk: 0,
+    unknown_with_induk: 0,
     total: 0
   };
 
@@ -1488,7 +1590,8 @@ function countKavlingFromMap() {
     'kavling-status-stok', 
     'kavling-status-rekom', 
     'kavling-status-disewakan',
-    'kavling-status-unknown'
+    'kavling-status-unknown-no-induk',
+    'kavling-status-unknown-with-induk'
   ];
 
   // Hitung status untuk setiap frame element
@@ -1499,21 +1602,21 @@ function countKavlingFromMap() {
       // Cek setiap kelas status
       statusClasses.forEach(className => {
         if (el.classList.contains(className)) {
-          const type = className.replace('kavling-status-', '');
+          const type = className.replace('kavling-status-', '').replace(/-/g, '_');
           counts[type]++;
           foundStatus = true;
         }
       });
 
-      // Jika tidak ada kelas status, maka termasuk UNKNOWN (putih)
+      // Jika tidak ada kelas status, maka termasuk UNKNOWN_NO_INDUK (merah)
       if (!foundStatus) {
-        counts.unknown++;
+        counts.unknown_no_induk++;
       }
     }
   });
 
   // Hitung total
-  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan + counts.unknown;
+  counts.total = counts.kpr + counts.stok + counts.rekom + counts.disewakan + counts.unknown_no_induk + counts.unknown_with_induk;
 
   console.log('📈 Hasil hitung real-time dari peta:', counts);
 
@@ -1527,7 +1630,8 @@ function countKavlingFromMap() {
   safeUpdate('countSTOK', counts.stok);
   safeUpdate('countREKOM', counts.rekom);
   safeUpdate('countDISEWAKAN', counts.disewakan);
-  safeUpdate('countUNKNOWN', counts.unknown);
+  safeUpdate('countUNKNOWN_NO_INDUK', counts.unknown_no_induk);
+  safeUpdate('countUNKNOWN_WITH_INDUK', counts.unknown_with_induk);
   safeUpdate('totalAll', counts.total);
 
   return counts;
@@ -1894,8 +1998,29 @@ function showImbStatsPopup(type) {
 
   const filtered = baseData.filter(item => {
     if (legacyStatuses.includes(statusType)) {
+      if (statusType === 'unknown') {
+        // If they click 'unknown' (legacy), show all unknown
+        return (item.kategori || '').toLowerCase() === 'unknown';
+      }
       return (item.kategori || '').toLowerCase() === statusType;
     }
+    
+    // Check new types: unknown_no_induk or unknown_with_induk
+    if (statusType === 'unknown_no_induk' || statusType === 'unknown_with_induk') {
+      if ((item.kategori || '').toLowerCase() !== 'unknown') return false;
+      const raw = item.rawData || [];
+      const refInduk = raw.length > 4 ? String(raw[4] || '').trim() : '';
+      const noSgb = raw.length > 12 ? String(raw[12] || '').trim() : ''; // Kolom M
+      const noInduk = raw.length > 15 ? String(raw[15] || '').trim() : ''; // Kolom P
+      
+      const hasCertificate = (refInduk !== '' && refInduk !== '-') || 
+                            (noSgb !== '' && noSgb !== '-') || 
+                            (noInduk !== '' && noInduk !== '-');
+                            
+      const targetType = hasCertificate ? 'unknown_with_induk' : 'unknown_no_induk';
+      return statusType === targetType;
+    }
+
     return (item.imbCategory || '').toLowerCase() === statusType;
   });
 
@@ -1918,6 +2043,8 @@ function showImbStatsPopup(type) {
     'tersewa_no_imb': 'Tersewa tanpa IMB/PBG/SLF',
     'dipinjam_imb': 'Dipinjam dengan IMB/PBG/SLF',
     'dipinjam_no_imb': 'Dipinjam belum ada IMB/PBG/SLF',
+    'unknown_no_induk': 'Tidak diketahui (tanpa sertifikat induk)',
+    'unknown_with_induk': 'Tidak diketahui (dengan sertifikat induk)',
     'unknown': 'Tidak diketahui'
   };
 
@@ -3025,123 +3152,242 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
     btn.innerHTML = '<span>⏳</span> Mengolah PDF...';
 
     try {
-      const mapElement = document.getElementById('map');
+      // Tunggu sebentar agar browser melepas memori
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Gunakan html2canvas untuk menangkap tampilan elemen #map
-      // Scale 4 memberikan resolusi Ultra HD untuk cetakan A3
-      const canvas = await html2canvas(mapElement, {
-        scale: 5, 
-        useCORS: true,
-        logging: false,
-        backgroundColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-        imageTimeout: 0,
-        onclone: (clonedDoc) => {
-          // Pastikan elemen SVG di dalam clone memiliki dimensi yang benar
-          const svg = clonedDoc.querySelector('#map svg');
-          if (svg) {
-            svg.style.width = '100%';
-            svg.style.height = '100%';
-          }
-        }
+      const svgElement = document.querySelector('#map svg');
+      if (!svgElement) throw new Error('Elemen peta (SVG) belum dimuat.');
+
+      // ==========================================
+      // METODE LIGHTWEIGHT: SVG DIRECT RENDER
+      // ==========================================
+      // Metode ini jauh lebih ringan daripada html2canvas dan mencegah "Force Close"
+      
+      const rect = svgElement.getBoundingClientRect();
+      const width = rect.width || 1000;
+      const height = rect.height || 800;
+      
+      // Clone SVG agar kita bisa memodifikasinya tanpa merusak tampilan asli
+      const clonedSvg = svgElement.cloneNode(true);
+      clonedSvg.setAttribute('width', width);
+      clonedSvg.setAttribute('height', height);
+      
+      // Masukkan semua style CSS penting ke dalam SVG agar warna tetap muncul
+      const style = document.createElement('style');
+      style.textContent = `
+        svg { background-color: #ffffff !important; }
+        .kavling-status-kpr { fill: grey !important; }
+        .kavling-status-kpr-no-imb { fill: lightgrey !important; }
+        .kavling-status-stok { fill: #2ecc71 !important; }
+        .kavling-status-stok-no-imb { fill: #c6f7c6ff !important; }
+        .kavling-status-rekom { fill: #9c27b0 !important; }
+        .kavling-status-rekom-no-imb { fill: #9c27b0 !important; }
+        .kavling-status-disewakan { fill: #42A5F5 !important; }
+        .kavling-status-disewakan-no-imb { fill: #1E88E5 !important; }
+        .kavling-status-dipinjam { fill: #26a69a !important; }
+        .kavling-status-dipinjam-no-imb { fill: #4db6ac !important; }
+        .kavling-status-unknown-no-induk { fill: red !important; }
+        .kavling-status-unknown-with-induk { fill: white !important; }
+        path, rect, polygon, circle { stroke: #000000 !important; stroke-width: 1.2px !important; shape-rendering: geometricPrecision !important; }
+        text { font-family: Arial, sans-serif !important; font-weight: bold !important; text-rendering: optimizeLegibility !important; }
+        .on-hand-overlay rect, .on-hand-overlay path, .on-hand-overlay polygon { fill: url(#onHandHatch) !important; }
+        .unknown-hatch-overlay rect, .unknown-hatch-overlay path, .unknown-hatch-overlay polygon { fill: url(#unknownHatch) !important; }
+      `;
+      clonedSvg.insertBefore(style, clonedSvg.firstChild);
+
+      // Serialize SVG ke XML
+      const svgData = new XMLSerializer().serializeToString(clonedSvg);
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+
+      // Render ke Canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const scale = 4; // Skala 4 sudah sangat tajam untuk cetakan A3 tanpa membebani RAM berlebih
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      
+      // Fill background PUTIH (Sesuai Layar)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const img = new Image();
+      const imgLoadPromise = new Promise((resolve, reject) => {
+        img.onload = () => {
+          // Gunakan smoothing agar garis tidak pecah
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve();
+        };
+        img.onerror = () => reject(new Error('Gagal memproses gambar SVG'));
       });
 
-      // Menggunakan PNG untuk kualitas lossless (garis peta lebih tajam)
-      const imgData = canvas.toDataURL('image/png');
+      img.src = url;
+      await imgLoadPromise;
+
+      // Konversi ke JPEG dengan kualitas maksimal
+      let imgData = canvas.toDataURL('image/jpeg', 0.95);
+      
+      // Cleanup
+      URL.revokeObjectURL(url);
+      canvas.width = 0;
+      canvas.height = 0;
       
       const { jsPDF } = window.jspdf;
-      // Tentukan orientasi berdasarkan rasio aspek tampilan
-      const orientation = canvas.width > canvas.height ? 'l' : 'p';
-      // Gunakan compress: false untuk kualitas PDF terbaik
       const pdf = new jsPDF({
-        orientation: orientation,
+        orientation: 'l',
         unit: 'mm',
         format: 'a3',
-        compress: false
+        compress: true 
       });
-      
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
-      const finalWidth = canvas.width * ratio;
-      const finalHeight = canvas.height * ratio;
+      // Alokasi ruang: Peta besar di atas (85%), Statistik memanjang di bawah
+      const mapAreaHeight = pdfHeight * 0.82;
+      const ratio = Math.min((pdfWidth - 10) / width, mapAreaHeight / height);
+      const finalWidth = width * ratio;
+      const finalHeight = height * ratio;
       
       const x = (pdfWidth - finalWidth) / 2;
-      const y = (pdfHeight - finalHeight) / 2;
+      const y = 5; // Margin atas sedikit
 
-      // Gunakan alias 'SLOW' atau undefined untuk kualitas render terbaik
-      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight, undefined, 'SLOW');
+      pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
+      imgData = null;
 
       // ===============================
-      // TAMBAHKAN LEGENDA (A3 BOTTOM)
+      // PANEL STATISTIK DI BAWAH (MEMANJANG)
       // ===============================
-      const legendCategories = [
-        { id: 'ONHAND', title: 'Highlight On Hand', color: [251, 192, 45] },
-        { id: 'STOK_IMB', title: 'Stok IMB', color: [39, 174, 96] },
-        { id: 'STOK_NO_IMB', title: 'Belum IMB', color: [166, 192, 18] },
-        { id: 'TERSEWA_IMB', title: 'Sewa IMB', color: [30, 136, 229] },
-        { id: 'TERSEWA_NO_IMB', title: 'Sewa Tanpa IMB', color: [21, 101, 192] },
-        { id: 'DIPINJAM_IMB', title: 'Pinjam IMB', color: [0, 137, 123] },
-        { id: 'DIPINJAM_NO_IMB', title: 'Pinjam Belum IMB', color: [0, 137, 123] },
-        { id: 'TERJUAL_IMB', title: 'Sold IMB', color: [204, 0, 0] },
-        { id: 'TERJUAL_NO_IMB', title: 'Sold Tanpa IMB', color: [198, 40, 40] },
-        { id: 'REKOM_IMB', title: 'Rekom IMB', color: [123, 31, 162] },
-        { id: 'REKOM_NO_IMB', title: 'Rekom Belum IMB', color: [123, 31, 162] },
-        { id: 'UNKNOWN', title: 'Lainnya', color: [204, 204, 204] }
+      let statsY = y + finalHeight + 10;
+      let currentX = 10;
+      const boxSize = 6;
+      const colWidth = 55; // Lebar per kolom legenda
+      const rowGap = 10;
+
+      // Judul Statistik
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(16);
+      pdf.text('RINGKASAN STATUS KAVLING', 10, statsY - 2);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+      pdf.line(10, statsY, pdfWidth - 10, statsY);
+      
+      statsY += 3; // Dikurangi dari 8 agar lebih rapat ke garis judul
+
+      const allCategories = [
+        { id: 'stok_imb', title: 'Stok Memilki IMB', color: [46, 204, 113] },
+        { id: 'stok_no_imb', title: 'Stok Tanpa IMB', color: [198, 247, 198] },
+        { id: 'unknown_no_induk', title: 'Tidak ada Sertif', color: [255, 0, 0] },
+        { id: 'unknown_with_induk', title: '(Proses)Memilki Sertif/Induk', color: [255, 255, 255], hatch: true, hatchColor: [255, 0, 0] },
+        { id: 'on_hand', title: 'ON HAND Sertifikat', color: [251, 192, 45], hatch: true, hatchColor: [130, 119, 23] },
+        { id: 'tersewa_imb', title: 'Sewa Memilki IMB', color: [66, 165, 245] },
+        { id: 'tersewa_no_imb', title: 'Sewa Tanpa IMB', color: [30, 136, 229] },
+        { id: 'dipinjam_imb', title: 'Dipinjam Memiliki IMB', color: [38, 166, 154] },
+        { id: 'dipinjam_no_imb', title: 'Dipinjam Tanpa IMB', color: [77, 182, 172] },
+        { id: 'terjual_imb', title: 'Terjual Memiliki IMB', color: [128, 128, 128] },
+        { id: 'terjual_no_imb', title: 'Terjual Tanpa IMB', color: [211, 211, 211] }
       ];
 
-      // Background putih untuk area legenda agar kontras
-      pdf.setFillColor(255, 255, 255);
-      pdf.rect(0, pdfHeight - 20, pdfWidth, 20, 'F');
+      // FILTER HANYA KATEGORI YANG AKTIF (TERCENTANG)
+      const legendCategories = allCategories.filter(cat => {
+        if (cat.id === 'on_hand') {
+          return localStorage.getItem('onHandFilter') === 'true';
+        }
+        return localStorage.getItem(`filter_${cat.id}`) !== 'false';
+      });
+
+      pdf.setFontSize(11); 
+
+      // PENGATURAN TATA LETAK DINAMIS: 6 kolom per baris
+      const itemsPerRow = 6;
+      const colWidthRatio = (pdfWidth - 20) / itemsPerRow;
       
+      legendCategories.forEach((cat, index) => {
+        const domIdMap = {
+          'terjual_imb': 'countTERJUAL_IMB',
+          'terjual_no_imb': 'countTERJUAL_NO_IMB',
+          'stok_imb': 'countSTOK_IMB',
+          'stok_no_imb': 'countSTOK_NO_IMB',
+          'rekom_imb': 'countREKOM_IMB',
+          'rekom_no_imb': 'countREKOM_NO_IMB',
+          'tersewa_imb': 'countTERSEWA_IMB',
+          'tersewa_no_imb': 'countTERSEWA_NO_IMB',
+          'dipinjam_imb': 'countDIPINJAM_IMB',
+          'dipinjam_no_imb': 'countDIPINJAM_NO_IMB',
+          'unknown_no_induk': 'countUNKNOWN_NO_INDUK',
+          'unknown_with_induk': 'countUNKNOWN_WITH_INDUK',
+          'on_hand': 'countONHAND'
+        };
+
+        const targetDomId = domIdMap[cat.id];
+        const countElement = document.getElementById(targetDomId);
+        const count = countElement ? countElement.innerText : '0';
+        
+        const colIndex = index % itemsPerRow;
+        const rowIndex = Math.floor(index / itemsPerRow);
+        
+        const itemX = 10 + (colIndex * colWidthRatio);
+        const itemY = statsY + 8 + (rowIndex * 10);
+
+        // Kotak warna
+        pdf.setFillColor(cat.color[0], cat.color[1], cat.color[2]);
+        pdf.rect(itemX, itemY - 5, boxSize, boxSize, 'F');
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(0.2);
+        pdf.rect(itemX, itemY - 5, boxSize, boxSize, 'S');
+        
+        // Jika arsiran
+        if (cat.hatch) {
+          const hColor = cat.hatchColor || [255, 0, 0];
+          pdf.setDrawColor(hColor[0], hColor[1], hColor[2]);
+          pdf.setLineWidth(0.2);
+          for (let i = 0; i <= boxSize; i += 2) {
+            pdf.line(itemX + i, itemY - 5, itemX, itemY - 5 + i);
+            pdf.line(itemX + boxSize, itemY - 5 + i, itemX + i, itemY - 5 + boxSize);
+          }
+        }
+        
+        // Teks statistik (Angka Tebal, Judul Normal)
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${count}`, itemX + boxSize + 2, itemY);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`${cat.title}`, itemX + boxSize + 12, itemY);
+      });
+
+      // Total di paling kanan bawah
+      const totalAll = document.getElementById('totalAll')?.innerText || '0';
+      const totalApi = document.getElementById('totalApiRecords')?.innerText || '0';
+
+      const finalRowIndex = Math.floor((legendCategories.length - 1) / itemsPerRow);
+      const bottomStatsY = statsY + 8 + (finalRowIndex * 10);
+
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`TOTAL UNIT: ${totalAll}`, pdfWidth - 60, bottomStatsY + 10);
+      
+      // Tambahkan Total Data API (lebih kecil dan sejajar)
       pdf.setFontSize(10);
-       pdf.setTextColor(0, 0, 0);
-       
-       let startY = pdfHeight - 12;
-       let currentX = 10;
-       const spacing = 4;
-       const boxSize = 3;
-
-       legendCategories.forEach((cat) => {
-         const countElement = document.getElementById('count' + cat.id);
-         const count = countElement ? countElement.innerText : '0';
-         const text = `${cat.title}: ${count}`;
-         const textWidth = pdf.getTextWidth(text);
-         const itemWidth = boxSize + 1.5 + textWidth + spacing;
-
-         // Cek apakah muat di baris ini, jika tidak pindah ke baris bawahnya
-         if (currentX + itemWidth > pdfWidth - 10) {
-           currentX = 10;
-           startY += 5;
-         }
-         
-         // Kotak warna
-         pdf.setFillColor(cat.color[0], cat.color[1], cat.color[2]);
-         pdf.rect(currentX, startY - 3, boxSize, boxSize, 'F');
-         pdf.setDrawColor(0, 0, 0);
-         pdf.rect(currentX, startY - 3, boxSize, boxSize, 'S');
-         
-         // Teks legenda
-         pdf.text(text, currentX + boxSize + 1.5, startY);
-         
-         currentX += itemWidth;
-       });
-
-       // Tambahkan Total di akhir
-       const totalAll = document.getElementById('totalAll')?.innerText || '0';
-       pdf.setFont('helvetica', 'bold');
-       const totalText = `| TOTAL: ${totalAll}`;
-       const totalWidth = pdf.getTextWidth(totalText);
-       
-       if (currentX + totalWidth > pdfWidth - 10) {
-         currentX = 10;
-         startY += 5;
-       }
-       pdf.text(totalText, currentX, startY);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`TOTAL DATA API: ${totalApi}`, pdfWidth - 60, bottomStatsY + 15);
       
+      // Watermark Tanggal
+      pdf.setFontSize(12); 
+      pdf.setTextColor(50, 50, 50); // Perjelas (lebih gelap)
       const now = new Date();
+      const timestamp = now.toLocaleString('id-ID');
+      pdf.text(`Data Update pada: ${timestamp} | BTU Site Plan System`, 12, pdfHeight - 5);
+      
       const dateStr = now.toLocaleDateString('id-ID').replace(/\//g, '-');
-      pdf.save(`Peta_Tampilan_BTU_${dateStr}.pdf`);
+      
+      // Nama file dinamis berdasarkan filter yang aktif
+      let filterSuffix = legendCategories.map(cat => cat.title.split(' ')[0]).join('_');
+      if (filterSuffix.length > 50) filterSuffix = filterSuffix.substring(0, 47) + '...';
+      const fileName = `Peta_BTU_${filterSuffix || 'All'}_${dateStr}.pdf`;
+      
+      pdf.save(fileName);
       
       btn.innerHTML = '<span>✅</span> Selesai!';
       setTimeout(() => {
@@ -3151,7 +3397,175 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
 
     } catch (error) {
       console.error('Download error:', error);
-      alert('Gagal mendownload peta. Pastikan semua data sudah termuat sempurna.');
+      alert('Gagal mendownload peta: ' + (error.message || 'Terjadi kesalahan tidak diketahui'));
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  });
+
+  // ===============================
+  // DOWNLOAD EXCEL STATISTIK
+  // ===============================
+  document.getElementById('downloadExcelStatistik')?.addEventListener('click', () => {
+    const btn = document.getElementById('downloadExcelStatistik');
+    const originalText = btn.innerHTML;
+    
+    try {
+      btn.innerHTML = '<span>⏳</span> Memproses Data...';
+      btn.disabled = true;
+
+      // 1. Ambil data asli dari API (cached di global variable jika ada)
+      // Jika menggunakan variabel global 'baseData' atau 'lastFetchedData'
+      const dataToProcess = window.lastFetchedKavlingData || [];
+      if (!dataToProcess || dataToProcess.length === 0) {
+        throw new Error('Data belum dimuat dari API. Silakan tunggu atau refresh.');
+      }
+
+      // 2. Identifikasi kategori yang sedang aktif (tercentang)
+      const activeFilters = {
+        'stok_imb': localStorage.getItem('filter_stok_imb') !== 'false',
+        'stok_no_imb': localStorage.getItem('filter_stok_no_imb') !== 'false',
+        'tersewa_imb': localStorage.getItem('filter_tersewa_imb') !== 'false',
+        'tersewa_no_imb': localStorage.getItem('filter_tersewa_no_imb') !== 'false',
+        'dipinjam_imb': localStorage.getItem('filter_dipinjam_imb') !== 'false',
+        'dipinjam_no_imb': localStorage.getItem('filter_dipinjam_no_imb') !== 'false',
+        'terjual_imb': localStorage.getItem('filter_terjual_imb') !== 'false',
+        'terjual_no_imb': localStorage.getItem('filter_terjual_no_imb') !== 'false',
+        'rekom_imb': localStorage.getItem('filter_rekom_imb') !== 'false',
+        'rekom_no_imb': localStorage.getItem('filter_rekom_no_imb') !== 'false',
+        'unknown_no_induk': localStorage.getItem('filter_unknown_no_induk') !== 'false',
+        'unknown_with_induk': localStorage.getItem('filter_unknown_with_induk') !== 'false',
+        'on_hand': localStorage.getItem('onHandFilter') === 'true'
+      };
+
+      const excelData = [];
+      
+      // 3. Proses setiap kavling sesuai kriteria
+      dataToProcess.forEach(item => {
+        const raw = item.rawData || [];
+        const skema = (item.skema || '').toUpperCase();
+        
+        // --- LOGIKA PENENTUAN KATEGORI YANG PERSIS DENGAN PEWARNAAN ---
+        let baseKategori = (item.kategori || 'unknown').toLowerCase();
+        
+        // Re-evaluasi kategori berdasarkan Skema Jual (Kolom I / Index 8)
+        const skemaJual = raw.length > 8 ? String(raw[8] || '').toUpperCase().trim() : skema;
+        
+        if (skemaJual.includes('DIPINJAM') || skemaJual.includes('PINJAM')) {
+          baseKategori = 'dipinjam';
+        } else if (skemaJual.includes('DISEWAKAN') || skemaJual.includes('SEWA')) {
+          baseKategori = 'disewakan';
+        } else if (skemaJual.includes('REKOM') || skemaJual.includes('REKOMENDASI')) {
+          baseKategori = 'rekom';
+        } else if (
+          skemaJual.includes('KPR') ||
+          skemaJual.includes('TUNAI') ||
+          skemaJual.includes('SOLD') ||
+          skemaJual.includes('TERJUAL') ||
+          skemaJual.includes('LUNAS') ||
+          skemaJual.includes('DP') ||
+          skemaJual.includes('DIHUNI')
+        ) {
+          baseKategori = 'kpr'; // Ini adalah SOLD
+        } else if (skemaJual.includes('STOK')) {
+          baseKategori = 'stok';
+        }
+
+        // Tentukan imbCategory (Sub-kategori)
+        let hasImb = typeof item.hasImb === 'boolean' ? item.hasImb : null;
+        if (hasImb === null && raw.length > 31) {
+          const noImbStr = String(raw[31] || '').trim();
+          const lower = noImbStr.toLowerCase();
+          hasImb = noImbStr !== '' && noImbStr !== '-' && !lower.includes('belum') && !lower.includes('[belum memiliki]');
+        }
+
+        let currentCat = '';
+        if (baseKategori === 'kpr') {
+          currentCat = hasImb === false ? 'terjual_no_imb' : 'terjual_imb';
+        } else if (baseKategori === 'stok') {
+          currentCat = hasImb === false ? 'stok_no_imb' : 'stok_imb';
+        } else if (baseKategori === 'rekom') {
+          currentCat = hasImb === false ? 'rekom_no_imb' : 'rekom_imb';
+        } else if (baseKategori === 'disewakan') {
+          currentCat = hasImb === false ? 'tersewa_no_imb' : 'tersewa_imb';
+        } else if (baseKategori === 'dipinjam') {
+          currentCat = hasImb === false ? 'dipinjam_no_imb' : 'dipinjam_imb';
+        } else if (baseKategori === 'unknown') {
+          const refInduk = raw.length > 4 ? String(raw[4] || '').trim() : '';
+          const noSgb = raw.length > 12 ? String(raw[12] || '').trim() : '';
+          const noInduk = raw.length > 15 ? String(raw[15] || '').trim() : '';
+          const hasCert = (refInduk !== '' && refInduk !== '-') || (noSgb !== '' && noSgb !== '-') || (noInduk !== '' && noInduk !== '-');
+          currentCat = hasCert ? 'unknown_with_induk' : 'unknown_no_induk';
+        }
+
+        // Deteksi On Hand
+        const qValue = raw.length > 16 ? String(raw[16] || '').trim().toUpperCase() : '';
+        const kValue = raw.length > 10 ? String(raw[10] || '').trim().toUpperCase() : '';
+        const isOnHand = qValue.includes('ON_HAND') || kValue.includes('ON_HAND');
+
+        // Cek apakah data ini harus dimasukkan ke Excel (sesuai filter centang status)
+        const isCatActive = activeFilters[currentCat];
+        
+        // HANYA masukkan jika kategori status UTAMA-nya sedang dicentang
+        if (isCatActive) {
+          const statusTextMap = {
+            'stok_imb': 'Stok Memilki IMB',
+            'stok_no_imb': 'Stok Tanpa IMB',
+            'tersewa_imb': 'Sewa Memilki IMB',
+            'tersewa_no_imb': 'Sewa Tanpa IMB',
+            'dipinjam_imb': 'Dipinjam Memiliki IMB',
+            'dipinjam_no_imb': 'Dipinjam Tanpa IMB',
+            'terjual_imb': 'Terjual Memiliki IMB',
+            'terjual_no_imb': 'Terjual Tanpa IMB',
+            'rekom_imb': 'Rekom Memiliki IMB',
+            'rekom_no_imb': 'Rekom Tanpa IMB',
+            'unknown_no_induk': 'Tidak ada Sertifikat',
+            'unknown_with_induk': 'Ada Sertifikat/Induk'
+          };
+
+          excelData.push({
+            "Nama Kavling": item.kode || raw[0] || '-',
+            "Nomor Sertifikat": raw[12] || '-',
+            "SGB": raw[12] || '-', // Kolom M
+            "SHM": raw[14] || '-', // Kolom O
+            "Ref Induk": raw[4] || '-', // Kolom E
+            "Induk": raw[15] || '-', // Kolom P
+            "Status Kavling": statusTextMap[currentCat] || item.kategori || '-',
+            "Sertifikat (On Hand)": isOnHand ? "YA (ON HAND)" : "-"
+          });
+        }
+      });
+
+      if (excelData.length === 0) {
+        alert('Tidak ada data untuk dicetak sesuai filter yang aktif.');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+      }
+
+      // 4. Generate Excel
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Statistik Kavling");
+      
+      // Auto-width kolom
+      const wscols = [
+        {wch: 15}, {wch: 25}, {wch: 20}, {wch: 20}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 20}
+      ];
+      ws['!cols'] = wscols;
+
+      const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
+      XLSX.writeFile(wb, `Data_Statistik_BTU_${dateStr}.xlsx`);
+
+      btn.innerHTML = '<span>✅</span> Selesai!';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }, 2000);
+
+    } catch (error) {
+      console.error('Excel Download Error:', error);
+      alert('Gagal mendownload Excel: ' + error.message);
       btn.innerHTML = originalText;
       btn.disabled = false;
     }
@@ -3387,8 +3801,8 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
 
     if (el.tagName.toLowerCase() === 'g') {
       el.querySelectorAll('rect, path, polygon').forEach(c => {
-        // ABAIKAN jika ini adalah bagian dari overlay arsiran ON HAND
-        if (c.closest('.on-hand-overlay')) return;
+        // ABAIKAN jika ini adalah bagian dari overlay arsiran (ON HAND atau UNKNOWN HATCH)
+        if (c.closest('.on-hand-overlay') || c.closest('.unknown-hatch-overlay')) return;
 
         // Only apply highlight style if it doesn't already have a status color
         const parent = c.closest('g');
@@ -3450,8 +3864,8 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
     els.forEach(el => {
       if (el.tagName.toLowerCase() === 'g') {
         el.querySelectorAll('rect, path, polygon').forEach(c => {
-          // ABAIKAN jika ini adalah bagian dari overlay arsiran ON HAND
-          if (c.closest('.on-hand-overlay')) return;
+          // ABAIKAN jika ini adalah bagian dari overlay arsiran (ON HAND atau UNKNOWN HATCH)
+          if (c.closest('.on-hand-overlay') || c.closest('.unknown-hatch-overlay')) return;
 
           const parent = c.closest('g');
           const target = (parent && parent.id && parent.id !== 'map') ? parent : c;
