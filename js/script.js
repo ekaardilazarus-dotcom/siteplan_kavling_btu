@@ -27,7 +27,27 @@ function showAccessCodePopup() {
   
   function validateCode() {
     const code = input.value.trim().toUpperCase();
-    if (code === 'F888') {
+    if (code === 'E000') {
+      accessLevel = 'admin';
+      sessionStorage.setItem('access_level', 'admin'); // Simpan level akses admin
+      sessionStorage.setItem('imb_access', 'e000'); // Simpan akses untuk IMB
+      overlay.remove();
+      applyAccessRestrictions();
+      
+      // Wait a little and try to show admin button (in case admin.js is loaded)
+      setTimeout(() => {
+        if (typeof showAdminButton === 'function') {
+          showAdminButton();
+        }
+      }, 100);
+      
+      // Otomatisasi status setelah 2 detik
+      setTimeout(() => {
+        if (typeof fetchKavlingStatus === 'function') {
+          fetchKavlingStatus();
+        }
+      }, 2000);
+    } else if (code === 'F888') {
       accessLevel = 'full';
       sessionStorage.setItem('access_level', 'full'); // Simpan level akses
       sessionStorage.setItem('imb_access', 'f888'); // Simpan akses untuk IMB
@@ -87,8 +107,8 @@ function applyAccessRestrictions() {
     // Tombol IMB tetap terlihat untuk BTU999
     const imbBtn = document.getElementById('checkImbStatus');
     if (imbBtn) imbBtn.style.display = 'block';
-  } else if (accessLevel === 'full') {
-    // Pastikan tombol IMB dan SITE MAP terlihat jika akses penuh (f888)
+  } else if (accessLevel === 'full' || accessLevel === 'admin') {
+    // Pastikan tombol IMB dan SITE MAP terlihat jika akses penuh (f888) atau admin (E000)
     const imbBtn = document.getElementById('checkImbStatus');
     if (imbBtn) imbBtn.style.display = 'block';
 
@@ -97,10 +117,44 @@ function applyAccessRestrictions() {
 
     const reportMapBtn = document.getElementById('openReportMap');
     if (reportMapBtn) reportMapBtn.style.display = 'block';
+    
+    // Show admin button if access is admin
+    if (accessLevel === 'admin' && typeof showAdminButton === 'function') {
+      showAdminButton();
+    }
   }
 }
 
 window.addEventListener('DOMContentLoaded', function() {
+  // Initialize filter defaults ONCE (only when visiting for the first time)
+  const hasInitializedFilters = localStorage.getItem('hasInitializedFilters');
+  if (!hasInitializedFilters) {
+    const filterKeys = [
+      'filter_stok_imb',
+      'filter_stok_no_imb',
+      'filter_tersewa_imb',
+      'filter_tersewa_no_imb',
+      'filter_dipinjam_imb',
+      'filter_dipinjam_no_imb',
+      'filter_terjual_imb',
+      'filter_terjual_no_imb',
+      'filter_rekom_imb',
+      'filter_rekom_no_imb',
+      'filter_unknown_no_induk',
+      'filter_unknown_with_induk'
+    ];
+    
+    filterKeys.forEach(key => {
+      localStorage.setItem(key, 'true');
+    });
+    
+    // Set "highlight on hand" to OFF by default (unchecked)
+    localStorage.setItem('onHandFilter', 'false');
+    
+    // Mark that we've initialized filters so we don't overwrite user choices later
+    localStorage.setItem('hasInitializedFilters', 'true');
+  }
+  
   const savedAccess = sessionStorage.getItem('access_level');
   if (savedAccess) {
     accessLevel = savedAccess;
@@ -4001,6 +4055,68 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
 
     applyViewBox(map.querySelector('svg'));
   }, { passive: false });
+
+  // ===============================
+  // SMOOTH ZOOM
+  // ===============================
+  const zoomInBtn = document.getElementById('zoomInBtn');
+  const zoomOutBtn = document.getElementById('zoomOutBtn');
+  let isZooming = false;
+
+  function smoothZoom(factor, duration = 200) {
+    if (isZooming || !viewBoxState) return;
+    isZooming = true;
+
+    const svg = map.querySelector('svg');
+    if (!svg) {
+      isZooming = false;
+      return;
+    }
+
+    // Calculate center of current view
+    const cx = viewBoxState.x + viewBoxState.w / 2;
+    const cy = viewBoxState.y + viewBoxState.h / 2;
+
+    // Target state
+    const targetW = viewBoxState.w * factor;
+    const targetH = viewBoxState.h * factor;
+    const targetX = cx - targetW / 2;
+    const targetY = cy - targetH / 2;
+
+    // Starting state
+    const startX = viewBoxState.x;
+    const startY = viewBoxState.y;
+    const startW = viewBoxState.w;
+    const startH = viewBoxState.h;
+
+    const startTime = performance.now();
+
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Ease out quad for smooth deceleration
+      const ease = 1 - (1 - progress) * (1 - progress);
+
+      viewBoxState.x = startX + (targetX - startX) * ease;
+      viewBoxState.y = startY + (targetY - startY) * ease;
+      viewBoxState.w = startW + (targetW - startW) * ease;
+      viewBoxState.h = startH + (targetH - startH) * ease;
+
+      applyViewBox(svg);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        isZooming = false;
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  zoomInBtn.onclick = () => smoothZoom(0.8); // Zoom in (smaller viewBox)
+  zoomOutBtn.onclick = () => smoothZoom(1.25); // Zoom out (larger viewBox)
 
   // ===============================
   // RESET
