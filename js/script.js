@@ -108,7 +108,10 @@ function applyAccessRestrictions() {
     const imbBtn = document.getElementById('checkImbStatus');
     if (imbBtn) imbBtn.style.display = 'block';
   } else if (accessLevel === 'full' || accessLevel === 'admin') {
-    // Pastikan tombol IMB dan SITE MAP terlihat jika akses penuh (f888) atau admin (E000)
+    // Pastikan semua tombol terlihat jika akses penuh (f888) atau admin (E000)
+    const certBtn = document.getElementById('searchByCertificate');
+    if (certBtn) certBtn.style.display = 'block';
+    
     const imbBtn = document.getElementById('checkImbStatus');
     if (imbBtn) imbBtn.style.display = 'block';
 
@@ -287,6 +290,23 @@ let kavlingStatusIndex = new Map();
 
 async function preloadKavlingStatusData() {
   try {
+    // Check for offline mode first
+    const offlineModeActive = localStorage.getItem('offlineModeActive') === 'true';
+    const offlineDataStr = localStorage.getItem('offlineKavlingData');
+    if (offlineModeActive && offlineDataStr) {
+      try {
+        const offlineData = JSON.parse(offlineDataStr);
+        if (offlineData.data) {
+          statusData = offlineData;
+          buildKavlingStatusIndex(statusData);
+          console.log('⚡ Preload status kavling dari OFFLINE MODE');
+          return;
+        }
+      } catch (e) {
+        console.warn('Error loading offline data:', e);
+      }
+    }
+    
     const CACHE_KEY = 'kavlingStatusData';
     const CACHE_EXPIRY = 10 * 60 * 1000;
     const cachedString = localStorage.getItem(CACHE_KEY);
@@ -642,6 +662,39 @@ async function fetchKavlingStatus() {
     };
 
     // ==========================================
+    // ⚡ CHECK OFFLINE MODE FIRST
+    // ==========================================
+    const offlineModeActive = localStorage.getItem('offlineModeActive') === 'true';
+    const offlineDataStr = localStorage.getItem('offlineKavlingData');
+    if (offlineModeActive && offlineDataStr) {
+      try {
+        const offlineData = JSON.parse(offlineDataStr);
+        if (offlineData.data) {
+          console.log('⚡ Menggunakan data status dari OFFLINE MODE');
+          
+          // Beri jeda sedikit agar loading terlihat
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Simpan ke variabel global
+          statusData = offlineData;
+          window.lastFetchedKavlingData = statusData.data;
+          buildKavlingStatusIndex(statusData);
+          
+          // Beri warna pada kavling
+          colorizeKavling(statusData.data || []);
+          
+          // Tampilkan data di panel
+          updateStatusPanel(statusData);
+          enableImbButton();
+          
+          return statusData;
+        }
+      } catch (e) {
+        console.warn('Error loading offline data in fetchKavlingStatus:', e);
+      }
+    }
+    
+    // ==========================================
     // ⚡ CACHE STRATEGY (LOCALSTORAGE)
     // ==========================================
     const CACHE_KEY = 'kavlingStatusData';
@@ -956,16 +1009,20 @@ function updateStatusPanel(data) {
     });
   }
 
+  const offlineModeActive = localStorage.getItem('offlineModeActive') === 'true';
   let html = `
-    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #673ab7; color: white; gap: 8px;">
-      <h4 style="margin: 0; font-size: 14px;">📊 Statistik Kavling (IMB)</h4>
+    <div class="status-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: ${offlineModeActive ? '#009688' : '#673ab7'}; color: white; gap: 8px;">
+      <h4 style="margin: 0; font-size: 14px;">📊 Statistik Kavling (IMB)${offlineModeActive ? ' - OFFLINE MODE' : ''}</h4>
       <button id="refreshKavlingStatusBtn"
         style="margin: 0; padding: 6px 10px; font-size: 11px; border-radius: 999px; border: none; cursor: pointer;
                background: #ff9800; color: #ffffff; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.25); display: inline-flex; align-items: center; gap: 4px;">
         <span>🔄</span><span>Refresh Status Kavling</span>
       </button>
     </div>
-
+    ${offlineModeActive ? `
+    <div style="background: #e0f2f1; padding: 8px 12px; border-left: 4px solid #009688; font-size: 12px; color: #00796b; margin-bottom: 10px;">
+      📁 Menggunakan database lokal (offline mode)
+    </div>` : ''}
     <div class="status-content" style="padding: 12px;">
       <!-- FILTER ON HAND -->
       <div style="margin-bottom: 15px; display: flex; align-items: center; background: ${onHandActive ? '#fff9c4' : '#f5f5f5'}; padding: 10px 14px; border-radius: 12px; border: 2px solid ${onHandActive ? '#fbc02d' : '#ddd'}; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s ease;" id="onHandToggleContainer">
@@ -2855,20 +2912,26 @@ async function fetchDataForAddress(address) {
     }
 
     // HANDLE BERDASARKAN STATUS DARI API
+    // Coba dapatkan rawData dari response API
+    let apiRawData = [];
+    if (data && data.results && Array.isArray(data.results) && data.results.length > 0) {
+      apiRawData = data.results[0].rawData || [];
+    } else if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
+      // Cari item yang cocok dengan cleanAddress di data.data
+      const matchedItem = data.data.find(item => (item.kode || '').toString().trim().toUpperCase() === cleanAddress);
+      if (matchedItem && matchedItem.rawData) {
+        apiRawData = matchedItem.rawData;
+      }
+    }
+    
     switch (data.status) {
       case 'success':
+      case 'empty':
         showKavlingPopup(cleanAddress, { 
           status: 'success',
           message: data.message || 'Data ditemukan',
-          data: data.data || ''
-        });
-        break;
-
-      case 'empty':
-        showKavlingPopup(cleanAddress, { 
-          status: 'empty',
-          message: data.message || 'Data ditemukan tetapi kolom kosong',
-          data: data.data || ''
+          data: data.data || '',
+          rawData: apiRawData
         });
         break;
 
@@ -3257,7 +3320,7 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
       // Render ke Canvas
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const scale = 4; // Skala 4 sudah sangat tajam untuk cetakan A3 tanpa membebani RAM berlebih
+      const scale = 6; // Skala 6 untuk kualitas terbaik
       canvas.width = width * scale;
       canvas.height = height * scale;
       
@@ -3281,7 +3344,7 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
       await imgLoadPromise;
 
       // Konversi ke JPEG dengan kualitas maksimal
-      let imgData = canvas.toDataURL('image/jpeg', 0.95);
+      let imgData = canvas.toDataURL('image/jpeg', 1.0);
       
       // Cleanup
       URL.revokeObjectURL(url);
@@ -3293,153 +3356,44 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
         orientation: 'l',
         unit: 'mm',
         format: 'a3',
-        compress: true 
+        compress: false 
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Alokasi ruang: Peta besar di atas (85%), Statistik memanjang di bawah
-      const mapAreaHeight = pdfHeight * 0.82;
-      const ratio = Math.min((pdfWidth - 10) / width, mapAreaHeight / height);
+      // Alokasi ruang: Peta besar di seluruh halaman dengan margin untuk frame
+      const margin = 10;
+      const ratio = Math.min((pdfWidth - margin * 2) / width, (pdfHeight - margin * 2) / height);
       const finalWidth = width * ratio;
       const finalHeight = height * ratio;
       
       const x = (pdfWidth - finalWidth) / 2;
-      const y = 5; // Margin atas sedikit
+      const y = (pdfHeight - finalHeight) / 2;
 
-      pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'FAST');
+      // Draw frame (border) around the map
+      pdf.setDrawColor(0,0,0);
+      pdf.setLineWidth(0.5);
+      pdf.rect(margin, margin, pdfWidth - margin*2, pdfHeight - margin*2);
+
+      pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight, undefined, 'SLOW');
       imgData = null;
 
-      // ===============================
-      // PANEL STATISTIK DI BAWAH (MEMANJANG)
-      // ===============================
-      let statsY = y + finalHeight + 10;
-      let currentX = 10;
-      const boxSize = 6;
-      const colWidth = 55; // Lebar per kolom legenda
-      const rowGap = 10;
-
-      // Judul Statistik
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(16);
-      pdf.text('RINGKASAN STATUS KAVLING', 10, statsY - 2);
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(0.5);
-      pdf.line(10, statsY, pdfWidth - 10, statsY);
-      
-      statsY += 3; // Dikurangi dari 8 agar lebih rapat ke garis judul
-
-      const allCategories = [
-        { id: 'stok_imb', title: 'Stok Memilki IMB', color: [46, 204, 113] },
-        { id: 'stok_no_imb', title: 'Stok Tanpa IMB', color: [198, 247, 198] },
-        { id: 'unknown_no_induk', title: 'Tidak ada Sertif', color: [255, 0, 0] },
-        { id: 'unknown_with_induk', title: '(Proses)Memilki Sertif/Induk', color: [255, 255, 255], hatch: true, hatchColor: [255, 0, 0] },
-        { id: 'on_hand', title: 'ON HAND Sertifikat', color: [251, 192, 45], hatch: true, hatchColor: [130, 119, 23] },
-        { id: 'tersewa_imb', title: 'Sewa Memilki IMB', color: [66, 165, 245] },
-        { id: 'tersewa_no_imb', title: 'Sewa Tanpa IMB', color: [30, 136, 229] },
-        { id: 'dipinjam_imb', title: 'Dipinjam Memiliki IMB', color: [38, 166, 154] },
-        { id: 'dipinjam_no_imb', title: 'Dipinjam Tanpa IMB', color: [77, 182, 172] },
-        { id: 'terjual_imb', title: 'Terjual Memiliki IMB', color: [128, 128, 128] },
-        { id: 'terjual_no_imb', title: 'Terjual Tanpa IMB', color: [211, 211, 211] }
-      ];
-
-      // FILTER HANYA KATEGORI YANG AKTIF (TERCENTANG)
-      const legendCategories = allCategories.filter(cat => {
-        if (cat.id === 'on_hand') {
-          return localStorage.getItem('onHandFilter') === 'true';
-        }
-        return localStorage.getItem(`filter_${cat.id}`) !== 'false';
-      });
-
-      pdf.setFontSize(11); 
-
-      // PENGATURAN TATA LETAK DINAMIS: 6 kolom per baris
-      const itemsPerRow = 6;
-      const colWidthRatio = (pdfWidth - 20) / itemsPerRow;
-      
-      legendCategories.forEach((cat, index) => {
-        const domIdMap = {
-          'terjual_imb': 'countTERJUAL_IMB',
-          'terjual_no_imb': 'countTERJUAL_NO_IMB',
-          'stok_imb': 'countSTOK_IMB',
-          'stok_no_imb': 'countSTOK_NO_IMB',
-          'rekom_imb': 'countREKOM_IMB',
-          'rekom_no_imb': 'countREKOM_NO_IMB',
-          'tersewa_imb': 'countTERSEWA_IMB',
-          'tersewa_no_imb': 'countTERSEWA_NO_IMB',
-          'dipinjam_imb': 'countDIPINJAM_IMB',
-          'dipinjam_no_imb': 'countDIPINJAM_NO_IMB',
-          'unknown_no_induk': 'countUNKNOWN_NO_INDUK',
-          'unknown_with_induk': 'countUNKNOWN_WITH_INDUK',
-          'on_hand': 'countONHAND'
-        };
-
-        const targetDomId = domIdMap[cat.id];
-        const countElement = document.getElementById(targetDomId);
-        const count = countElement ? countElement.innerText : '0';
-        
-        const colIndex = index % itemsPerRow;
-        const rowIndex = Math.floor(index / itemsPerRow);
-        
-        const itemX = 10 + (colIndex * colWidthRatio);
-        const itemY = statsY + 8 + (rowIndex * 10);
-
-        // Kotak warna
-        pdf.setFillColor(cat.color[0], cat.color[1], cat.color[2]);
-        pdf.rect(itemX, itemY - 5, boxSize, boxSize, 'F');
-        pdf.setDrawColor(0, 0, 0);
-        pdf.setLineWidth(0.2);
-        pdf.rect(itemX, itemY - 5, boxSize, boxSize, 'S');
-        
-        // Jika arsiran
-        if (cat.hatch) {
-          const hColor = cat.hatchColor || [255, 0, 0];
-          pdf.setDrawColor(hColor[0], hColor[1], hColor[2]);
-          pdf.setLineWidth(0.2);
-          for (let i = 0; i <= boxSize; i += 2) {
-            pdf.line(itemX + i, itemY - 5, itemX, itemY - 5 + i);
-            pdf.line(itemX + boxSize, itemY - 5 + i, itemX + i, itemY - 5 + boxSize);
-          }
-        }
-        
-        // Teks statistik (Angka Tebal, Judul Normal)
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`${count}`, itemX + boxSize + 2, itemY);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(`${cat.title}`, itemX + boxSize + 12, itemY);
-      });
-
-      // Total di paling kanan bawah
-      const totalAll = document.getElementById('totalAll')?.innerText || '0';
-      const totalApi = document.getElementById('totalApiRecords')?.innerText || '0';
-
-      const finalRowIndex = Math.floor((legendCategories.length - 1) / itemsPerRow);
-      const bottomStatsY = statsY + 8 + (finalRowIndex * 10);
-
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`TOTAL UNIT: ${totalAll}`, pdfWidth - 60, bottomStatsY + 10);
-      
-      // Tambahkan Total Data API (lebih kecil dan sejajar)
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`TOTAL DATA API: ${totalApi}`, pdfWidth - 60, bottomStatsY + 15);
-      
-      // Watermark Tanggal
-      pdf.setFontSize(12); 
-      pdf.setTextColor(50, 50, 50); // Perjelas (lebih gelap)
+      // Tanggal cetak di kanan bawah
+      pdf.setFontSize(10); 
+      pdf.setTextColor(50, 50, 50); 
       const now = new Date();
-      const timestamp = now.toLocaleString('id-ID');
-      pdf.text(`Data Update pada: ${timestamp} | BTU Site Plan System`, 12, pdfHeight - 5);
+      const dateStr = now.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      pdf.text(`Dicetak pada: ${dateStr}`, pdfWidth - margin - 50, pdfHeight - margin - 2, { align: 'right' });
       
-      const dateStr = now.toLocaleDateString('id-ID').replace(/\//g, '-');
-      
-      // Nama file dinamis berdasarkan filter yang aktif
-      let filterSuffix = legendCategories.map(cat => cat.title.split(' ')[0]).join('_');
-      if (filterSuffix.length > 50) filterSuffix = filterSuffix.substring(0, 47) + '...';
-      const fileName = `Peta_BTU_${filterSuffix || 'All'}_${dateStr}.pdf`;
+      const fileNameDate = now.toLocaleDateString('id-ID').replace(/\//g, '-');
+      const fileName = `Peta_BTU_${fileNameDate}.pdf`;
       
       pdf.save(fileName);
       
