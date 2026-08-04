@@ -3572,7 +3572,40 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
       ws['!cols'] = wscols;
 
       const dateStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
-      XLSX.writeFile(wb, `Data_Statistik_BTU_${dateStr}.xlsx`);
+      
+      const filterLabelMap = {
+        'stok_imb': 'STOK_IMB',
+        'stok_no_imb': 'STOK_BLM_IMB',
+        'tersewa_imb': 'SEWA_IMB',
+        'tersewa_no_imb': 'SEWA_BLM_IMB',
+        'dipinjam_imb': 'PINJAM_IMB',
+        'dipinjam_no_imb': 'PINJAM_BLM_IMB',
+        'terjual_imb': 'SOLD_IMB',
+        'terjual_no_imb': 'SOLD_BLM_IMB',
+        'rekom_imb': 'REKOM_IMB',
+        'rekom_no_imb': 'REKOM_BLM_IMB',
+        'unknown_no_induk': 'TANPA_SERTIF',
+        'unknown_with_induk': 'ADA_SERTIF',
+        'on_hand': 'ONHAND'
+      };
+
+      const filterKeys = Object.keys(activeFilters || {});
+      const filterKeysNoOnHand = filterKeys.filter(k => k !== 'on_hand');
+      const isAllMainSelected = filterKeysNoOnHand.length > 0 && filterKeysNoOnHand.every(k => activeFilters[k]);
+
+      let filterPart = '';
+      if (isAllMainSelected) {
+        filterPart = 'SEMUA';
+      } else {
+        filterPart = filterKeysNoOnHand.filter(k => activeFilters[k]).map(k => filterLabelMap[k] || k.toUpperCase()).join('_');
+      }
+
+      if (activeFilters?.on_hand) {
+        filterPart = filterPart ? `${filterPart}_ONHAND` : 'ONHAND';
+      }
+
+      const safeFilterPart = (filterPart || 'TANPA_FILTER').replace(/[\\/:*?"<>|]/g, '').slice(0, 120);
+      XLSX.writeFile(wb, `Data_Statistik_BTU_${safeFilterPart}_${dateStr}.xlsx`);
 
       btn.innerHTML = '<span>✅</span> Selesai!';
       setTimeout(() => {
