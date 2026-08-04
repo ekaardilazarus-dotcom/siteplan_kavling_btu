@@ -3539,7 +3539,14 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
             "Ref Induk": raw[4] || '-', // Kolom E
             "Induk": raw[15] || '-', // Kolom P
             "Status Kavling": statusTextMap[currentCat] || item.kategori || '-',
-            "Sertifikat (On Hand)": isOnHand ? "YA (ON HAND)" : "-"
+            "Sertifikat (On Hand)": isOnHand ? "YA (ON HAND)" : "-",
+            "Luas Tanah": raw[16] || '-',
+            "Luas Bangunan": raw[42] || '-',
+            "Pemegang Hak Lama": raw[39] || '-',
+            "Skema Pembiayaan": raw[10] || '-',
+            "Skema Penjualan": raw[8] || '-',
+            "Tipe Kavling": raw[5] || '-',
+            "Nomor IMB": raw[31] || '-'
           });
         }
       });
@@ -3558,7 +3565,9 @@ document.getElementById('downloadExcelKavling')?.addEventListener('click', gener
       
       // Auto-width kolom
       const wscols = [
-        {wch: 15}, {wch: 25}, {wch: 20}, {wch: 20}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 20}
+        {wch: 15}, {wch: 25}, {wch: 20}, {wch: 20}, {wch: 15},
+        {wch: 15}, {wch: 25}, {wch: 20}, {wch: 12}, {wch: 15},
+        {wch: 25}, {wch: 18}, {wch: 18}, {wch: 15}, {wch: 18}
       ];
       ws['!cols'] = wscols;
 
